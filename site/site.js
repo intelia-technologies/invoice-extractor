@@ -25,13 +25,15 @@
   // OS detection for the download button and the install tabs.
   var ua = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent || '';
   var os = /win/i.test(ua) ? 'win' : /linux|x11/i.test(ua) && !/android/i.test(ua) ? 'linux' : 'mac';
-  var names = { mac: 'macOS', win: 'Windows', linux: 'Linux' };
-  var others = { mac: ['Windows', 'Linux'], win: ['macOS', 'Linux'], linux: ['macOS', 'Windows'] }[os];
-  var sub = document.getElementById('download-os');
-  if (sub) {
-    sub.textContent = es
-      ? 'para ' + names[os] + ' · también ' + others[0] + ' y ' + others[1]
-      : 'for ' + names[os] + ' · also ' + others[0] + ' & ' + others[1];
+  // There is one zip for every OS, so the button only changes on phones and tablets, where the
+  // download is useless until you are back at a computer.
+  var mobile = (navigator.userAgentData && navigator.userAgentData.mobile) ||
+    /android|iphone|ipad|ipod|mobi/i.test(navigator.userAgent || '') ||
+    (/mac/i.test(ua) && navigator.maxTouchPoints > 1);
+  if (mobile) {
+    document.querySelectorAll('[data-download-sub]').forEach(function (sub) {
+      sub.textContent = es ? 'Para Chrome en tu ordenador' : 'For Chrome on your computer';
+    });
   }
 
   var tabs = Array.prototype.slice.call(document.querySelectorAll('[role="tab"]'));

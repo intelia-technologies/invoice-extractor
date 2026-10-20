@@ -101,13 +101,13 @@
         <div><strong>Choose a sync service you trust</strong> Workspace URLs and account IDs can be personal information. The extension talks to any server that implements the open profile-sync contract: you can use the service run by Intelia, or host your own.</div>
       </div>
 
-      <h2>Chrome permissions, and why</h2>
+      <h2 id="permissions">Chrome permissions, and why</h2>
       <p>The extension asks for broad permissions because each provider's billing page is different. This is what each one is for.</p>
-      <h4>Reading billing pages</h4>
+      <h3>Reading billing pages</h3>
       <p><code>&lt;all_urls&gt;</code>, <code>scripting</code>, <code>tabs</code>, <code>webNavigation</code> and <code>cookies</code> let it open a provider's billing page, read the invoice table, and check that you are signed in to the right account.</p>
-      <h4>Saving files</h4>
+      <h3>Saving files</h3>
       <p><code>downloads</code> saves the PDFs. <code>debugger</code> is used only to print receipt pages that have no PDF button; while it runs, Chrome shows a bar saying the extension is debugging the browser.</p>
-      <h4>Talking to your vault</h4>
+      <h3>Talking to your vault</h3>
       <p><code>nativeMessaging</code> lets the extension ask the small helper program installed on your computer for a login. <code>storage</code> and <code>alarms</code> keep your settings and run the optional sync in the background.</p>
       <div class="callout danger">
         <svg class="icon" aria-hidden="true"><use href="#i-x-circle"/></svg>

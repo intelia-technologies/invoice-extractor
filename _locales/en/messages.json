@@ -129,8 +129,8 @@
     "description": "Tooltip of the quick save button."
   },
   "homeOpSyncLabel": {
-    "message": "1P",
-    "description": "Short label of the button that syncs profiles from 1Password (1P = 1Password)."
+    "message": "1Password",
+    "description": "Home button that syncs profiles from 1Password tags (brand name)."
   },
   "homeOpSyncTitle": {
     "message": "Sync profiles and active providers from 1Password tags",
@@ -449,12 +449,12 @@
     }
   },
   "workflowReady": {
-    "message": "Ready — Download invoices",
-    "description": "Button the user clicks after signing in manually."
+    "message": "I'm signed in — continue",
+    "description": "Main button after signing in manually."
   },
   "workflowSwitchAccount": {
-    "message": "Switch account with 1Password",
-    "description": "Sign out and sign in with the profile's 1Password credentials."
+    "message": "Switch account",
+    "description": "Sign out and sign in with the profile credentials from the password manager."
   },
   "workflowShowTab": {
     "message": "Show tab",
@@ -713,8 +713,8 @@
     }
   },
   "workflowStatusLoginPrompt": {
-    "message": "$provider$: sign in (or use \"Sign in with 1Password\"), then click \"Ready\".",
-    "description": "Status asking the user to sign in. Button names must match commonSignInOp and workflowReady.",
+    "message": "$provider$: waiting for you to sign in.",
+    "description": "Status while the sign-in steps are shown.",
     "placeholders": {
       "provider": {
         "content": "$1"
@@ -835,7 +835,7 @@
     }
   },
   "workflowStatusWrongAccount": {
-    "message": "$provider$: wrong account. Expected \"$expected$\", found \"$found$\". Switch account in $provider$, then click \"Ready\".",
+    "message": "$provider$: wrong account. Expected \"$expected$\", found \"$found$\". Switch account in $provider$, then click \"I’m signed in — continue\".",
     "description": "Status. Nothing is downloaded until the account matches.",
     "placeholders": {
       "provider": {
@@ -1006,7 +1006,7 @@
     }
   },
   "workflowStatusNotDetected": {
-    "message": "$provider$: billing page not detected. Sign in, then click \"Ready\".",
+    "message": "$provider$: billing page not detected. Sign in, then click \"I’m signed in — continue\".",
     "description": "Status.",
     "placeholders": {
       "provider": {
@@ -1024,8 +1024,8 @@
     }
   },
   "workflowStatusLogInReady": {
-    "message": "Sign in to $provider$, then click \"Ready\".",
-    "description": "Status.",
+    "message": "Sign in to $provider$, then click \"I'm signed in — continue\".",
+    "description": "Status after opening the provider tab. The button name must match workflowReady.",
     "placeholders": {
       "provider": {
         "content": "$1"
@@ -1793,5 +1793,297 @@
   "recordExport": {
     "message": "Export Recording JSON",
     "description": "Button."
+  },
+  "homeReadyCountOne": {
+    "message": "$count$ ready",
+    "description": "Download All subtitle: providers that will run, singular.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "homeReadyCountOther": {
+    "message": "$count$ ready",
+    "description": "Download All subtitle: providers that will run, plural.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "homeNeedsSetupCountOne": {
+    "message": "$count$ needs setup (skipped)",
+    "description": "Download All subtitle: selected providers that will be skipped because a setting is missing, singular.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "homeNeedsSetupCountOther": {
+    "message": "$count$ need setup (skipped)",
+    "description": "Download All subtitle: selected providers that will be skipped because a setting is missing, plural.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "homeGroupReady": {
+    "message": "Ready",
+    "description": "Home group heading: selected providers that will run."
+  },
+  "homeGroupNeedsSetup": {
+    "message": "Needs setup",
+    "description": "Home group heading: selected providers missing a required setting."
+  },
+  "homeGroupOff": {
+    "message": "Off",
+    "description": "Home group heading: providers not included in Download All."
+  },
+  "homeProviderOff": {
+    "message": "Off",
+    "description": "Small label on a provider card that is not included in Download All."
+  },
+  "homeProviderInclude": {
+    "message": "Include $provider$",
+    "description": "Accessible name and tooltip of the include toggle on a provider card.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "commonSignInBw": {
+    "message": "Sign in with Bitwarden",
+    "description": "Button: fill the login with the Bitwarden credentials."
+  },
+  "commonRemoveValue": {
+    "message": "Remove $value$",
+    "description": "Accessible name of the remove button on a saved setting value.",
+    "placeholders": {
+      "value": {
+        "content": "$1"
+      }
+    }
+  },
+  "commonShowFileInFolder": {
+    "message": "Show $file$ in its folder",
+    "description": "Accessible name of a downloaded invoice in the live list.",
+    "placeholders": {
+      "file": {
+        "content": "$1"
+      }
+    }
+  },
+  "batchPresetsLabel": {
+    "message": "Quick ranges",
+    "description": "Accessible name of the group of date presets."
+  },
+  "batchPresetThisMonth": {
+    "message": "This month",
+    "description": "Date preset: since the first day of this month."
+  },
+  "batchPresetLastMonth": {
+    "message": "Last month",
+    "description": "Date preset: since the first day of last month."
+  },
+  "batchPresetThisQuarter": {
+    "message": "This quarter",
+    "description": "Date preset: since the first day of this quarter."
+  },
+  "batchMaxHint": {
+    "message": "Leave empty to download all.",
+    "description": "Hint under the max invoices field."
+  },
+  "batchWillSkip": {
+    "message": "Needs setup, will be skipped",
+    "description": "Note on a provider in the run list that will be skipped for missing settings."
+  },
+  "workflowLoginStep1": {
+    "message": "Sign in to $provider$ in the tab we opened.",
+    "description": "Sign-in step 1.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "workflowLoginStep2": {
+    "message": "Enter the 2FA code if asked.",
+    "description": "Sign-in step 2."
+  },
+  "workflowLoginStep3": {
+    "message": "Click \"I'm signed in — continue\". The run also continues by itself once the billing page loads.",
+    "description": "Sign-in step 3. The button name must match workflowReady."
+  },
+  "workflowLoginReassure": {
+    "message": "Your password stays in your browser or your password manager. Invoice Extractor doesn't store it.",
+    "description": "Neutral security note on the sign-in step. No apologies, no mascot."
+  },
+  "workflowSiteFiled": {
+    "message": "Filed",
+    "description": "Status of a provider row: finished and filed."
+  },
+  "workflowSiteNow": {
+    "message": "Now",
+    "description": "Status of a provider row: in progress."
+  },
+  "workflowSiteSkipped": {
+    "message": "Skipped",
+    "description": "Status of a provider row: skipped."
+  },
+  "workflowSiteWaiting": {
+    "message": "Waiting",
+    "description": "Status of a provider row: not started yet."
+  },
+  "completionCleanOne": {
+    "message": "Done. $count$ invoice filed.",
+    "description": "Completion title for a clean run, singular.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "completionCleanOther": {
+    "message": "Done. $count$ invoices filed.",
+    "description": "Completion title for a clean run, plural.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "completionCleanNone": {
+    "message": "Done. Nothing new to file.",
+    "description": "Completion title when the run found no new invoices and nothing needs attention."
+  },
+  "completionFiledOne": {
+    "message": "$count$ filed",
+    "description": "First half of the completion title when something needs attention, singular (invoices).",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "completionFiledOther": {
+    "message": "$count$ filed",
+    "description": "First half of the completion title when something needs attention, plural (invoices).",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "completionNeedYouOne": {
+    "message": "$count$ needs you",
+    "description": "Second half of the completion title: providers that need the user, singular.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "completionNeedYouOther": {
+    "message": "$count$ need you",
+    "description": "Second half of the completion title: providers that need the user, plural.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "completionNeedsYouLabel": {
+    "message": "Needs you",
+    "description": "Status label on a skipped provider that needs action."
+  },
+  "completionUpToDateLabel": {
+    "message": "Up to date",
+    "description": "Status label on a skipped provider with nothing new."
+  },
+  "completionAttentionHelp": {
+    "message": "These providers were skipped. Open each one, fix what is listed and run it again.",
+    "description": "Help under the completion title when something needs attention."
+  },
+  "completionOpenFolder": {
+    "message": "Open downloads folder",
+    "description": "Completion button: open the browser download folder."
+  },
+  "historyFilterProviderShort": {
+    "message": "Provider",
+    "description": "Visible label of the provider filter."
+  },
+  "historyFilterFromShort": {
+    "message": "From",
+    "description": "Visible label of the download date filter start."
+  },
+  "historyFilterToShort": {
+    "message": "To",
+    "description": "Visible label of the download date filter end."
+  },
+  "historyColLogo": {
+    "message": "Logo",
+    "description": "Hidden header of the logo column (screen readers)."
+  },
+  "historyOpenRowLabel": {
+    "message": "Show the $provider$ invoice of $date$ in its folder",
+    "description": "Accessible name of a history row button.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      },
+      "date": {
+        "content": "$2"
+      }
+    }
+  },
+  "historyDeleteRowLabel": {
+    "message": "Delete the $provider$ invoice of $date$",
+    "description": "Accessible name of the delete button on a history row.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      },
+      "date": {
+        "content": "$2"
+      }
+    }
+  },
+  "profilesListTitle": {
+    "message": "Your profiles",
+    "description": "Section title above the profile list."
+  },
+  "profilesNewLabel": {
+    "message": "New profile",
+    "description": "Label of the new profile name field."
+  },
+  "profilesFilesTitle": {
+    "message": "Export and import",
+    "description": "Section title of the profile file actions."
+  },
+  "profilesRenameLabel": {
+    "message": "Rename $name$",
+    "description": "Accessible name of the rename button on a profile.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "profilesDeleteLabel": {
+    "message": "Delete $name$",
+    "description": "Accessible name of the delete button on a profile.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "syncDisclosure": {
+    "message": "Sync across devices (optional)",
+    "description": "Collapsible section with the optional profile sync service."
   }
 }

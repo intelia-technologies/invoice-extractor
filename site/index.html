@@ -9,8 +9,8 @@
       if (!localStorage.getItem('ie-lang') && /^es\b/i.test(navigator.language || '')) location.replace('es/');
     } catch (e) { /* storage blocked: stay in English */ }
   </script>
-  <title>Invoice Extractor — every SaaS invoice, downloaded for you</title>
-  <meta name="description" content="Open-source Chrome extension and AI-agent toolkit that signs into your SaaS billing pages with 1Password or Bitwarden and saves every invoice as a PDF. macOS, Windows and Linux." />
+  <title>Invoice Extractor — every invoice, filed in one run</title>
+  <meta name="description" content="Open-source Chrome extension and AI-agent toolkit that signs into your providers' billing pages with 1Password or Bitwarden and saves every invoice as a PDF. macOS, Windows and Linux." />
   <link rel="canonical" href="https://invoice-extractor.noscomelaia.com/" />
   <link rel="alternate" hreflang="en" href="https://invoice-extractor.noscomelaia.com/" />
   <link rel="alternate" hreflang="es" href="https://invoice-extractor.noscomelaia.com/es/" />
@@ -34,23 +34,14 @@
 <body>
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
     <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
-    <symbol id="i-circle-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></symbol>
     <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
     <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></symbol>
     <symbol id="i-github" viewBox="0 0 24 24"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.4 5.4 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></symbol>
-    <symbol id="i-key" viewBox="0 0 24 24"><path d="M2.59 17.41A2 2 0 0 0 2 18.83V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.17a2 2 0 0 0 1.42-.59l.81-.81a6.5 6.5 0 1 0-4-4z"/><circle cx="16.5" cy="7.5" r="1"/></symbol>
-    <symbol id="i-braces" viewBox="0 0 24 24"><path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5c0 1.1.9 2 2 2h1"/><path d="M16 21h1a2 2 0 0 0 2-2v-5c0-1.1.9-2 2-2a2 2 0 0 1-2-2V5a2 2 0 0 0-2-2h-1"/></symbol>
-    <symbol id="i-folder-check" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/><path d="m9 13 2 2 4-4"/></symbol>
-    <symbol id="i-window" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 9h20"/><path d="M6 6.5h.01"/><path d="M9 6.5h.01"/></symbol>
-    <symbol id="i-terminal" viewBox="0 0 24 24"><path d="m4 17 6-6-6-6"/><path d="M12 19h8"/></symbol>
-    <symbol id="i-bot" viewBox="0 0 24 24"><path d="M12 8V4H8"/><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></symbol>
     <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></symbol>
-    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
-    <symbol id="i-cloud-off" viewBox="0 0 24 24"><path d="m2 2 20 20"/><path d="M5.78 5.78A7 7 0 0 0 9 19h8.5a4.5 4.5 0 0 0 1.31-.19"/><path d="M21.53 16.5A4.5 4.5 0 0 0 17.5 10h-1.79A7 7 0 0 0 10 5.07"/></symbol>
-    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol>
-    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></symbol>
   </svg>
-
   <a class="skip" href="#main">Skip to content</a>
 
   <header class="topbar">
@@ -61,9 +52,9 @@
       </a>
       <nav class="topnav" aria-label="Main">
         <a class="nav-section" href="#how">How it works</a>
-        <a class="nav-section" href="#agents">For agents</a>
         <a class="nav-section" href="#providers">Providers</a>
-        <a class="nav-section" href="#install">Install</a>
+        <a class="nav-section" href="#agents">For agents</a>
+        <a class="nav-section nav-keep" href="#install">Install</a>
         <a class="gh" href="https://github.com/intelia-technologies/invoice-extractor" rel="noopener">
           <svg class="icon sm" aria-hidden="true"><use href="#i-github"/></svg><span class="gh-label">GitHub</span><span class="sr-only"> (source code)</span>
         </a>
@@ -77,32 +68,21 @@
 
   <main id="main">
     <section class="hero wrap" id="top">
-      <div class="hero-title">
-        <p class="kicker"><span class="badge">Public beta</span><span>Open source · MIT · local-first</span></p>
-        <h1>Every SaaS invoice, <span class="copyline">filed before you ask.</span></h1>
-      </div>
+      <h1 class="hero-title">Every invoice, <span class="copyline">filed in one run.</span></h1>
       <div class="hero-copy">
         <p class="lede">
-          Invoice Extractor signs into your providers' billing pages with the logins you already keep in
-          <strong>1Password</strong> or <strong>Bitwarden</strong>, finds each invoice and saves it as a PDF on your disk.
-          Run it from a Chrome extension, or hand it to your AI agent.
+          Invoice Extractor signs into each provider's billing page with the logins you already keep in
+          <strong>1Password</strong> or <strong>Bitwarden</strong>, finds every invoice and saves it as a named PDF on your disk.
+          Use the Chrome extension, or hand the job to your AI agent.
         </p>
         <div class="cta">
-          <a class="btn btn-primary" id="download-btn" href="https://github.com/intelia-technologies/invoice-extractor/releases/latest/download/invoice-extractor.zip">
+          <a class="btn btn-primary" href="https://github.com/intelia-technologies/invoice-extractor/releases/latest/download/invoice-extractor.zip">
             <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
-            <span class="btn-text"><span class="btn-label">Download</span><span class="btn-sub" id="download-os">macOS · Windows · Linux</span></span>
+            <span class="btn-text"><span class="btn-label">Download</span><span class="btn-sub" data-download-sub>One zip for macOS, Windows and Linux</span></span>
           </a>
-          <a class="btn btn-secondary" href="#install">Installation guide</a>
+          <a class="btn-quiet" href="#install">Installation guide <svg class="icon sm" aria-hidden="true"><use href="#i-arrow"/></svg></a>
         </div>
-        <ul class="facts">
-          <li><b>20</b> providers built in</li>
-          <li><b>0</b> passwords stored by us</li>
-          <li><b>3</b> operating systems</li>
-        </ul>
-        <p class="beta-note">
-          <svg class="icon" aria-hidden="true"><use href="#i-info"/></svg>
-          <span>During the beta you install the extension by hand from this download, not from the Chrome Web Store. The code is public, so you can read exactly what you install.</span>
-        </p>
+        <p class="beta-note">Public beta, open source (MIT). For now you install it by hand from this download, not from the Chrome Web Store, and you can read every line of what you install.</p>
       </div>
 
       <figure class="sheet-wrap" aria-label="Example run: seven invoices saved for the profile Acme">
@@ -131,67 +111,66 @@
     <section id="how" class="section">
       <div class="wrap">
         <header class="section-head">
-          <p class="eyebrow">01 · How it works</p>
-          <h2>Your vault already knows the logins. Bonobot does the clicking.</h2>
+          <h2>Press Start once. Step in only when it asks.</h2>
+          <p class="section-lede">This is a run in the extension, beat by beat. Your logins stay in your vault: it reads them through the official <code>op</code> or <code>bw</code> command-line tool at the moment it signs in, and copies nothing to a server.</p>
         </header>
-        <div class="steps">
-          <article class="step">
-            <div class="step-top"><span class="tile-icon"><svg class="icon" aria-hidden="true"><use href="#i-key"/></svg></span><span class="step-n">A</span></div>
-            <h3>Your vault stays the source of truth</h3>
-            <p>Tag your billing logins by client or company (<code>#Acme</code>) or keep them in a folder. Invoice Extractor reads them when it needs them through the official <code>op</code> or <code>bw</code> CLI, live 2FA codes included. Nothing is copied to a server.</p>
-          </article>
-          <article class="step">
-            <div class="step-top"><span class="tile-icon"><svg class="icon" aria-hidden="true"><use href="#i-braces"/></svg></span><span class="step-n">B</span></div>
-            <h3>One recipe per provider, not one scraper per person</h3>
-            <p>Each provider is a small declarative JSON recipe: where the billing page lives, how to read the table, how to download. When a site changes, one fix in the catalog fixes it for everybody.</p>
-          </article>
-          <article class="step">
-            <div class="step-top"><span class="tile-icon"><svg class="icon" aria-hidden="true"><use href="#i-folder-check"/></svg></span><span class="step-n">C</span></div>
-            <h3>PDFs on your disk, never twice</h3>
-            <p>Files land in your folder with a consistent name (date, provider, number, amount). A local history skips what you already have, so you can run it every month without thinking.</p>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <section id="agents" class="section">
-      <div class="wrap">
-        <header class="section-head">
-          <p class="eyebrow">02 · Two ways to use it</p>
-          <h2>Press start yourself, or ask your agent.</h2>
-        </header>
-        <div class="modes">
-          <article class="mode">
-            <p class="mode-tag"><svg class="icon sm" aria-hidden="true"><use href="#i-window"/></svg>For humans</p>
-            <h3>Chrome extension</h3>
-            <p>Pick a client profile, tick the providers, press start. The extension signs in with your password manager, walks through the billing history and downloads everything, whether you watch or not.</p>
-            <ul class="ticks">
-              <li><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>Client profiles from your vault tags</li>
-              <li><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>Record mode to create a new provider</li>
-              <li><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>Download history and consistent file names</li>
-            </ul>
-          </article>
-          <article class="mode">
-            <p class="mode-tag"><svg class="icon sm" aria-hidden="true"><use href="#i-terminal"/></svg>For AI agents</p>
-            <h3>CLI · MCP server · Skill</h3>
-            <p>Ask Claude Desktop, Claude Code or any MCP client <em>“download this month's invoices for Acme”</em>. Agents can also add a new provider on their own: they inspect the billing page, write the recipe and check it with one real download.</p>
-            <pre class="term"><code><span class="p">$</span> invoice-extractor profiles --sync-1p
-<span class="ok">✓</span> 3 profiles · 41 logins matched
-<span class="p">$</span> invoice-extractor run --profile Acme --since 2026-09-01
-<span class="ok">✓</span> stripe 2 · github 1 · openai 1 · hetzner 3
-<span class="p">$</span> invoice-extractor onboard --provider vercel
-<span class="go">→</span> needs_creation <span class="dim">· recipe draft ready</span></code></pre>
-          </article>
-        </div>
+        <ol class="run">
+          <li class="beat">
+            <div class="ui" aria-hidden="true">
+              <span class="ui-label">Profile</span>
+              <span class="ui-select">Acme <svg class="icon sm"><use href="#i-chevron"/></svg></span>
+              <ul class="ui-list">
+                <li><span class="ui-box"><svg class="icon sm"><use href="#i-check"/></svg></span>Stripe</li>
+                <li><span class="ui-box"><svg class="icon sm"><use href="#i-check"/></svg></span>Hetzner</li>
+                <li><span class="ui-box"><svg class="icon sm"><use href="#i-check"/></svg></span>GitHub</li>
+                <li class="ui-more">+ 4 more providers</li>
+              </ul>
+            </div>
+            <h3>Pick a profile</h3>
+            <p>A profile is one company or client: its providers and their account settings. Build it from a tag in your vault (<code>#Acme</code>) or a folder.</p>
+          </li>
+          <li class="beat">
+            <div class="ui" aria-hidden="true">
+              <span class="ui-button">Start Download</span>
+              <ul class="ui-log">
+                <li><span>Stripe</span><span class="status ok"><svg class="icon sm"><use href="#i-check"/></svg>2 saved</span></li>
+                <li><span>GitHub</span><span class="status go"><svg class="icon sm"><use href="#i-arrow"/></svg>Reading billing page</span></li>
+              </ul>
+            </div>
+            <h3>Press Start</h3>
+            <p>It opens each billing page in a tab, signs in and reads the invoice table. Watch it work, or get on with something else.</p>
+          </li>
+          <li class="beat">
+            <div class="ui" aria-hidden="true">
+              <div class="ui-needs">
+                <span class="status warn"><svg class="icon sm"><use href="#i-alert"/></svg>Needs you</span>
+                <span>Hetzner: enter the 2FA code in its tab, then click “I’m signed in — continue”.</span>
+              </div>
+              <span class="ui-button ghost">I’m signed in — continue</span>
+            </div>
+            <h3>Step in when asked</h3>
+            <p>When a login needs a person, the run waits and says exactly what to do. 2FA codes kept in your vault are filled in for you.</p>
+          </li>
+          <li class="beat">
+            <div class="ui" aria-hidden="true">
+              <div class="ui-file"><svg class="icon sm"><use href="#i-file"/></svg><span>Hetzner_Invoice_R0021_Sep-12-2026_4.51.pdf</span></div>
+              <ul class="ui-log">
+                <li><span>Saved</span><span class="status ok"><svg class="icon sm"><use href="#i-check"/></svg>7 PDFs</span></li>
+                <li><span>Already had</span><span class="ui-dim">14 skipped</span></li>
+              </ul>
+            </div>
+            <h3>Filed</h3>
+            <p>Every PDF lands in your download folder under a consistent name. A local history skips what you already have, so next month only the new ones come down.</p>
+          </li>
+        </ol>
       </div>
     </section>
 
     <section id="providers" class="section">
       <div class="wrap">
         <header class="section-head">
-          <p class="eyebrow">03 · Built-in providers</p>
           <h2>Twenty billing pages Bonobot already knows by heart.</h2>
-          <p class="section-lede">Missing one? Record it once in the extension, or let your agent write the recipe, and send it back so everyone gets it.</p>
+          <p class="section-lede">Each provider is a recipe: a small public JSON file that says where the billing page lives, how to read the invoice table and how to download. When a site changes, one fix to its recipe fixes it for everyone. Missing one? Record it once in the extension, or let your agent write the recipe, and send it back.</p>
         </header>
         <ul class="providers">
           <li><span class="logo lg"><img src="assets/providers/amazon.png" alt="" data-name="Amazon" /></span>Amazon</li>
@@ -219,77 +198,113 @@
       </div>
     </section>
 
-    <section id="install" class="section">
-      <div class="wrap">
-        <header class="section-head">
-          <p class="eyebrow">04 · Install</p>
-          <h2>Three steps, one double-click.</h2>
-          <p class="section-lede">You need <strong>Google Chrome</strong>, <strong>Node.js 18+</strong> (the installer gets it for you on Mac with Homebrew and on Windows) and <strong>1Password</strong> or <strong>Bitwarden</strong>. The installer takes care of the rest: dependencies, the automation browser, the password-manager CLI and Claude Desktop.</p>
-        </header>
-
-        <div class="tabs" role="tablist" aria-label="Operating system">
-          <button role="tab" id="tab-mac" data-os="mac" aria-controls="panel-mac" aria-selected="true">macOS</button>
-          <button role="tab" id="tab-win" data-os="win" aria-controls="panel-win" aria-selected="false" tabindex="-1">Windows</button>
-          <button role="tab" id="tab-linux" data-os="linux" aria-controls="panel-linux" aria-selected="false" tabindex="-1">Linux</button>
+    <section id="agents" class="section">
+      <div class="wrap agents">
+        <div class="agents-copy">
+          <h2>Or hand the chore to your AI agent.</h2>
+          <p>The same recipes and the same vault logins work from the command line and from AI agents. The installer sets up both connections: Claude Desktop gets the <b>MCP server</b> (MCP is the standard way an AI app plugs in an outside tool), and Claude Code, OMP and Antigravity get the <b>Skill</b> (written instructions the agent loads to know how to use it). Then just ask:</p>
+          <blockquote class="ask">“Sync my providers from 1Password and download last month's invoices for Acme.”</blockquote>
+          <p>Agents can also add a provider on their own: they inspect the billing page, write the recipe and check it with one real download.</p>
         </div>
-
-        <div class="panel" id="panel-mac" role="tabpanel" aria-labelledby="tab-mac" data-panel="mac">
-          <ol class="howto">
-            <li><b>Download</b> <a href="https://github.com/intelia-technologies/invoice-extractor/releases/latest/download/invoice-extractor.zip">invoice-extractor.zip</a> and unzip it somewhere permanent, e.g. <code>~/Applications/invoice-extractor</code>.</li>
-            <li><b>Double-click</b> <code>install.command</code>. If macOS blocks it, right-click → <em>Open</em>. Choose 1Password or Bitwarden when asked; secrets go into a native system dialog, never into a chat.</li>
-            <li><b>Load the extension:</b> open <code>chrome://extensions</code>, turn on <em>Developer mode</em>, click <em>Load unpacked</em> and select the unzipped folder.</li>
-          </ol>
-        </div>
-        <div class="panel" id="panel-win" role="tabpanel" aria-labelledby="tab-win" data-panel="win" hidden>
-          <ol class="howto">
-            <li><b>Download</b> <a href="https://github.com/intelia-technologies/invoice-extractor/releases/latest/download/invoice-extractor.zip">invoice-extractor.zip</a> and extract it, e.g. to <code>C:\Users\you\invoice-extractor</code>.</li>
-            <li><b>Double-click</b> <code>install.bat</code>. If Node.js is missing it installs it with <code>winget</code> and asks you to run it again. Choose 1Password or Bitwarden; Windows Hello works with 1Password.</li>
-            <li><b>Load the extension:</b> open <code>chrome://extensions</code>, turn on <em>Developer mode</em>, click <em>Load unpacked</em> and select the extracted folder.</li>
-          </ol>
-        </div>
-        <div class="panel" id="panel-linux" role="tabpanel" aria-labelledby="tab-linux" data-panel="linux" hidden>
-          <ol class="howto">
-            <li><b>Download and unzip:</b>
-              <pre class="term small"><code><span class="p">$</span> curl -LO https://github.com/intelia-technologies/invoice-extractor/releases/latest/download/invoice-extractor.zip
-<span class="p">$</span> unzip invoice-extractor.zip -d ~/invoice-extractor && cd ~/invoice-extractor</code></pre>
-            </li>
-            <li><b>Run the installer:</b> <code>bash install.command</code>. It uses <code>snap</code> to install the 1Password or Bitwarden CLI and opens a <code>zenity</code>/<code>kdialog</code> prompt for secrets.</li>
-            <li><b>Load the extension:</b> open <code>chrome://extensions</code>, turn on <em>Developer mode</em>, click <em>Load unpacked</em> and select the folder.</li>
-          </ol>
-        </div>
-
-        <div class="agent-note">
-          <span class="tile-icon"><svg class="icon" aria-hidden="true"><use href="#i-bot"/></svg></span>
-          <p><b>Using an AI agent?</b> After installing, Claude Desktop already has the <code>invoice-extractor</code> MCP server, and Claude Code, OMP and Antigravity get the <code>invoice-extractor</code> Skill. Just ask:</p>
-          <blockquote>“Sync my providers from 1Password and download last month's invoices for Acme.”</blockquote>
-        </div>
+        <pre class="term"><code><span class="p">$</span> invoice-extractor profiles --sync-1p
+<span class="ok">✓</span> 3 profiles · 41 logins matched
+<span class="p">$</span> invoice-extractor run --profile Acme --since 2026-09-01
+<span class="ok">✓</span> stripe 2 · github 1 · openai 1 · hetzner 3
+<span class="p">$</span> invoice-extractor onboard --provider vercel
+<span class="go">→</span> needs_creation <span class="dim">· recipe draft ready</span></code></pre>
       </div>
     </section>
 
     <section id="privacy" class="section">
+      <div class="wrap trust">
+        <div class="trust-copy">
+          <h2>Boring on purpose.</h2>
+          <p>Invoice Extractor runs on your computer. We never receive your passwords, your invoices or your browsing. The code is public, so every line of this receipt can be checked.</p>
+          <a class="more-link" href="privacy.html">Read the privacy policy <svg class="icon sm" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+        </div>
+        <div class="receipt">
+          <div class="sheet-head"><span>Receipt</span><span>What we keep</span></div>
+          <dl>
+            <div><dt>Your passwords</dt><dd><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>Not stored</span><span class="why">Read from your vault at login, written nowhere else.</span></dd></div>
+            <div><dt>Cloud account</dt><dd><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>Not needed</span><span class="why">Profiles and history live in <code>~/.config/invoice-extractor</code>. Optional profile sync exists; everything works without it.</span></dd></div>
+            <div><dt>Phone-home</dt><dd><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>None</span><span class="why">The only traffic is your browser talking to your providers.</span></dd></div>
+            <div><dt>Your invoices</dt><dd><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>On your disk</span><span class="why">In your download folder, never sent to us.</span></dd></div>
+          </dl>
+          <div class="sheet-total"><span>Passwords stored by us</span><span>0</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="install" class="section">
       <div class="wrap">
         <header class="section-head">
-          <p class="eyebrow">05 · What it does not do</p>
-          <h2>Boring on purpose.</h2>
+          <h2>Three steps, one double-click.</h2>
+          <p class="section-lede">You need <strong>Google Chrome</strong>, <strong>Node.js 18+</strong> (the installer gets it for you on Mac with Homebrew and on Windows) and <strong>1Password</strong> or <strong>Bitwarden</strong>. The installer takes care of the rest: dependencies, the automation browser, the password-manager CLI and Claude Desktop.</p>
         </header>
-        <div class="trust">
-          <div>
-            <span class="tile-icon"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg></span>
-            <h3>It does not store your passwords</h3>
-            <p>Credentials are read from your own vault at the moment of login and never written anywhere else.</p>
+
+        <div class="install">
+          <div class="install-steps">
+            <div class="tabs" role="tablist" aria-label="Operating system">
+              <button role="tab" id="tab-mac" data-os="mac" aria-controls="panel-mac" aria-selected="true">macOS</button>
+              <button role="tab" id="tab-win" data-os="win" aria-controls="panel-win" aria-selected="false" tabindex="-1">Windows</button>
+              <button role="tab" id="tab-linux" data-os="linux" aria-controls="panel-linux" aria-selected="false" tabindex="-1">Linux</button>
+            </div>
+
+            <div class="panel" id="panel-mac" role="tabpanel" aria-labelledby="tab-mac" data-panel="mac">
+              <ol class="howto">
+                <li><b>Download</b> <a href="https://github.com/intelia-technologies/invoice-extractor/releases/latest/download/invoice-extractor.zip">invoice-extractor.zip</a> and unzip it somewhere permanent, e.g. <code>~/Applications/invoice-extractor</code>.</li>
+                <li><b>Double-click</b> <code>install.command</code>. If macOS blocks it, right-click → <em>Open</em>. Choose 1Password or Bitwarden when asked; secrets go into a native system dialog, never into a chat.</li>
+                <li><b>Load the extension:</b> open <code>chrome://extensions</code>, turn on <em>Developer mode</em>, click <em>Load unpacked</em> and select the unzipped folder. Leave the folder where it is: Chrome runs the extension from it.</li>
+              </ol>
+            </div>
+            <div class="panel" id="panel-win" role="tabpanel" aria-labelledby="tab-win" data-panel="win" hidden>
+              <ol class="howto">
+                <li><b>Download</b> <a href="https://github.com/intelia-technologies/invoice-extractor/releases/latest/download/invoice-extractor.zip">invoice-extractor.zip</a> and extract it somewhere permanent, e.g. <code>C:\Users\you\invoice-extractor</code>.</li>
+                <li><b>Double-click</b> <code>install.bat</code>. If Node.js is missing it installs it with <code>winget</code> and asks you to run it again. Choose 1Password or Bitwarden; Windows Hello works with 1Password.</li>
+                <li><b>Load the extension:</b> open <code>chrome://extensions</code>, turn on <em>Developer mode</em>, click <em>Load unpacked</em> and select the extracted folder. Leave the folder where it is: Chrome runs the extension from it.</li>
+              </ol>
+            </div>
+            <div class="panel" id="panel-linux" role="tabpanel" aria-labelledby="tab-linux" data-panel="linux" hidden>
+              <ol class="howto">
+                <li><b>Download and unzip:</b>
+                  <pre class="term small"><code><span class="p">$</span> curl -LO https://github.com/intelia-technologies/invoice-extractor/releases/latest/download/invoice-extractor.zip
+<span class="p">$</span> unzip invoice-extractor.zip -d ~/invoice-extractor && cd ~/invoice-extractor</code></pre>
+                </li>
+                <li><b>Run the installer:</b> <code>bash install.command</code>. It uses <code>snap</code> to install the 1Password or Bitwarden CLI and opens a <code>zenity</code>/<code>kdialog</code> prompt for secrets.</li>
+                <li><b>Load the extension:</b> open <code>chrome://extensions</code>, turn on <em>Developer mode</em>, click <em>Load unpacked</em> and select the folder. Leave the folder where it is: Chrome runs the extension from it.</li>
+              </ol>
+            </div>
           </div>
-          <div>
-            <span class="tile-icon"><svg class="icon" aria-hidden="true"><use href="#i-cloud-off"/></svg></span>
-            <h3>It does not need a cloud account</h3>
-            <p>Profiles and history live in <code>~/.config/invoice-extractor</code>. Optional profile sync between computers exists, but everything works without it.</p>
-          </div>
-          <div>
-            <span class="tile-icon"><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg></span>
-            <h3>It does not phone home</h3>
-            <p>The only network traffic is your browser talking to your providers. Read the code: it is all on GitHub.</p>
-          </div>
+
+          <aside class="allow" aria-labelledby="allow-title">
+            <h3 id="allow-title">What you're about to allow</h3>
+            <p>The extension asks for broad permissions because each provider's billing page is different. The two that stand out:</p>
+            <dl>
+              <dt>Access to every site <code>&lt;all_urls&gt;</code></dt>
+              <dd>To open a provider's billing page, read the invoice table and check that you are signed in to the right account.</dd>
+              <dt>The debugger <code>debugger</code></dt>
+              <dd>Only to print receipt pages that have no PDF button. While it runs, Chrome shows a bar saying the extension is debugging the browser.</dd>
+            </dl>
+            <p><strong>Install only from this site or GitHub Releases.</strong> Because the extension can read the pages you open, a modified copy could do harm.</p>
+            <a class="more-link" href="privacy.html#permissions">Every permission, explained <svg class="icon sm" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+          </aside>
         </div>
-        <a class="more-link" href="privacy.html">Read the privacy policy <svg class="icon sm" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+      </div>
+    </section>
+
+    <section class="section closing" aria-labelledby="closing-title">
+      <div class="wrap closing-inner">
+        <div>
+          <h2 id="closing-title">Close the month in one run.</h2>
+          <p>Free and open source. One zip for macOS, Windows and Linux; the three steps above do the rest.</p>
+        </div>
+        <div class="closing-cta">
+          <a class="btn btn-primary" href="https://github.com/intelia-technologies/invoice-extractor/releases/latest/download/invoice-extractor.zip">
+            <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
+            <span class="btn-text"><span class="btn-label">Download</span><span class="btn-sub" data-download-sub>One zip for macOS, Windows and Linux</span></span>
+          </a>
+          <p class="foot-rest"><img src="assets/bonobot-waiting.svg" alt="" width="48" height="48" />Bonobot is resting until next month's close.</p>
+        </div>
       </div>
     </section>
   </main>
@@ -298,7 +313,6 @@
     <div class="wrap">
       <div class="foot-brand">
         <a class="wordmark" href="#top"><img src="assets/app-icon.svg" alt="" width="32" height="32" /><span>Invoice Extractor</span></a>
-        <p class="foot-rest"><img src="assets/bonobot-waiting.svg" alt="" width="48" height="48" />Bonobot is resting until next month's close.</p>
         <p class="by">MIT licensed · by <a href="https://inteliatech.ai" rel="noopener">Intelia</a> · hosted by Nos Come La IA</p>
       </div>
       <nav aria-label="Footer">

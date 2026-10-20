@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <title>Invoice Extractor</title>
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
@@ -13,11 +14,11 @@
       <button id="btn-toggle-float" class="btn-icon" title="Toggle floating window" data-i18n-title="homeFloatToggle" data-i18n-aria-label="homeFloatToggle"><svg class="ie-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.8a2 2 0 0 1-1.1 1.8l-1.8.9A2 2 0 0 0 5 15.2V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.8a2 2 0 0 0-1.1-1.8l-1.8-.9a2 2 0 0 1-1.1-1.8V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1Z"/></svg></button>
     </div>
     <div class="profile-bar" id="profile-bar">
-      <span class="profile-label" data-i18n="homeProfileLabel">Profile</span>
+      <label class="profile-label" for="profile-select" data-i18n="homeProfileLabel">Profile</label>
       <select class="profile-select" id="profile-select"></select>
-      <span class="profile-dirty-badge" id="profile-dirty-badge" style="display: none;" data-i18n="homeProfileModified">Modified</span>
-      <button class="btn-profile-save-quick" id="btn-save-profile-quick" title="Save current settings to this profile" style="display: none;" data-i18n="commonSave" data-i18n-title="homeProfileSaveTitle">Save</button>
-      <button class="btn-profile-manage" id="btn-sync-op-profiles" title="Sync profiles &amp; active providers from 1Password tags" data-i18n="homeOpSyncLabel" data-i18n-title="homeOpSyncTitle">1P</button>
+      <span class="profile-dirty-badge" id="profile-dirty-badge" hidden data-i18n="homeProfileModified">Modified</span>
+      <button class="btn-profile-save-quick" id="btn-save-profile-quick" title="Save current settings to this profile" hidden data-i18n="commonSave" data-i18n-title="homeProfileSaveTitle">Save</button>
+      <button class="btn-profile-manage" id="btn-sync-op-profiles" title="Sync profiles &amp; active providers from 1Password tags" hidden data-i18n-title="homeOpSyncTitle" data-i18n-aria-label="homeOpSyncTitle"><svg class="ie-icon" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg><span class="op-sync-label" data-i18n="homeOpSyncLabel">1Password</span></button>
       <button class="btn-profile-manage" id="btn-manage-profiles" title="Manage profiles" data-i18n="homeProfileEdit" data-i18n-title="homeProfileEditTitle">Edit</button>
       <button class="btn-profile-manage" id="btn-new-profile-quick" title="Create new profile" data-i18n="homeProfileNew" data-i18n-title="homeProfileNewTitle">New</button>
     </div>
@@ -25,36 +26,36 @@
     <div class="stats-bar" id="home-stats"></div>
 
     <!-- Resume banner -->
-    <div class="resume-banner" id="resume-banner" style="display: none;">
+    <div class="resume-banner" id="resume-banner" hidden>
       <div class="resume-text" data-i18n="homeResumeText">Previous download interrupted (<strong id="resume-progress">0/0</strong> done)</div>
-      <div style="display: flex; gap: 8px;">
-        <button class="btn-secondary" id="btn-resume-workflow" style="flex:1;" data-i18n="homeResume">Resume</button>
+      <div class="resume-actions">
+        <button class="btn-secondary" id="btn-resume-workflow" data-i18n="homeResume">Resume</button>
         <button class="btn-link" id="btn-dismiss-resume" data-i18n="homeDismiss">Dismiss</button>
       </div>
     </div>
 
     <!-- Quick actions row -->
     <div class="quick-actions">
-      <div class="card card-secondary quick-action" id="card-record">
-        <span class="record-dot" style="animation: none;"></span>
+      <button type="button" class="card card-secondary quick-action" id="card-record">
+        <span class="quick-action-icon"><svg class="ie-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg></span>
         <span class="quick-action-label" data-i18n="homeRecord">Record</span>
-      </div>
-      <div class="card card-secondary quick-action" id="card-history">
+      </button>
+      <button type="button" class="card card-secondary quick-action" id="card-history">
         <span class="quick-action-icon"><svg class="ie-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg></span>
         <span class="quick-action-label" data-i18n="homeHistory">History</span>
         <span class="quick-action-badge" id="history-card-badge"></span>
-      </div>
+      </button>
     </div>
 
     <!-- Download All card -->
-    <div class="card card-primary" id="card-download-all">
-      <div class="card-title" data-i18n="homeDownloadAll">Download All</div>
-      <div class="card-subtitle" id="download-all-subtitle"></div>
-    </div>
+    <button type="button" class="card card-primary" id="card-download-all" aria-describedby="download-all-subtitle">
+      <span class="card-title" data-i18n="homeDownloadAll">Download All</span>
+      <span class="card-subtitle" id="download-all-subtitle"></span>
+    </button>
 
     <!-- Provider list -->
     <div class="section-title-row">
-      <div class="section-title" data-i18n="homeProvidersTitle">Providers</div>
+      <h2 class="section-title" data-i18n="homeProvidersTitle">Providers</h2>
       <button class="btn-select-all" id="btn-select-all" data-i18n="homeSelectAll">Select all</button>
     </div>
     <div id="provider-cards"></div>
@@ -66,29 +67,30 @@
   <div id="view-provider" class="view">
     <div class="nav-header">
       <button class="nav-back" id="provider-back" data-i18n="commonBack">← Back</button>
+      <span></span>
       <label class="toggle-switch" id="provider-toggle-wrap">
         <input type="checkbox" id="provider-toggle" data-i18n-aria-label="providerToggleLabel">
         <span class="toggle-slider"></span>
       </label>
     </div>
     <div class="provider-hero">
-      <img id="provider-detail-logo" class="detail-logo" src="" alt="">
+      <img id="provider-detail-logo" class="detail-logo" src="icons/icon48.png" alt="" hidden>
       <div id="provider-detail-name" class="detail-name"></div>
       <div id="provider-detail-domain" class="detail-domain"></div>
     </div>
 
     <!-- Config section (shown only if provider has config) -->
-    <div id="provider-config-section" style="display: none;">
-      <div class="section-title" data-i18n="providerConfigTitle">Configuration</div>
+    <div id="provider-config-section" hidden>
+      <h2 class="section-title" data-i18n="providerConfigTitle">Configuration</h2>
       <div id="provider-config-fields"></div>
     </div>
 
     <!-- Per-provider history -->
-    <div class="section-title" data-i18n="providerHistoryTitle">Download History</div>
+    <h2 class="section-title" data-i18n="providerHistoryTitle">Download History</h2>
     <div id="provider-history"></div>
 
     <!-- Individual download button -->
-    <button class="btn-primary" id="btn-download-single" style="margin-top: 20px;" data-i18n="providerDownload">
+    <button class="btn-primary btn-block-gap" id="btn-download-single" data-i18n="providerDownload">
       Download Invoices
     </button>
   </div>
@@ -101,21 +103,27 @@
       <span></span>
     </div>
 
-    <div style="margin-top: 12px;">
+    <div class="batch-fields">
       <div class="config-field">
         <label class="config-label" for="config-since-date" data-i18n="batchSinceLabel">Download invoices since:</label>
         <input type="date" class="config-input" id="config-since-date">
+        <div class="preset-row" role="group" data-i18n-aria-label="batchPresetsLabel">
+          <button type="button" class="chip-button" data-preset="this-month" data-i18n="batchPresetThisMonth">This month</button>
+          <button type="button" class="chip-button" data-preset="last-month" data-i18n="batchPresetLastMonth">Last month</button>
+          <button type="button" class="chip-button" data-preset="this-quarter" data-i18n="batchPresetThisQuarter">This quarter</button>
+        </div>
       </div>
       <div class="config-field">
         <label class="config-label" for="config-max-invoices" data-i18n="batchMaxLabel">Max invoices per provider:</label>
-        <input type="number" class="config-input" id="config-max-invoices" min="1" max="999" placeholder="All" data-i18n-placeholder="batchMaxPlaceholder">
+        <input type="number" class="config-input config-input-narrow" id="config-max-invoices" min="1" max="999" inputmode="numeric" placeholder="All" data-i18n-placeholder="batchMaxPlaceholder" aria-describedby="config-max-hint">
+        <div class="config-hint config-hint-below" id="config-max-hint" data-i18n="batchMaxHint">Leave empty to download all.</div>
       </div>
     </div>
 
-    <div class="section-title" id="batch-providers-title">Providers</div>
+    <h2 class="section-title" id="batch-providers-title">Providers</h2>
     <div id="batch-provider-list"></div>
 
-    <button class="btn-primary" id="btn-start-batch" style="margin-top: 20px;" data-i18n="batchStart">
+    <button class="btn-primary btn-block-gap" id="btn-start-batch" data-i18n="batchStart">
       Start Download
     </button>
   </div>
@@ -130,60 +138,69 @@
 
     <!-- Progress -->
     <div class="progress-section">
-      <div class="progress-bar">
-        <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+      <div class="progress-bar" id="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-labelledby="progress-text">
+        <div class="progress-fill" id="progress-fill"></div>
       </div>
-      <div class="progress-text" id="progress-text" data-i18n="workflowProgressEmpty">Not started</div>
+      <div class="progress-text" id="progress-text" aria-live="polite" data-i18n="workflowProgressEmpty">Not started</div>
     </div>
 
     <!-- Current site panel -->
     <div id="current-site-panel" class="workflow-panel">
       <div class="workflow-panel-header">
-        <img id="workflow-current-logo" class="workflow-logo" src="" alt="">
+        <img id="workflow-current-logo" class="workflow-logo" src="icons/icon48.png" alt="" hidden>
         <div>
           <div id="workflow-current-name" class="workflow-name"></div>
-          <div id="workflow-current-status" class="workflow-status"></div>
+          <div id="workflow-current-status" class="workflow-status" role="status" aria-live="polite"></div>
         </div>
       </div>
-      <button class="btn-secondary btn-accent" id="btn-logged-in" style="display: none;" data-i18n="workflowReady">
-        Ready — Download invoices
-      </button>
-      <button class="btn-secondary" id="btn-1password-login" style="display: none;" data-i18n="commonSignInOp">
-        Sign in with 1Password
-      </button>
-      <button class="btn-secondary" id="btn-switch-account" style="display: none;" data-i18n="workflowSwitchAccount">
-        Switch account with 1Password
-      </button>
-      <button class="btn-secondary" id="btn-show-tab" style="display: none;" data-i18n="workflowShowTab">
-        Show tab
-      </button>
-      <button class="btn-secondary" id="btn-goto-billing" style="display: none;" data-i18n="workflowGotoBilling">
-        Go to billing page
-      </button>
-      <button class="btn-primary" id="btn-downloading" style="display: none;" disabled data-i18n="workflowDownloadingButton">
-        Downloading...
-      </button>
-      <button class="btn-danger" id="btn-stop" style="display: none; margin-top: 8px;" data-i18n="workflowStopNext">
-        Stop and next
-      </button>
-      <button class="btn-secondary" id="btn-retry" style="display: none;" data-i18n="workflowRetry">
-        Retry download
-      </button>
-      <button class="btn-secondary" id="btn-next" style="display: none;" data-i18n="workflowNext">
-        Next provider
-      </button>
-      <button class="btn-link btn-skip" id="btn-skip" style="display: block;" data-i18n="workflowSkip">
+
+      <!-- Sign-in needed: what to do, in order -->
+      <div id="login-steps" class="login-steps" hidden>
+        <ol class="login-steps-list">
+          <li id="login-step-1"></li>
+          <li data-i18n="workflowLoginStep2">Enter the 2FA code if asked.</li>
+          <li data-i18n="workflowLoginStep3">Click "I'm signed in — continue".</li>
+        </ol>
+        <p class="login-reassure"><svg class="ie-icon" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span data-i18n="workflowLoginReassure">Your password stays in your browser or your password manager. Invoice Extractor doesn't store it.</span></p>
+      </div>
+
+      <div class="workflow-actions">
+        <button class="btn-primary" id="btn-logged-in" hidden data-i18n="workflowReady">
+          I'm signed in — continue
+        </button>
+        <button class="btn-secondary" id="btn-1password-login" hidden data-i18n="commonSignInOp">
+          Sign in with 1Password
+        </button>
+        <button class="btn-primary" id="btn-downloading" hidden disabled data-i18n="workflowDownloadingButton">
+          Downloading...
+        </button>
+        <button class="btn-secondary" id="btn-stop" hidden data-i18n="workflowStopNext">
+          Stop and next
+        </button>
+        <button class="btn-secondary" id="btn-retry" hidden data-i18n="workflowRetry">
+          Retry download
+        </button>
+        <button class="btn-secondary" id="btn-next" hidden data-i18n="workflowNext">
+          Next provider
+        </button>
+      </div>
+      <div class="workflow-secondary-row" id="workflow-secondary-row">
+        <button class="btn-link" id="btn-show-tab" hidden data-i18n="workflowShowTab">Show tab</button>
+        <button class="btn-link" id="btn-goto-billing" hidden data-i18n="workflowGotoBilling">Go to billing page</button>
+        <button class="btn-link" id="btn-switch-account" hidden data-i18n="workflowSwitchAccount">Switch account</button>
+      </div>
+      <button class="btn-link btn-skip" id="btn-skip" data-i18n="workflowSkip">
         Skip this provider
       </button>
     </div>
 
-    <!-- Live download feed -->
-    <div class="section-title" data-i18n="workflowFeedTitle">Downloaded</div>
-    <div id="download-feed" class="download-feed"></div>
+    <!-- Live download feed: each invoice drops in as a copy slip -->
+    <h2 class="section-title" id="download-feed-title" hidden data-i18n="workflowFeedTitle">Downloaded</h2>
+    <div id="download-feed" class="download-feed" aria-labelledby="download-feed-title"></div>
 
     <!-- Workflow provider list -->
-    <div class="section-title" data-i18n="workflowProgressTitle">Progress</div>
-    <div id="workflow-sites-container"></div>
+    <h2 class="section-title" data-i18n="workflowProgressTitle">Progress</h2>
+    <ol id="workflow-sites-container" class="site-list"></ol>
 
     <button class="btn-link btn-restart" id="btn-restart-workflow" data-i18n="workflowRestart">
       Restart from beginning
@@ -192,15 +209,19 @@
 
   <!-- ============ COMPLETION VIEW ============ -->
   <div id="view-completion" class="view">
-    <div class="completion">
-      <div class="emoji" aria-hidden="true">🎉</div>
-      <h2 data-i18n="completionTitle">Done. Every invoice filed.</h2>
-      <p class="completion-quip" data-i18n="completionQuip">Monkey work is Bonobot's job.</p>
+    <div class="completion" id="completion">
+      <div class="completion-art" id="completion-art" aria-hidden="true"></div>
+      <h2 id="completion-title" data-i18n="completionTitle">Done. Every invoice filed.</h2>
+      <p class="completion-quip" id="completion-quip" data-i18n="completionQuip">Monkey work is Bonobot's job.</p>
       <p id="completion-summary"></p>
-      <div id="completion-skipped" class="completion-skipped" style="display: none;"></div>
-      <button class="btn-secondary" id="btn-completion-home" style="margin-top: 20px;" data-i18n="completionHome">
-        Back to Home
-      </button>
+      <p class="completion-help" id="completion-help" hidden data-i18n="completionAttentionHelp">These providers were skipped. Open each one, fix what is listed and run it again.</p>
+      <ul id="completion-skipped" class="completion-skipped" hidden></ul>
+      <div class="completion-actions">
+        <button class="btn-primary" id="btn-open-downloads" data-i18n="completionOpenFolder">Open downloads folder</button>
+        <button class="btn-secondary" id="btn-completion-home" data-i18n="completionHome">
+          Back to Home
+        </button>
+      </div>
     </div>
   </div>
 
@@ -228,19 +249,30 @@
     </div>
 
     <div class="filter-row">
-      <select class="config-input" id="hist-filter-provider" style="flex: 1; min-width: 120px;" data-i18n-aria-label="historyFilterProvider">
-        <option value="" data-i18n="historyAllProviders">All providers</option>
-      </select>
-      <input type="date" class="config-input" id="hist-filter-from" style="flex: 1;" data-i18n-aria-label="historyFilterFrom">
-      <input type="date" class="config-input" id="hist-filter-to" style="flex: 1;" data-i18n-aria-label="historyFilterTo">
+      <div class="filter-field filter-field-wide">
+        <label class="config-label" for="hist-filter-provider" data-i18n="historyFilterProviderShort">Provider</label>
+        <select class="config-input" id="hist-filter-provider">
+          <option value="" data-i18n="historyAllProviders">All providers</option>
+        </select>
+      </div>
+      <div class="filter-field">
+        <label class="config-label" for="hist-filter-from" data-i18n="historyFilterFromShort">From</label>
+        <input type="date" class="config-input" id="hist-filter-from" data-i18n-title="historyFilterFrom">
+      </div>
+      <div class="filter-field">
+        <label class="config-label" for="hist-filter-to" data-i18n="historyFilterToShort">To</label>
+        <input type="date" class="config-input" id="hist-filter-to" data-i18n-title="historyFilterTo">
+      </div>
     </div>
 
     <div id="history-table-container"></div>
 
     <div class="action-row">
-      <button class="btn-secondary" id="btn-export-csv" style="flex: 1;" data-i18n="historyExportCsv">Export CSV</button>
-      <button class="btn-secondary btn-danger-outline" id="btn-delete-filtered" style="flex: 1;" data-i18n="historyDeleteFiltered">Delete filtered</button>
-      <button class="btn-secondary btn-danger-outline" id="btn-clear-history" style="flex: 1;" data-i18n="historyClearAll">Clear all</button>
+      <button class="btn-secondary" id="btn-export-csv" data-i18n="historyExportCsv">Export CSV</button>
+    </div>
+    <div class="danger-row">
+      <button class="btn-link btn-link-danger" id="btn-delete-filtered" data-i18n="historyDeleteFiltered">Delete filtered</button>
+      <button class="btn-link btn-link-danger" id="btn-clear-history" data-i18n="historyClearAll">Clear all</button>
     </div>
   </div>
 
@@ -252,55 +284,66 @@
       <span></span>
     </div>
 
-    <section class="sync-panel" aria-labelledby="sync-title">
-      <h2 id="sync-title" data-i18n="syncTitle">Profile synchronization</h2>
-      <p class="sync-help" data-i18n="syncHelpScope">Only saved profiles are shared. Live settings, logins, invoices and the selected profile stay on this device.</p>
-      <p id="sync-status" class="sync-status" role="status" aria-live="polite" data-i18n="syncStatusInitial">Not connected</p>
-      <div id="sync-login">
-        <label for="sync-endpoint" data-i18n="syncEndpointLabel">Sync service URL</label>
-        <input class="config-input" id="sync-endpoint" type="url" placeholder="https://your-sync-service.example" data-i18n-placeholder="syncEndpointPlaceholder" autocomplete="url">
-        <label for="sync-username" data-i18n="syncUsernameLabel">Username</label>
-        <input class="config-input" id="sync-username" type="text" autocomplete="username" minlength="3" maxlength="64" autocapitalize="none" spellcheck="false">
-        <label for="sync-password" data-i18n="syncPasswordLabel">Password</label>
-        <input class="config-input" id="sync-password" type="password" autocomplete="off">
-        <p class="sync-help" data-i18n="syncHelpCredentials">Use a username of 3–64 letters, digits, dots, underscores or hyphens and a password of 12–128 characters. No email is required. Profiles remain usable locally without an account.</p>
-        <p class="sync-help" data-i18n="syncHelpTrust">Connect only to a service you trust. Connecting enables automatic upload of your saved profiles, including workspace URLs and team IDs. Passwords are not saved by the extension.</p>
-        <div class="sync-actions">
-          <button class="btn-primary" id="btn-sync-login" data-i18n="syncLogin">Sign in and synchronize</button>
-          <button class="btn-secondary" id="btn-sync-register" data-i18n="syncRegister">Create account and synchronize</button>
-          <button class="btn-secondary" id="btn-sync-1password" type="button" data-i18n="commonSignInOp">Sign in with 1Password</button>
-        </div>
+    <section class="profiles-section" aria-labelledby="profiles-list-title">
+      <h2 class="section-title section-title-first" id="profiles-list-title" data-i18n="profilesListTitle">Your profiles</h2>
+      <div id="profiles-list"></div>
+      <label class="config-label" for="profile-new-name" data-i18n="profilesNewLabel">New profile</label>
+      <div class="profile-create-row">
+        <input type="text" class="config-input" id="profile-new-name" placeholder="New profile name..." data-i18n-placeholder="profilesNewPlaceholder">
+        <button class="btn-secondary btn-inline" id="btn-create-profile" data-i18n="profilesCreate">Create</button>
       </div>
-      <div id="sync-connected" hidden>
-        <p id="sync-account" class="sync-help"></p>
-        <div class="sync-actions">
-          <button class="btn-primary" id="btn-sync-now" data-i18n="syncNow">Sync now</button>
-          <button class="btn-secondary" id="btn-sync-disconnect" data-i18n="syncDisconnect">Disconnect</button>
-        </div>
+    </section>
+
+    <section class="profiles-section" aria-labelledby="profiles-files-title">
+      <h2 class="section-title" id="profiles-files-title" data-i18n="profilesFilesTitle">Export and import</h2>
+      <div class="link-row">
+        <button class="btn-link" id="btn-profiles-export" data-i18n="profilesExport">Export profiles</button>
+        <button class="btn-link" id="btn-profiles-import" data-i18n="profilesImport">Import profiles</button>
+        <button class="btn-link" id="btn-profiles-backup" data-i18n="profilesBackup">Export replacement backup</button>
+        <button class="btn-link" id="btn-discover-op-profiles" type="button" data-i18n="profilesOpSyncButton">Sync profiles from 1Password tags</button>
       </div>
-      <div id="sync-conflict" hidden>
-        <p class="sync-help" data-i18n="syncConflictHelp">Both saved copies differ. Choosing one replaces the entire saved profile list, not your live settings. The replaced copy is backed up on this device.</p>
-        <p id="sync-conflict-summary" class="sync-help"></p>
-        <div class="sync-actions">
-          <button class="btn-secondary" id="btn-sync-local" data-i18n="syncKeepLocal">Keep this device</button>
-          <button class="btn-secondary" id="btn-sync-remote" data-i18n="syncUseRemote">Use cloud profiles</button>
-        </div>
-      </div>
-      <div class="sync-actions">
-        <button class="btn-secondary" id="btn-discover-op-profiles" type="button" data-i18n="profilesOpSyncButton">Sync profiles from 1Password tags</button>
-        <button class="btn-secondary" id="btn-profiles-export" data-i18n="profilesExport">Export profiles</button>
-        <button class="btn-secondary" id="btn-profiles-import" data-i18n="profilesImport">Import profiles</button>
-        <button class="btn-secondary" id="btn-profiles-backup" data-i18n="profilesBackup">Export replacement backup</button>
-      </div>
-      <p id="op-profiles-status" class="sync-help" style="display: none;"></p>
+      <p id="op-profiles-status" class="sync-help op-profiles-status" hidden></p>
       <input id="profiles-import-file" type="file" accept=".json,application/json" hidden>
     </section>
-    <div class="profile-create-row">
-      <input type="text" class="config-input" id="profile-new-name" placeholder="New profile name..." data-i18n-placeholder="profilesNewPlaceholder">
-      <button class="btn-primary" id="btn-create-profile" style="white-space: nowrap;" data-i18n="profilesCreate">Create</button>
-    </div>
 
-    <div id="profiles-list"></div>
+    <details class="sync-disclosure" id="sync-disclosure">
+      <summary data-i18n="syncDisclosure">Sync across devices (optional)</summary>
+      <section class="sync-panel" aria-labelledby="sync-title">
+        <h3 id="sync-title" class="visually-hidden" data-i18n="syncTitle">Profile synchronization</h3>
+        <p class="sync-help" data-i18n="syncHelpScope">Only saved profiles are shared. Live settings, logins, invoices and the selected profile stay on this device.</p>
+        <p id="sync-status" class="sync-status" role="status" aria-live="polite" data-i18n="syncStatusInitial">Not connected</p>
+        <div id="sync-login">
+          <label for="sync-endpoint" data-i18n="syncEndpointLabel">Sync service URL</label>
+          <input class="config-input" id="sync-endpoint" type="url" placeholder="https://your-sync-service.example" data-i18n-placeholder="syncEndpointPlaceholder" autocomplete="url">
+          <label for="sync-username" data-i18n="syncUsernameLabel">Username</label>
+          <input class="config-input" id="sync-username" type="text" autocomplete="username" minlength="3" maxlength="64" autocapitalize="none" spellcheck="false">
+          <label for="sync-password" data-i18n="syncPasswordLabel">Password</label>
+          <input class="config-input" id="sync-password" type="password" autocomplete="off">
+          <p class="sync-help" data-i18n="syncHelpCredentials">Use a username of 3–64 letters, digits, dots, underscores or hyphens and a password of 12–128 characters. No email is required. Profiles remain usable locally without an account.</p>
+          <p class="sync-help" data-i18n="syncHelpTrust">Connect only to a service you trust. Connecting enables automatic upload of your saved profiles, including workspace URLs and team IDs. Passwords are not saved by the extension.</p>
+          <div class="sync-actions">
+            <button class="btn-secondary btn-accent" id="btn-sync-login" data-i18n="syncLogin">Sign in and synchronize</button>
+            <button class="btn-secondary" id="btn-sync-register" data-i18n="syncRegister">Create account and synchronize</button>
+            <button class="btn-secondary" id="btn-sync-1password" type="button" data-i18n="commonSignInOp">Sign in with 1Password</button>
+          </div>
+        </div>
+        <div id="sync-connected" hidden>
+          <p id="sync-account" class="sync-help"></p>
+          <div class="sync-actions">
+            <button class="btn-secondary btn-accent" id="btn-sync-now" data-i18n="syncNow">Sync now</button>
+            <button class="btn-secondary" id="btn-sync-disconnect" data-i18n="syncDisconnect">Disconnect</button>
+          </div>
+        </div>
+        <div id="sync-conflict" hidden>
+          <p class="sync-help" data-i18n="syncConflictHelp">Both saved copies differ. Choosing one replaces the entire saved profile list, not your live settings. The replaced copy is backed up on this device.</p>
+          <p id="sync-conflict-summary" class="sync-help"></p>
+          <div class="sync-actions">
+            <button class="btn-secondary" id="btn-sync-local" data-i18n="syncKeepLocal">Keep this device</button>
+            <button class="btn-secondary" id="btn-sync-remote" data-i18n="syncUseRemote">Use cloud profiles</button>
+          </div>
+        </div>
+      </section>
+    </details>
   </div>
 
   <!-- ============ RECORD VIEW ============ -->
@@ -313,15 +356,15 @@
 
     <!-- Record Confirm -->
     <div id="record-step-confirm">
-      <div class="record-panel record-panel-warning">
-        <div class="record-panel-title" style="color: var(--warning);" data-i18n="recordConfirmTitle">Record on this tab?</div>
+      <div class="record-panel">
+        <div class="record-panel-title" data-i18n="recordConfirmTitle">Record on this tab?</div>
         <div class="record-info" data-i18n="recordTabLine">
           Tab: <span id="confirm-tab-title" class="record-info-value">—</span>
         </div>
-        <div class="record-info" style="margin-bottom: 14px; word-break: break-all;" data-i18n="recordUrlLine">
+        <div class="record-info record-info-last record-info-break" data-i18n="recordUrlLine">
           URL: <span id="confirm-tab-url" class="record-info-accent">—</span>
         </div>
-        <button class="btn-danger" id="btn-confirm-record" data-i18n="recordStart">
+        <button class="btn-primary" id="btn-confirm-record" data-i18n="recordStart">
           Start Recording
         </button>
       </div>
@@ -331,17 +374,17 @@
     </div>
 
     <!-- Record Mode -->
-    <div id="record-step-recording" style="display: none;">
-      <div class="record-panel record-panel-danger">
-        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+    <div id="record-step-recording" hidden>
+      <div class="record-panel record-panel-live">
+        <div class="record-live-row">
           <span class="record-dot"></span>
-          <span class="record-panel-title" style="color: var(--danger);" data-i18n="recordRecording">Recording…</span>
+          <span class="record-panel-title" data-i18n="recordRecording">Recording…</span>
         </div>
         <div class="record-info" data-i18n="recordTabLine">
           Tab: <span id="record-tab-title" class="record-info-value">—</span>
         </div>
-        <div class="record-info" data-i18n="recordUrlLine">
-          URL: <span id="record-url" class="record-info-value" style="word-break: break-all;">—</span>
+        <div class="record-info record-info-break" data-i18n="recordUrlLine">
+          URL: <span id="record-url" class="record-info-value">—</span>
         </div>
         <div class="record-info" data-i18n="recordClicksLine">
           Clicks: <span id="record-click-count" class="record-info-accent">0</span>
@@ -349,10 +392,10 @@
         <div class="record-info" data-i18n="recordNetworkLine">
           Network: <span id="record-network-count" class="record-info-accent">0</span>
         </div>
-        <div class="record-info" style="margin-bottom: 12px;" data-i18n="recordDurationLine">
+        <div class="record-info record-info-last" data-i18n="recordDurationLine">
           Duration: <span id="record-duration" class="record-info-value">0s</span>
         </div>
-        <button class="btn-danger" id="btn-stop-recording" data-i18n="recordStop">
+        <button class="btn-primary" id="btn-stop-recording" data-i18n="recordStop">
           Stop Recording
         </button>
       </div>
@@ -362,24 +405,24 @@
     </div>
 
     <!-- Record Result -->
-    <div id="record-step-result" style="display: none;">
-      <div class="record-panel record-panel-accent">
-        <div class="record-panel-title" style="color: var(--accent-text);" data-i18n="recordComplete">Recording Complete</div>
-        <div class="record-info" data-i18n="recordUrlLine">
-          URL: <span id="result-url" class="record-info-value" style="word-break: break-all;">—</span>
+    <div id="record-step-result" hidden>
+      <div class="record-panel record-panel-done">
+        <div class="record-panel-title status status-ok" data-i18n="recordComplete">Recording Complete</div>
+        <div class="record-info record-info-break" data-i18n="recordUrlLine">
+          URL: <span id="result-url" class="record-info-value">—</span>
         </div>
         <div class="record-info" data-i18n="recordResultLine">
           Actions: <span id="result-actions" class="record-info-value">0</span> ·
           Network: <span id="result-network" class="record-info-value">0</span> ·
           Downloads: <span id="result-downloads" class="record-info-value">0</span>
         </div>
-        <div class="record-info" style="margin-bottom: 12px;" data-i18n="recordDurationLine">
+        <div class="record-info record-info-last" data-i18n="recordDurationLine">
           Duration: <span id="result-duration" class="record-info-value">0s</span>
         </div>
-        <button class="btn-primary" id="btn-export-recording" style="margin-bottom: 8px;" data-i18n="recordExport">
+        <button class="btn-primary" id="btn-export-recording" data-i18n="recordExport">
           Export Recording JSON
         </button>
-        <button class="btn-secondary" id="btn-record-done" data-i18n="commonDone">
+        <button class="btn-secondary btn-stack-gap" id="btn-record-done" data-i18n="commonDone">
           Done
         </button>
       </div>
