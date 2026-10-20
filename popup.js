@@ -2348,10 +2348,15 @@ function showCompletion() {
   const filed = runInvoiceCount;
   const clean = attention.length === 0;
 
-  // Headline follows the outcome: Bonobot and the stamp only for a clean run.
+  // Headline follows the outcome: Bonobot only for a clean run, and the stamp only when something was
+  // filed. A clean run with nothing new shows the "nothing new this month" scene instead.
   const completion = document.getElementById('completion');
   completion.classList.toggle('needs-attention', !clean);
   setHidden('completion-art', !clean);
+  document.getElementById('completion-scene').src = filed > 0
+    ? 'icons/brand/scene-success.svg' : 'icons/brand/empty-nothing-new.svg';
+  completion.classList.toggle('nothing-new', clean && filed === 0);
+  setHidden('completion-stamp', !(clean && filed > 0));
   setHidden('completion-quip', !clean);
   setHidden('completion-help', clean);
   document.getElementById('completion-title').textContent = clean
@@ -3968,8 +3973,10 @@ async function renderHistory(filterProviderId = null) {
   // Render table
   const container = document.getElementById('history-table-container');
   if (filtered.length === 0) {
-    const emptyText = history.length === 0 ? t('historyEmpty') : t('historyNoMatches');
-    container.innerHTML = `<div class="empty-state"><div class="empty-art" aria-hidden="true"></div><p>${escapeHtml(emptyText)}</p></div>`;
+    // Bonobot only when nothing was ever filed; a filter with no matches is plain text.
+    container.innerHTML = history.length === 0
+      ? `<div class="empty-state"><img class="empty-art" src="icons/brand/empty-empty-history.svg" alt="" width="120" height="120" aria-hidden="true"><p>${escapeHtml(t('historyEmpty'))}</p></div>`
+      : `<div class="empty-state empty-state-compact"><p>${escapeHtml(t('historyNoMatches'))}</p></div>`;
     return;
   }
 
@@ -4711,7 +4718,7 @@ async function renderProfiles() {
   container.innerHTML = '';
 
   if (profiles.length === 0) {
-    container.innerHTML = `<div class="empty-state"><p>${escapeHtml(t('profilesEmpty'))}</p></div>`;
+    container.innerHTML = `<div class="empty-state"><img class="empty-art" src="icons/brand/empty-no-providers.svg" alt="" width="120" height="120" aria-hidden="true"><p>${escapeHtml(t('profilesEmpty'))}</p></div>`;
     return;
   }
 

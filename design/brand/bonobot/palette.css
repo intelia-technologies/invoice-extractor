@@ -1,0 +1,24 @@
+:root {
+  --ie-bonobot-fur: #2b211d;
+  --ie-bonobot-fur-light: #4a3a33;
+  --ie-bonobot-face: #e9b8a2;
+  --ie-bonobot-lip: #d98880;
+  --ie-bonobot-metal: #a3abb6;
+  --ie-bonobot-metal-dark: #6b7380;
+  --ie-calco-500: #4f53e6;
+  --ie-calco-600: #3d3fd8;
+  --ie-bonobot-edge: #887267;
+  --ie-bonobot-fur-mid: #694b3e;
+  --ie-bonobot-ear: #8e604d;
+  --ie-bonobot-metal-light: #cbd0d6;
+  --ie-bonobot-paper: #fffdf9;
+  --ie-bonobot-paper-edge: #e0e3e0;
+  --ie-bonobot-ink: #241d19;
+  --ie-bonobot-soft: #e8e8de;
+  --ie-surface: #f3f4f1;
+  --ie-success: #287b57;
+  --ie-bonobot-promo-accent: #e8e8fb;
+}
+@media (prefers-color-scheme: dark) {
+  .bonobot-theme { --ie-surface: #0f1115; --ie-bonobot-soft: #2b2d32; --ie-bonobot-promo-accent: #22223c; }
+}

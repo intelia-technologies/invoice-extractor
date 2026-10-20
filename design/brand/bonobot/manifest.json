@@ -1,0 +1,275 @@
+[
+  {
+    "file": "bonobot.svg",
+    "width": 512,
+    "height": 512,
+    "category": "character",
+    "description": "Bonobot saluda con una factura"
+  },
+  {
+    "file": "bonobot-waiting.svg",
+    "width": 512,
+    "height": 512,
+    "category": "character",
+    "description": "Bonobot espera con los brazos recogidos"
+  },
+  {
+    "file": "app-icon-16.svg",
+    "width": 16,
+    "height": 16,
+    "category": "icons",
+    "description": "Icono Bonobot 16 píxeles"
+  },
+  {
+    "file": "app-icon-32.svg",
+    "width": 32,
+    "height": 32,
+    "category": "icons",
+    "description": "Icono Bonobot 32 píxeles"
+  },
+  {
+    "file": "app-icon-48.svg",
+    "width": 48,
+    "height": 48,
+    "category": "icons",
+    "description": "Icono Bonobot 48 píxeles"
+  },
+  {
+    "file": "app-icon-128.svg",
+    "width": 128,
+    "height": 128,
+    "category": "icons",
+    "description": "Icono Bonobot 128 píxeles"
+  },
+  {
+    "file": "app-icon-180.svg",
+    "width": 180,
+    "height": 180,
+    "category": "icons",
+    "description": "Icono Bonobot 180 píxeles"
+  },
+  {
+    "file": "app-icon-512.svg",
+    "width": 512,
+    "height": 512,
+    "category": "icons",
+    "description": "Icono Bonobot 512 píxeles"
+  },
+  {
+    "file": "app-icon.svg",
+    "width": 512,
+    "height": 512,
+    "category": "icons",
+    "description": "Icono principal Bonobot"
+  },
+  {
+    "file": "bonobot-front.svg",
+    "width": 512,
+    "height": 512,
+    "category": "character",
+    "description": "Bonobot: vista frente"
+  },
+  {
+    "file": "bonobot-three-quarter.svg",
+    "width": 512,
+    "height": 512,
+    "category": "character",
+    "description": "Bonobot: vista tres cuartos"
+  },
+  {
+    "file": "bonobot-profile.svg",
+    "width": 512,
+    "height": 512,
+    "category": "character",
+    "description": "Bonobot: vista perfil"
+  },
+  {
+    "file": "character-sheet.svg",
+    "width": 1440,
+    "height": 930,
+    "category": "reference",
+    "description": "Hoja de personaje: frente, tres cuartos, perfil, paleta y proporciones"
+  },
+  {
+    "file": "expression-concentrated.svg",
+    "width": 512,
+    "height": 512,
+    "category": "expressions",
+    "description": "Bonobot concentrado"
+  },
+  {
+    "file": "expression-satisfied.svg",
+    "width": 512,
+    "height": 512,
+    "category": "expressions",
+    "description": "Bonobot satisfecho"
+  },
+  {
+    "file": "expression-celebrating.svg",
+    "width": 512,
+    "height": 512,
+    "category": "expressions",
+    "description": "Bonobot celebrando"
+  },
+  {
+    "file": "expression-confused.svg",
+    "width": 512,
+    "height": 512,
+    "category": "expressions",
+    "description": "Bonobot confundido"
+  },
+  {
+    "file": "expression-waiting.svg",
+    "width": 512,
+    "height": 512,
+    "category": "expressions",
+    "description": "Bonobot esperando"
+  },
+  {
+    "file": "expression-sleeping.svg",
+    "width": 512,
+    "height": 512,
+    "category": "expressions",
+    "description": "Bonobot dormido"
+  },
+  {
+    "file": "expression-sheet.svg",
+    "width": 1440,
+    "height": 1060,
+    "category": "reference",
+    "description": "Seis expresiones Bonobot"
+  },
+  {
+    "file": "scene-hero.svg",
+    "width": 1440,
+    "height": 720,
+    "category": "scenes",
+    "description": "Bonobot archiva facturas procedentes de distintas webs"
+  },
+  {
+    "file": "scene-hero-mobile.svg",
+    "width": 360,
+    "height": 520,
+    "category": "scenes",
+    "description": "Hero móvil: Bonobot archiva facturas"
+  },
+  {
+    "file": "scene-success.svg",
+    "width": 180,
+    "height": 180,
+    "category": "scenes",
+    "description": "Descarga completada: Bonobot celebra junto a las facturas archivadas"
+  },
+  {
+    "file": "success-stamp.svg",
+    "width": 72,
+    "height": 72,
+    "category": "animation",
+    "description": "Sello independiente de descarga completada"
+  },
+  {
+    "file": "empty-no-providers.svg",
+    "width": 120,
+    "height": 120,
+    "category": "empty-states",
+    "description": "Estado vacío: sin proveedores configurados"
+  },
+  {
+    "file": "empty-empty-history.svg",
+    "width": 120,
+    "height": 120,
+    "category": "empty-states",
+    "description": "Estado vacío: historial vacío"
+  },
+  {
+    "file": "empty-nothing-new.svg",
+    "width": 120,
+    "height": 120,
+    "category": "empty-states",
+    "description": "Estado vacío: nada nuevo este mes"
+  },
+  {
+    "file": "mode-recording.svg",
+    "width": 120,
+    "height": 120,
+    "category": "scenes",
+    "description": "Bonobot toma notas mientras aprende un proveedor"
+  },
+  {
+    "file": "sticker-hello.svg",
+    "width": 512,
+    "height": 512,
+    "category": "stickers",
+    "description": "Pegatina Bonobot: hello"
+  },
+  {
+    "file": "sticker-done.svg",
+    "width": 512,
+    "height": 512,
+    "category": "stickers",
+    "description": "Pegatina Bonobot: done"
+  },
+  {
+    "file": "sticker-working.svg",
+    "width": 512,
+    "height": 512,
+    "category": "stickers",
+    "description": "Pegatina Bonobot: working"
+  },
+  {
+    "file": "sticker-thinking.svg",
+    "width": 512,
+    "height": 512,
+    "category": "stickers",
+    "description": "Pegatina Bonobot: thinking"
+  },
+  {
+    "file": "sticker-waiting.svg",
+    "width": 512,
+    "height": 512,
+    "category": "stickers",
+    "description": "Pegatina Bonobot: waiting"
+  },
+  {
+    "file": "sticker-noting.svg",
+    "width": 512,
+    "height": 512,
+    "category": "stickers",
+    "description": "Pegatina Bonobot: noting"
+  },
+  {
+    "file": "chrome-promo-440x280.svg",
+    "width": 440,
+    "height": 280,
+    "category": "marketing",
+    "description": "Banner Chrome Web Store con espacio de texto a la izquierda"
+  },
+  {
+    "file": "chrome-screenshot-background-1280x800.svg",
+    "width": 1280,
+    "height": 800,
+    "category": "marketing",
+    "description": "Fondo Chrome Web Store con zona central para una captura real"
+  },
+  {
+    "file": "github-social-1280x640.svg",
+    "width": 1280,
+    "height": 640,
+    "category": "marketing",
+    "description": "Imagen social GitHub con espacio libre para el nombre del producto"
+  },
+  {
+    "file": "dark-mode-proof.svg",
+    "width": 1440,
+    "height": 780,
+    "category": "reference",
+    "description": "Prueba visual de Bonobot sobre fondo oscuro"
+  },
+  {
+    "file": "icon-size-proof.svg",
+    "width": 1000,
+    "height": 430,
+    "category": "reference",
+    "description": "Iconos 16, 32, 48 y 128 a tamaño real en claro y oscuro"
+  }
+]

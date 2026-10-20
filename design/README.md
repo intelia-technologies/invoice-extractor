@@ -5,8 +5,8 @@ The product does the same job: it makes a copy of each invoice and files it.
 
 - **Brand accent:** the ultramarine of carbon-copy paper (`--ie-accent`).
 - **Signature:** the *copy shadow*, a solid offset behind the primary action (`--ie-shadow-copy`).
-- **Mascot:** **Bonobot**, a robot bonobo. "Monkey work is Bonobot's job." The current art is a
-  geometric placeholder; the final character comes from an illustrator with the same filenames.
+- **Mascot:** **Bonobot**, a robot bonobo. "Monkey work is Bonobot's job." The final art kit lives in
+  `brand/bonobot/` (SVG masters, palette, stamp animation); see its README for where each piece is used.
 - **Specimen:** open `design/specimen.html` in a browser to see every token and component in light and dark.
 
 ## Files
@@ -16,13 +16,14 @@ The product does the same job: it makes a copy of each invoice and files it.
 | `tokens.json` | **Single source of truth**, W3C Design Tokens format. Primitives (by hue) and semantics (by use, per mode). |
 | `tokens.css` | Generated. CSS custom properties `--ie-*`, light by default, dark via `prefers-color-scheme` or `[data-theme="dark"]`. |
 | `fonts.css` | Generated. `@font-face` for the bundled OFL fonts in `/fonts`. |
-| `brand/` | App icon (`app-icon.svg`, pixel-drawn `app-icon-16.svg`) and Bonobot placeholders. |
+| `brand/` | `bonobot/`: the final Bonobot vector kit (masters). The loose SVGs next to it are copies the specimen uses. |
 | `specimen.html` | Living reference of the whole system. |
 
 After editing `tokens.json`, run `npm run design:build`. `npm test` fails when a generated file is stale
 (`build-design-tokens.mjs --check`) or when a text/background pair misses WCAG AA in either mode
-(`check-contrast.mjs`, pairs listed in `tokens.json → contrastPairs`). Icons in `icons/` and
-`site/assets/` are rendered from `brand/*.svg`.
+(`check-contrast.mjs`, pairs listed in `tokens.json → contrastPairs`). Icons in `icons/`, the art in
+`icons/brand/` and `site/assets/`, and the store images are built from `brand/bonobot/` with
+`node scripts/render-store-assets.mjs`.
 
 ## Naming
 

@@ -1152,44 +1152,29 @@ th[aria-sort="descending"] .sort-indicator { transform: rotate(180deg); }
 
 .completion { padding: var(--ie-space-10) var(--ie-space-4) var(--ie-space-6); text-align: center; }
 
+/* Bonobot files the batch (scene-success, 180 px) and the separate stamp lands in the corner the
+   scene leaves free (56 px, bottom right). Same 520 ms stamp moment as the provider rows. */
 .completion-art {
   position: relative;
-  width: 120px;
-  height: 120px;
+  width: 180px;
+  height: 180px;
   margin: 0 auto var(--ie-space-4);
-  font-size: 0;
-  background: url('icons/brand/bonobot.svg') center / contain no-repeat;
-  animation: ie-bob 2.4s var(--ie-ease-in-out) infinite;
 }
 
-/* The stamp lands on the finished batch (signature motion) */
-.completion-art::after {
-  content: '';
+.completion-scene { display: block; width: 100%; height: 100%; }
+
+.completion-stamp {
   position: absolute;
-  right: -14px;
-  bottom: 2px;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: var(--ie-success);
-  box-shadow: 0 0 0 4px var(--ie-bg);
-  animation: ie-stamp var(--ie-duration-stamp) var(--ie-ease-stamp) 200ms both;
+  right: 0;
+  bottom: 0;
+  width: 56px;
+  height: 56px;
+  transform-origin: 50% 70%;
+  animation: ie-stamp-drop var(--ie-duration-stamp) cubic-bezier(0.22, 0.8, 0.32, 1) 200ms both;
 }
 
-.completion-art::before {
-  content: '✓';
-  position: absolute;
-  right: -14px;
-  bottom: 2px;
-  z-index: 1;
-  width: 44px;
-  height: 44px;
-  font-size: 26px;
-  font-weight: var(--ie-weight-bold);
-  line-height: 44px;
-  color: var(--ie-bg);
-  animation: ie-stamp var(--ie-duration-stamp) var(--ie-ease-stamp) 200ms both;
-}
+/* Clean run with nothing new: the smaller "nothing new this month" scene, no stamp */
+.completion.nothing-new .completion-art { width: 120px; height: 120px; }
 
 .completion h2 { margin-bottom: var(--ie-space-1); font-family: var(--ie-font-display); font-size: var(--ie-fs-xl); font-weight: var(--ie-weight-black); letter-spacing: -0.02em; color: var(--ie-text); text-wrap: balance; }
 .completion p { font-size: var(--ie-fs-sm); color: var(--ie-text-2); }
@@ -1226,11 +1211,10 @@ th[aria-sort="descending"] .sort-indicator { transform: rotate(180deg); }
 .empty-state { padding: var(--ie-space-6) var(--ie-space-5); color: var(--ie-text-2); text-align: center; }
 
 .empty-state .empty-art {
-  width: 88px;
-  height: 88px;
+  display: block;
+  width: 120px;
+  height: 120px;
   margin: 0 auto var(--ie-space-3);
-  font-size: 0;
-  background: url('icons/brand/bonobot-waiting.svg') center / contain no-repeat;
 }
 
 .empty-state p { max-width: 30ch; margin: 0 auto; font-size: var(--ie-fs-sm); text-wrap: balance; }
@@ -1274,6 +1258,8 @@ th[aria-sort="descending"] .sort-indicator { transform: rotate(180deg); }
 .record-panel-title { margin-bottom: var(--ie-space-3); font-family: var(--ie-font-display); font-size: var(--ie-fs-md); font-weight: var(--ie-weight-black); color: var(--ie-text); }
 .record-live-row { display: flex; align-items: center; gap: var(--ie-space-2); margin-bottom: var(--ie-space-3); }
 .record-live-row .record-panel-title { margin-bottom: 0; color: var(--ie-danger); }
+/* Bonobot takes notes while the recorder runs (decorative; the title carries the meaning) */
+.record-art { flex: none; width: 64px; height: 64px; margin: calc(-1 * var(--ie-space-2)) 0 calc(-1 * var(--ie-space-2)) auto; }
 .record-panel-done .record-panel-title { color: var(--ie-success); }
 .record-panel-done .record-panel-title::before { width: 16px; height: 16px; }
 .record-info-last { margin-bottom: var(--ie-space-3); }
@@ -1363,9 +1349,12 @@ th[aria-sort="descending"] .sort-indicator { transform: rotate(180deg); }
   100% { opacity: 1; transform: scale(1) rotate(-4deg); }
 }
 
-@keyframes ie-bob {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-4px); }
+/* Bonobot kit stamp: drops in, squashes on the paper, settles (520 ms) */
+@keyframes ie-stamp-drop {
+  0% { opacity: 0; transform: translateY(-72px) rotate(-12deg) scale(1.15); }
+  62% { opacity: 1; transform: translateY(2px) rotate(5deg) scale(0.88, 1.08); }
+  82% { transform: translateY(-8px) rotate(-3deg) scale(1.04, 0.96); }
+  100% { opacity: 1; transform: none; }
 }
 
 @keyframes ie-record {
@@ -1381,6 +1370,7 @@ th[aria-sort="descending"] .sort-indicator { transform: rotate(180deg); }
 @keyframes ie-spin { to { transform: rotate(360deg); } }
 
 @media (prefers-reduced-motion: reduce) {
+  .completion-stamp { animation: none; }
   *, *::before, *::after {
     animation-duration: 1ms !important;
     animation-iteration-count: 1 !important;

@@ -1,43 +1,22 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="t">
-  <title id="t">Bonobot (placeholder)</title>
-  <!-- PLACEHOLDER by the design system. Final character comes from the illustrator (see the Bonobot brief).
-       Fill ids map to tokens: bonobot-fur, bonobot-face, bonobot-lip, bonobot-metal, calco (LED). -->
-  <g id="antenna">
-    <rect x="62" y="6" width="4" height="18" rx="2" fill="#a3abb6"/>
-    <circle cx="64" cy="7" r="6" fill="#4f53e6"/>
-    <circle cx="62" cy="5" r="2" fill="#e3e4ff"/>
-  </g>
-  <g id="ears">
-    <circle cx="17" cy="70" r="15" fill="#2b211d"/>
-    <circle cx="111" cy="70" r="15" fill="#2b211d"/>
-    <circle cx="17" cy="70" r="8" fill="#a3abb6"/>
-    <circle cx="111" cy="70" r="8" fill="#a3abb6"/>
-    <circle cx="17" cy="70" r="3" fill="#6b7380"/>
-    <circle cx="111" cy="70" r="3" fill="#6b7380"/>
-  </g>
-  <g id="head">
-    <circle cx="64" cy="70" r="46" fill="#2b211d"/>
-    <!-- the bonobo's centre parting -->
-    <path d="M64 30 C54 20 36 22 28 36 C40 30 52 32 62 40 Z" fill="#2b211d"/>
-    <path d="M64 30 C74 20 92 22 100 36 C88 30 76 32 66 40 Z" fill="#2b211d"/>
-    <path d="M64 28 L64 42" stroke="#4a3a33" stroke-width="3" stroke-linecap="round"/>
-    <rect x="30" y="44" width="68" height="6" rx="3" fill="#4a3a33"/>
-  </g>
-  <g id="face">
-    <path d="M64 56 C58 50 30 46 30 68 C30 80 38 84 42 86 C40 102 52 110 64 110 C76 110 88 102 86 86 C90 84 98 80 98 68 C98 46 70 50 64 56 Z" fill="#e9b8a2"/>
-  </g>
-  <g id="eyes">
-    <circle cx="48" cy="68" r="10" fill="#ffffff"/>
-    <circle cx="80" cy="68" r="10" fill="#ffffff"/>
-    <circle cx="50" cy="69" r="5" fill="#3d3fd8"/>
-    <circle cx="82" cy="69" r="5" fill="#3d3fd8"/>
-    <circle cx="51.5" cy="67" r="1.6" fill="#ffffff"/>
-    <circle cx="83.5" cy="67" r="1.6" fill="#ffffff"/>
-    <rect x="58" y="66" width="12" height="4" rx="2" fill="#a3abb6"/>
-  </g>
-  <g id="mouth">
-    <circle cx="60" cy="86" r="2" fill="#2b211d"/>
-    <circle cx="68" cy="86" r="2" fill="#2b211d"/>
-    <path d="M50 95 Q64 106 78 95 Q64 101 50 95 Z" fill="#d98880" stroke="#2b211d" stroke-width="2.5" stroke-linejoin="round"/>
-  </g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Bonobot saluda con una factura"><title>Bonobot saluda con una factura</title><style>
+.fur{fill:var(--ie-bonobot-fur,#2b211d)}
+.fur-light{fill:var(--ie-bonobot-fur-light,#4a3a33)}
+.fur-mid{fill:var(--ie-bonobot-fur-mid,#694b3e)}
+.ear{fill:var(--ie-bonobot-ear,#8e604d)}
+.face{fill:var(--ie-bonobot-face,#e9b8a2)}
+.lip{fill:var(--ie-bonobot-lip,#d98880)}
+.metal{fill:var(--ie-bonobot-metal,#a3abb6)}
+.metal-light{fill:var(--ie-bonobot-metal-light,#cbd0d6)}
+.metal-dark{fill:var(--ie-bonobot-metal-dark,#6b7380)}
+.brand{fill:var(--ie-calco-500,#4f53e6)}
+.plate{fill:var(--ie-calco-600,#3d3fd8)}
+.paper{fill:var(--ie-bonobot-paper,#fffdf9)}
+.paper-edge{fill:var(--ie-bonobot-paper-edge,#e0e3e0)}
+.ink{fill:var(--ie-bonobot-ink,#241d19)}
+.bg{fill:var(--ie-surface,#f3f4f1)}
+.soft{fill:var(--ie-bonobot-soft,#e8e8de)}
+.success{fill:var(--ie-success,#287b57)}
+.outline{stroke:var(--ie-bonobot-edge,#887267);stroke-width:1.6;stroke-linejoin:round}
+.line{fill:none;stroke:var(--ie-bonobot-ink,#241d19);stroke-width:4.5;stroke-linecap:round;stroke-linejoin:round}
+@media (prefers-color-scheme: dark){svg{--ie-bonobot-soft:#2b2d32}}
+</style><ellipse class="soft" cx="256" cy="482" rx="130" ry="13" opacity=".7"/><g id="body" class="outline"><path class="fur-light" d="M180 329C163 352 157 395 161 431C164 454 184 465 256 465C328 465 348 454 351 431C355 395 349 352 332 329Z"/><path class="fur-mid" d="M222 369C190 380 187 407 197 429C205 447 233 451 256 451C279 451 307 447 315 429C325 407 322 380 290 369C267 362 245 362 222 369Z"/><path class="fur-light" d="M176 447C167 452 162 465 164 476C165 485 186 485 203 485C221 485 228 481 228 475L229 456Z"/><path class="fur-light" d="M336 447C345 452 350 465 348 476C347 485 326 485 309 485C291 485 284 481 284 475L283 456Z"/></g><g id="arm-left"><path d="M180 359L135 365L99 317" fill="none" stroke="var(--ie-bonobot-metal,#a3abb6)" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/><path d="M177 355L132 361L96 313" fill="none" stroke="var(--ie-bonobot-metal-light,#cbd0d6)" stroke-width="19.38" stroke-linecap="round" stroke-linejoin="round"/><circle class="metal-dark" cx="135" cy="365" r="18.02"/><circle class="metal" cx="135" cy="365" r="10.88"/><path d="M125.19999999999999 323.6L98.0 344.0" stroke="var(--ie-calco-500,#4f53e6)" stroke-width="7"/><circle class="metal" cx="99" cy="317" r="18.36"/></g><g id="arm-right"><path d="M333 359L363 407L322 421" fill="none" stroke="var(--ie-bonobot-metal,#a3abb6)" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/><path d="M330 355L360 403L319 417" fill="none" stroke="var(--ie-bonobot-metal-light,#cbd0d6)" stroke-width="19.38" stroke-linecap="round" stroke-linejoin="round"/><circle class="metal-dark" cx="363" cy="407" r="18.02"/><circle class="metal" cx="363" cy="407" r="10.88"/><path d="M336.37990147147224 398.1260315277224L347.36679248338356 430.3019266340342" stroke="var(--ie-calco-500,#4f53e6)" stroke-width="7"/><circle class="metal" cx="322" cy="421" r="18.36"/></g><g id="accessory"><g transform="translate(261 351) rotate(4 41.0 52.0)"><rect class="paper-edge" x="2" y="3" width="82" height="104" rx="9"/><rect class="paper" width="82" height="104" rx="9"/><rect class="brand" x="13.940000000000001" y="22.88" width="53.300000000000004" height="8.84" rx="4.368"/><rect class="brand" x="13.940000000000001" y="43.68" width="53.300000000000004" height="8.84" rx="4.368"/><rect class="brand" x="13.940000000000001" y="64.48" width="35.26" height="8.84" rx="4.368"/></g></g><g id="head" class="outline"><ellipse class="fur-light" cx="101" cy="220" rx="51" ry="59"/><ellipse class="ear" cx="102" cy="220" rx="29" ry="35"/><ellipse class="fur-light" cx="411" cy="220" rx="51" ry="59"/><ellipse class="ear" cx="410" cy="220" rx="29" ry="35"/><path class="fur-light" d="M96 226C94 134 158 82 256 82C354 82 418 134 416 226C418 310 382 345 256 349C130 345 94 310 96 226Z"/><path class="fur-light" d="M247 98C217 75 209 64 222 54C239 40 265 48 269 72C271 82 270 91 269 99C281 74 293 63 307 72C322 85 303 106 274 111Z"/><path class="fur-mid" d="M137 202C155 164 196 151 256 153C316 151 357 164 375 202C390 230 386 279 367 304C348 331 308 337 256 336C204 337 164 331 145 304C126 279 122 230 137 202Z"/><path class="face" d="M147 207C162 176 201 164 256 165C311 164 350 176 365 207C377 231 374 273 358 295C341 317 305 325 256 324C207 325 171 317 154 295C138 273 135 231 147 207Z"/></g><g id="expression" data-expression="satisfied" transform="translate(0 0)"><circle class="ink" cx="194" cy="248" r="10"/><circle class="ink" cx="319" cy="248" r="10"/><path class="line" d="M244 274q12 17 25 0"/></g><g id="front-arm-right"><path d="M345 377L363 407L322 421" fill="none" stroke="var(--ie-bonobot-metal,#a3abb6)" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/><path d="M342 373L360 403L319 417" fill="none" stroke="var(--ie-bonobot-metal-light,#cbd0d6)" stroke-width="19.38" stroke-linecap="round" stroke-linejoin="round"/><circle class="metal-dark" cx="363" cy="407" r="18.02"/><circle class="metal" cx="363" cy="407" r="10.88"/><path d="M336.37990147147224 398.1260315277224L347.36679248338356 430.3019266340342" stroke="var(--ie-calco-500,#4f53e6)" stroke-width="7"/><circle class="metal" cx="322" cy="421" r="18.36"/></g></svg>

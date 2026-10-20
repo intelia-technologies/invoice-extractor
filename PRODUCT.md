@@ -53,8 +53,8 @@ by hand and nothing sensitive leaving the user's machine.
   security, credential or error screens. Its face is the app icon.
 - Voice: reliable and sober, with a touch of administrative humor. Error and security copy is neutral:
   what happened and how to fix it, no apologies.
-- Final Bonobot illustration is commissioned from a human illustrator; the current art is a placeholder
-  that will be replaced under the same filenames.
+- The final Bonobot illustration is delivered (MIT) and in use: the vector kit lives in
+  `design/brand/bonobot/`, the full kit (3D model, renders, animation) on its download page.
 
 ## Evidence on Hand
 
