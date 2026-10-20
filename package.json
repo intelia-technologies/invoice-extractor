@@ -10,13 +10,14 @@
     "test": "test"
   },
   "scripts": {
-    "test": "node scripts/validate-providers.mjs && node scripts/sync-design-tokens.mjs --check && node --test test/profile-sync.test.mjs",
+    "test": "node scripts/validate-providers.mjs && node scripts/build-design-tokens.mjs --check && node scripts/check-contrast.mjs && node --test test/profile-sync.test.mjs",
     "validate": "node scripts/validate-providers.mjs",
     "test:sync": "node --test test/profile-sync.test.mjs",
     "install:1password": "node scripts/install-onepassword-host.mjs",
     "cli": "node bin/invoice-extractor.mjs",
     "dev": "./dev-chrome.sh",
-    "dev:reset": "./dev-chrome.sh --reset"
+    "dev:reset": "./dev-chrome.sh --reset",
+    "design:build": "node scripts/build-design-tokens.mjs"
   },
   "repository": {
     "type": "git",
