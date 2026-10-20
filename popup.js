@@ -88,7 +88,7 @@ async function saveProfiles() {
     await loadProfiles();
     await renderHome();
     await renderProfiles();
-    alert(error.message);
+    alert(localizeSyncText(error.message));
     throw error;
   }
 }
@@ -230,14 +230,14 @@ async function callOnePassword(action, input = {}) {
     }, 800);
     return {
       ok: false,
-      error: 'Reloading extension to activate 1Password permission — reopen the popup in 2 seconds and click 🔑 1P again.',
+      error: t('opReloadingExtension'),
     };
   }
 
   if (cacheKey && response?.ok) {
     _opResolveCache.set(cacheKey, { ts: Date.now(), response });
   }
-  return response || { ok: false, error: 'Background service worker did not respond — click Reload (🔄) in chrome://extensions.' };
+  return response || { ok: false, error: t('opWorkerNoResponse') };
 }
 
 async function syncProfilesFrom1Password() {
@@ -254,13 +254,13 @@ async function syncProfilesFrom1Password() {
 
   if (quickBtn) {
     quickBtn.disabled = true;
-    quickBtn.textContent = '⏳';
+    quickBtn.textContent = t('commonBusy');
   }
   if (fullBtn) {
     fullBtn.disabled = true;
-    fullBtn.textContent = '⏳ Scanning 1Password vaults...';
+    fullBtn.textContent = t('profilesOpScanning');
   }
-  setStatus('Scanning 1Password vaults (AI / AI bots) for tagged provider credentials...');
+  setStatus(t('profilesOpScanningDetail'));
 
   try {
     _opResolveCache.clear();
@@ -275,12 +275,12 @@ async function syncProfilesFrom1Password() {
     });
 
     if (!response?.ok || !response.data) {
-      throw new Error(response?.error || 'Could not query 1Password.');
+      throw new Error(response?.error || t('opQueryFailed'));
     }
 
     const discovered = response.data.profiles || [];
     if (discovered.length === 0) {
-      const msg = `No matching provider credentials found in 1Password (${response.data.totalItems || 0} item(s) scanned). Add provider logins with their website URL to the AI or AI bots vault.`;
+      const msg = t('profilesOpNoMatches', [response.data.totalItems || 0]);
       setStatus(msg, true);
       if (!statusEl || statusEl.offsetParent === null) alert(msg);
       return;
@@ -341,23 +341,23 @@ async function syncProfilesFrom1Password() {
     await renderProfiles();
 
     const summary = discovered
-      .map(d => `${d.name} (${d.activeProviders.length} provider${d.activeProviders.length !== 1 ? 's' : ''})`)
+      .map(d => `${d.name} (${tp('commonProvidersCount', d.activeProviders.length)})`)
       .join(', ');
-    const msg = `Synced from 1Password: ${summary}`;
+    const msg = t('profilesOpSynced', [summary]);
     setStatus(msg, false);
   } catch (err) {
-    setStatus(`1Password sync failed: ${err.message}`, true);
+    setStatus(t('profilesOpSyncFailed', [err.message]), true);
     if (!statusEl || statusEl.offsetParent === null) {
-      alert(`1Password sync failed: ${err.message}`);
+      alert(t('profilesOpSyncFailed', [err.message]));
     }
   } finally {
     if (quickBtn) {
       quickBtn.disabled = false;
-      quickBtn.textContent = '🔑 1P';
+      quickBtn.textContent = t('homeOpSyncLabel');
     }
     if (fullBtn) {
       fullBtn.disabled = false;
-      fullBtn.textContent = '🔑 Sync Profiles from 1Password Tags';
+      fullBtn.textContent = t('profilesOpSyncButton');
     }
   }
 }
@@ -490,7 +490,7 @@ async function loadState() {
     state.completed = state.completed.filter(id => validIds.includes(id));
     // Migrate old string-based skipped to { key, reason } format
     state.skipped = (state.skipped || []).map(s =>
-      typeof s === 'string' ? { key: s, reason: 'Skipped' } : s
+      typeof s === 'string' ? { key: s, reason: t('workflowSkipped') } : s
     );
     state.skipped = state.skipped.filter(s => validIds.includes(s.key));
     return true;
@@ -518,7 +518,7 @@ function addToCompleted(key) {
   if (!state.completed.includes(key)) state.completed.push(key);
 }
 
-function addToSkipped(key, reason = 'Skipped by user') {
+function addToSkipped(key, reason = t('workflowSkippedByUser')) {
   if (!state.skipped.some(s => (typeof s === 'string' ? s : s.key) === key)) {
     state.skipped.push({ key, reason });
   }
@@ -531,7 +531,7 @@ function isSkipped(key) {
 function getSkipReason(key) {
   const entry = state.skipped.find(s => (typeof s === 'string' ? s : s.key) === key);
   if (!entry) return null;
-  return typeof entry === 'string' ? 'Skipped' : entry.reason;
+  return typeof entry === 'string' ? t('workflowSkipped') : entry.reason;
 }
 
 // =====================================================
@@ -574,7 +574,7 @@ function normalizeConfigEntry(value, fieldDef) {
   const captured = fieldDef.capture ? raw.match(new RegExp(fieldDef.capture.urlPattern))?.[1] : null;
   const normalized = captured || raw;
   if (fieldDef.pattern && !new RegExp(fieldDef.pattern).test(normalized)) {
-    throw new Error(fieldDef.validationMessage || `Enter a valid ${fieldDef.title}.`);
+    throw new Error(fieldDef.validationMessage || t('providerConfigInvalid', [fieldDef.title]));
   }
   return normalized;
 }
@@ -633,25 +633,25 @@ function appendConfigCapture(container, fieldDef, onUse) {
   const use = async candidate => {
     await onUse(normalizeConfigEntry(candidate.value, fieldDef));
     choices.replaceChildren();
-    message.textContent = `Saved ${candidate.value}.`;
+    message.textContent = t('providerCaptureSaved', [candidate.value]);
   };
   button.addEventListener('click', async () => {
     button.disabled = true;
     choices.replaceChildren();
-    message.textContent = 'Reading the current browser page...';
+    message.textContent = t('providerCaptureReading');
     try {
       const tab = await getActiveBrowserTab();
       const candidates = tab ? await captureConfigCandidates(tab.id, fieldDef) : [];
       if (!candidates.length) {
-        message.textContent = 'No matching account found. Open the linked page, then try again.';
+        message.textContent = t('providerCaptureNone');
       } else if (candidates.length === 1) {
         await use(candidates[0]);
       } else {
-        message.textContent = 'Multiple accounts found. Choose the one to add.';
+        message.textContent = t('providerCaptureMultiple');
         const select = document.createElement('select');
         select.className = 'config-input config-capture-select';
-        select.setAttribute('aria-label', `Choose ${fieldDef.title}`);
-        select.append(new Option('Choose an account...', ''));
+        select.setAttribute('aria-label', t('providerCaptureChooseAria', [fieldDef.title]));
+        select.append(new Option(t('providerCaptureChoosePlaceholder'), ''));
         candidates.forEach((candidate, index) => {
           const label = candidate.label === candidate.value ? candidate.value : `${candidate.label} — ${candidate.value}`;
           select.append(new Option(label, String(index)));
@@ -659,7 +659,7 @@ function appendConfigCapture(container, fieldDef, onUse) {
         const confirm = document.createElement('button');
         confirm.type = 'button';
         confirm.className = 'btn-secondary';
-        confirm.textContent = 'Use selection';
+        confirm.textContent = t('providerCaptureUse');
         confirm.disabled = true;
         select.addEventListener('change', () => { confirm.disabled = select.value === ''; });
         confirm.addEventListener('click', async () => {
@@ -670,7 +670,7 @@ function appendConfigCapture(container, fieldDef, onUse) {
         choices.append(select, confirm);
       }
     } catch (error) {
-      message.textContent = `Could not read this page. ${error.message}`;
+      message.textContent = t('providerCaptureFailed', [error.message]);
     } finally {
       button.disabled = false;
     }
@@ -1092,12 +1092,12 @@ async function waitForSelector(tabId, selector, maxWaitSeconds = 60, onProgress 
       await new Promise(r => setTimeout(r, 1000));
     } catch (e) {
       if (e.message?.includes('No tab') || e.message?.includes('cannot access')) {
-        return { success: false, error: 'Tab closed or inaccessible' };
+        return { success: false, error: t('workflowErrorTabClosed') };
       }
       await new Promise(r => setTimeout(r, 1000));
     }
   }
-  return { success: false, error: `Timeout after ${maxWaitSeconds} seconds` };
+  return { success: false, error: t('workflowErrorTimeout', [maxWaitSeconds]) };
 }
 
 // Combined tab ready check: waits for tab load + optional readySelector
@@ -1245,7 +1245,7 @@ async function downloadInvoice(tabId, invoice, provider, frameId) {
   switch (method) {
     case 'direct-link': {
       const url = invoice.downloadUrl;
-      if (!url) return { success: false, error: 'no URL' };
+      if (!url) return { success: false, error: t('downloadErrorNoUrl') };
       const dlId = await chrome.downloads.download({ url, filename });
       if (dlId) invoice._downloadId = dlId;
       return { success: true };
@@ -1253,13 +1253,13 @@ async function downloadInvoice(tabId, invoice, provider, frameId) {
 
     case 'fetch-blob': {
       const url = invoice.downloadUrl;
-      if (!url) return { success: false, error: 'no URL' };
+      if (!url) return { success: false, error: t('downloadErrorNoUrl') };
       try {
         const target = frameId != null ? { tabId, frameIds: [frameId] } : { tabId };
         const results = await chrome.scripting.executeScript({
           target,
           world: 'MAIN',
-          func: async (fetchUrl) => {
+          func: async (fetchUrl, htmlPageError) => {
             try {
               const res = await fetch(fetchUrl, { credentials: 'include' });
               if (!res.ok) {
@@ -1267,7 +1267,7 @@ async function downloadInvoice(tabId, invoice, provider, frameId) {
               }
               const contentType = (res.headers.get('content-type') || '').toLowerCase();
               if (contentType.includes('text/html')) {
-                return { ok: false, error: 'Received HTML page instead of invoice document (session may have expired)' };
+                return { ok: false, error: htmlPageError };
               }
               const blob = await res.blob();
               const dataUrl = await new Promise((resolve, reject) => {
@@ -1281,7 +1281,7 @@ async function downloadInvoice(tabId, invoice, provider, frameId) {
               return { ok: false, fallback: true, error: err.message };
             }
           },
-          args: [url],
+          args: [url, t('downloadErrorHtmlPage')],
         });
         const fetchRes = results?.[0]?.result;
         if (fetchRes?.ok && fetchRes.dataUrl) {
@@ -1290,7 +1290,7 @@ async function downloadInvoice(tabId, invoice, provider, frameId) {
           return { success: true };
         }
         if (fetchRes && !fetchRes.fallback) {
-          return { success: false, error: fetchRes.error || 'fetch-blob failed' };
+          return { success: false, error: fetchRes.error || t('downloadErrorFetchFailed') };
         }
       } catch {
         // Fall back to direct chrome.downloads if cross-origin script execution fails
@@ -1302,7 +1302,7 @@ async function downloadInvoice(tabId, invoice, provider, frameId) {
 
     case 'chrome-download': {
       let url = invoice.downloadUrl;
-      if (!url) return { success: false, error: 'no URL' };
+      if (!url) return { success: false, error: t('downloadErrorNoUrl') };
       if (provider.download.urlSuffix) {
         url = url.replace(/\/?$/, '') + provider.download.urlSuffix;
       }
@@ -1351,10 +1351,10 @@ async function downloadInvoice(tabId, invoice, provider, frameId) {
               world: 'MAIN'
             });
           } catch (clickErr) {
-            return { success: false, error: `invoice download click failed: ${clickErr.message}` };
+            return { success: false, error: t('downloadErrorClickFailed', [clickErr.message]) };
           }
           if (!clickResults.some(result => result.result)) {
-            return { success: false, error: 'invoice download button not found' };
+            return { success: false, error: t('downloadErrorButtonNotFound') };
           }
         }
 
@@ -1366,14 +1366,14 @@ async function downloadInvoice(tabId, invoice, provider, frameId) {
         if (!downloadStarted) {
           // A hosted invoice page is HTML, not a fallback PDF download.
           if (provider.download.postLoadClick) {
-            return { success: false, error: 'no download detected' };
+            return { success: false, error: t('downloadErrorNoDownload') };
           }
           try {
             const fallbackId = await chrome.downloads.download({ url, filename });
             if (fallbackId) invoice._downloadId = fallbackId;
             return { success: true };
           } catch (e2) {
-            return { success: false, error: 'no download detected' };
+            return { success: false, error: t('downloadErrorNoDownload') };
           }
         }
         return { success: true };
@@ -1388,7 +1388,7 @@ async function downloadInvoice(tabId, invoice, provider, frameId) {
 
     case 'debugger-print': {
       const url = invoice.downloadUrl;
-      if (!url) return { success: false, error: 'no URL' };
+      if (!url) return { success: false, error: t('downloadErrorNoUrl') };
 
       const dlTab = await chrome.tabs.create({ url, active: false });
 
@@ -1428,7 +1428,7 @@ async function downloadInvoice(tabId, invoice, provider, frameId) {
             if (dlId) invoice._downloadId = dlId;
             setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
           } else {
-            return { success: false, error: 'PDF generation returned no data' };
+            return { success: false, error: t('downloadErrorPdfEmpty') };
           }
         } finally {
           try { await chrome.debugger.detach(target); } catch (e) {}
@@ -1477,13 +1477,13 @@ async function downloadInvoice(tabId, invoice, provider, frameId) {
 
     case 'open-tabs': {
       const url = invoice.downloadUrl;
-      if (!url) return { success: false, error: 'no URL' };
+      if (!url) return { success: false, error: t('downloadErrorNoUrl') };
       await chrome.tabs.create({ url });
       return { success: true };
     }
 
     default:
-      return { success: false, error: `Unknown download method: ${method}` };
+      return { success: false, error: t('downloadErrorUnknownMethod', [method]) };
   }
 }
 
@@ -1692,11 +1692,22 @@ const nav = {
 // =====================================================
 // HOME VIEW
 // =====================================================
+function selectedProvidersLabel(count) {
+  return count === 0 ? t('homeEmptySelection') : tp('homeSelectedCount', count);
+}
+
+// Icon-only buttons carry their name in both the tooltip and the accessible label.
+function setButtonLabel(button, label) {
+  button.title = label;
+  button.setAttribute('aria-label', label);
+}
+
 async function renderHome() {
   // Profile bar
   const profileSelect = document.getElementById('profile-select');
   if (profileSelect) {
-    profileSelect.innerHTML = '<option value="">— No profile —</option>';
+    profileSelect.innerHTML = '';
+    profileSelect.append(new Option(t('homeNoProfile'), ''));
     for (const p of profiles) {
       const opt = document.createElement('option');
       opt.value = p.id;
@@ -1721,12 +1732,11 @@ async function renderHome() {
   // Stats bar
   const history = await loadDownloadHistory();
   document.getElementById('home-stats').textContent =
-    `${history.length} invoices \u00b7 ${providers.length} providers`;
+    `${tp('commonInvoicesCount', history.length)} \u00b7 ${tp('commonProvidersCount', providers.length)}`;
 
   // Download All subtitle
   const activeCount = activeProviderIds.size;
-  document.getElementById('download-all-subtitle').textContent =
-    `${activeCount} provider${activeCount !== 1 ? 's' : ''} selected`;
+  document.getElementById('download-all-subtitle').textContent = selectedProvidersLabel(activeCount);
 
   // Provider cards
   const container = document.getElementById('provider-cards');
@@ -1750,17 +1760,17 @@ async function renderHome() {
 
     card.innerHTML = `
       <img class="provider-logo" src="${logoUrl}" alt="${provider.icon}" onerror="this.style.display='none';this.nextElementSibling.style.display='block';">
-      <span class="provider-logo" style="display:none; font-size: 24px; width: 32px; text-align: center;">${provider.icon}</span>
+      <span class="provider-logo provider-logo-fallback" style="display:none;" aria-hidden="true">${escapeHtml(provider.name.split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase())}</span>
       <div class="provider-info">
         <div class="provider-name">${provider.name}</div>
         <div class="provider-subtitle">${
-          needsConfig ? '\u26a0\ufe0f Needs configuration' :
-          providerHistory.length > 0 ? `${providerHistory.length} invoice${providerHistory.length !== 1 ? 's' : ''} downloaded` :
-          'No downloads yet'
+          needsConfig ? `<span class="status status-warn">${escapeHtml(t('homeProviderNeedsConfig'))}</span>` :
+          providerHistory.length > 0 ? `<span class="status status-ok">${escapeHtml(tp('homeProviderDownloaded', providerHistory.length))}</span>` :
+          escapeHtml(t('homeProviderNoDownloads'))
         }</div>
       </div>
       <div class="provider-card-toggle">
-        <label class="toggle-switch" title="${isActive ? 'Disable' : 'Enable'} ${provider.name}">
+        <label class="toggle-switch" title="${escapeHtml(t(isActive ? 'homeProviderDisable' : 'homeProviderEnable', [provider.name]))}">
           <input type="checkbox" ${isActive ? 'checked' : ''} data-provider-id="${provider.id}">
           <span class="toggle-slider"></span>
         </label>
@@ -1779,8 +1789,7 @@ async function renderHome() {
       card.style.opacity = toggle.checked ? '1' : '0.5';
       // Update Download All subtitle
       const activeCount = activeProviderIds.size;
-      document.getElementById('download-all-subtitle').textContent =
-        `${activeCount} provider${activeCount !== 1 ? 's' : ''} selected`;
+      document.getElementById('download-all-subtitle').textContent = selectedProvidersLabel(activeCount);
       // Update profile dirty state
       updateProfileDirtyIndicator();
     });
@@ -1795,7 +1804,7 @@ async function renderHome() {
   const btnSelectAll = document.getElementById('btn-select-all');
   if (btnSelectAll) {
     const allSelected = providers.every(p => activeProviderIds.has(p.id));
-    btnSelectAll.textContent = allSelected ? 'Deselect all' : 'Select all';
+    btnSelectAll.textContent = t(allSelected ? 'homeDeselectAll' : 'homeSelectAll');
     btnSelectAll.onclick = async () => {
       if (allSelected) {
         activeProviderIds.clear();
@@ -1860,7 +1869,7 @@ async function renderProviderDetail(providerId) {
         const div = document.createElement('div');
         div.className = 'config-field';
         const hintHtml = fieldDef.hint
-          ? `<div class="config-hint">${escapeHtml(fieldDef.hint)}${fieldDef.hintUrl ? ` <a href="#" class="config-hint-link" data-url="${escapeHtml(fieldDef.hintUrl)}">Open page ↗</a>` : ''}</div>`
+          ? `<div class="config-hint">${escapeHtml(fieldDef.hint)}${fieldDef.hintUrl ? ` <a href="#" class="config-hint-link" data-url="${escapeHtml(fieldDef.hintUrl)}">${escapeHtml(t('providerHintOpenPage'))}</a>` : ''}</div>`
           : '';
         div.innerHTML = `<label class="config-label">${escapeHtml(fieldDef.title || fieldName)}</label>${hintHtml}`;
 
@@ -1878,7 +1887,7 @@ async function renderProviderDetail(providerId) {
             row.className = 'config-multi-item';
             row.innerHTML = `
               <span class="config-multi-value"></span>
-              <button class="config-multi-remove" data-idx="${idx}" title="Remove">&times;</button>
+              <button class="config-multi-remove" data-idx="${idx}" title="${escapeHtml(t('commonRemove'))}">&times;</button>
             `;
             row.querySelector('.config-multi-value').textContent = String(val);
             try { normalizeConfigEntry(val, fieldDef); }
@@ -1894,7 +1903,7 @@ async function renderProviderDetail(providerId) {
             try { normalizeConfigEntry(value, fieldDef); return false; } catch { return true; }
           });
           errorEl.textContent = invalid
-            ? `${fieldDef.validationMessage || 'Invalid configuration.'} Remove invalid saved entries with ×.`
+            ? t('providerConfigRemoveInvalid', [fieldDef.validationMessage || t('providerConfigInvalidGeneric')])
             : '';
           document.getElementById('btn-download-single').disabled = !!providerConfigError(provider);
         }
@@ -1906,8 +1915,8 @@ async function renderProviderDetail(providerId) {
         addRow.className = 'config-multi-add';
         addRow.innerHTML = `
           <input class="config-input config-multi-input" type="${escapeHtml(fieldDef.type || 'text')}"
-                 placeholder="${escapeHtml(fieldDef.placeholder || fieldDef.default || 'Add value...')}">
-          <button class="config-multi-add-btn" title="Add">+</button>
+                 placeholder="${escapeHtml(fieldDef.placeholder || fieldDef.default || t('providerConfigAddPlaceholder'))}">
+          <button class="config-multi-add-btn" title="${escapeHtml(t('commonAdd'))}">+</button>
         `;
         const addInput = addRow.querySelector('input');
         const addBtn = addRow.querySelector('button');
@@ -1935,7 +1944,7 @@ async function renderProviderDetail(providerId) {
         const div = document.createElement('div');
         div.className = 'config-field';
         const singleHintHtml = fieldDef.hint
-          ? `<div class="config-hint">${escapeHtml(fieldDef.hint)}${fieldDef.hintUrl ? ` <a href="#" class="config-hint-link" data-url="${escapeHtml(fieldDef.hintUrl)}">Open page ↗</a>` : ''}</div>`
+          ? `<div class="config-hint">${escapeHtml(fieldDef.hint)}${fieldDef.hintUrl ? ` <a href="#" class="config-hint-link" data-url="${escapeHtml(fieldDef.hintUrl)}">${escapeHtml(t('providerHintOpenPage'))}</a>` : ''}</div>`
           : '';
         div.innerHTML = `
           <label class="config-label">${escapeHtml(fieldDef.title || fieldName)}</label>
@@ -1980,8 +1989,8 @@ async function renderProviderDetail(providerId) {
   const opDiv = document.createElement('div');
   opDiv.className = 'config-field';
   opDiv.innerHTML = `
-    <label class="config-label">🔑 1Password Item (optional)</label>
-    <div class="config-hint">Auto-matched by domain or provider name across vaults "AI" and "AI bots". Override with an item title or op://vault/item if needed.</div>
+    <label class="config-label">${escapeHtml(t('providerOpItemLabel'))}</label>
+    <div class="config-hint">${escapeHtml(t('providerOpItemHint'))}</div>
     <input class="config-input" type="text"
            data-provider="${escapeHtml(provider.id)}" data-field="_onepasswordItem"
            placeholder="${escapeHtml(provider.auth?.item || provider.name)}">
@@ -2003,7 +2012,7 @@ async function renderProviderDetail(providerId) {
     .sort((a, b) => (b.downloadedAt || '').localeCompare(a.downloadedAt || ''));
   const histContainer = document.getElementById('provider-history');
   if (provHistory.length === 0) {
-    histContainer.innerHTML = '<div class="empty-state" style="padding: 20px;"><p style="font-size: 12px;">No invoices downloaded yet</p></div>';
+    histContainer.innerHTML = `<div class="empty-state" style="padding: 20px;"><p style="font-size: 12px;">${escapeHtml(t('providerHistoryEmpty'))}</p></div>`;
   } else {
     let html = '<div class="provider-history-list">';
     for (const entry of provHistory.slice(0, 20)) {
@@ -2033,7 +2042,7 @@ async function renderProviderDetail(providerId) {
 function renderBatchConfig(providerList) {
   const list = document.getElementById('batch-provider-list');
   const title = document.getElementById('batch-providers-title');
-  title.textContent = `${providerList.length} Provider${providerList.length !== 1 ? 's' : ''}`;
+  title.textContent = tp('commonProvidersCount', providerList.length);
 
   list.innerHTML = '';
   for (const p of providerList) {
@@ -2102,8 +2111,11 @@ function updateProgress() {
   document.getElementById('progress-fill').style.width = pct + '%';
   const skipped = state.skipped.length;
   const completed = state.completed.length;
-  document.getElementById('progress-text').textContent =
-    `${completed} downloaded${skipped > 0 ? `, ${skipped} skipped` : ''} — ${total - done} remaining`;
+  document.getElementById('progress-text').textContent = [
+    t('workflowProgressDownloaded', [completed]),
+    ...(skipped > 0 ? [t('workflowProgressSkipped', [skipped])] : []),
+    t('workflowProgressRemaining', [total - done]),
+  ].join(' \u00b7 ');
 }
 
 function updateSitesList() {
@@ -2135,9 +2147,9 @@ function showCompletion() {
   saveState();
   const done = state.completed.length;
   const skippedList = state.skipped;
-  let summaryHtml = `${done} provider${done !== 1 ? 's' : ''} completed`;
+  let summaryHtml = tp('completionSummary', done);
   if (skippedList.length > 0) {
-    summaryHtml += `, ${skippedList.length} skipped`;
+    summaryHtml += ` \u00b7 ${tp('completionSkipped', skippedList.length)}`;
   }
   document.getElementById('completion-summary').textContent = summaryHtml;
 
@@ -2275,8 +2287,8 @@ async function processCurrentSite() {
     });
     const configError = providerConfigError(provider);
     if (unconfigured || configError) {
-      showStatus(`${provider.name}: skipped — ${configError || 'needs configuration'}`);
-      addToSkipped(workflowKey(provider), configError || 'Not configured');
+      showStatus(t('workflowStatusSkippedConfig', [provider.name, configError || t('workflowNeedsConfig')]));
+      addToSkipped(workflowKey(provider), configError || t('workflowSkipNotConfigured'));
       updateProgress();
       updateSitesList();
       await new Promise(r => setTimeout(r, 1000));
@@ -2285,14 +2297,14 @@ async function processCurrentSite() {
     }
   }
 
-  showStatus(`Provider ${provNum} of ${provTotal} — Opening ${provider.name}...`);
+  showStatus(t('workflowStatusOpeningNth', [provNum, provTotal, provider.name]));
   showButtons(false, false, false, true);
 
   // Pre-navigation: navigate to a preparatory URL first (e.g., to switch org/account)
   if (shouldRunPreNavigation(provider)) {
     const preNav = provider.preNavigation;
     const preNavUrl = resolveConfigTemplate(preNav.url, provider);
-    showStatus(`${provider.name}: preparing account...`);
+    showStatus(t('workflowStatusPreparingAccount', [provider.name]));
     const preNavTab = await createTabInBrowser(preNavUrl);
     await waitForTabReady(preNavTab.id, preNav.readySelector);
 
@@ -2317,17 +2329,17 @@ async function processCurrentSite() {
 
     currentProviderTabId = preNavTab.id;
 
-    showStatus(`${provider.name}: waiting for billing data...`);
+    showStatus(t('workflowStatusWaitingData', [provider.name]));
     const result = await waitForSelector(preNavTab.id, provider.readySelector, 30,
-      (attempt) => showStatus(`${provider.name}: detecting billing page... (${attempt}s)`)
+      (attempt) => showStatus(t('workflowStatusDetecting', [provider.name, attempt]))
     );
     if (result.success) {
-      showStatus(`${provider.name}: billing page loaded, starting download...`);
+      showStatus(t('workflowStatusLoadedStarting', [provider.name]));
       showButtons(false, true, false, false, true);
       await executeDownload(preNavTab.id, provider);
     } else {
-      lastProviderError = 'Billing page not ready after pre-navigation';
-      showStatus(`${provider.name}: billing page not ready — check account selection`);
+      lastProviderError = t('workflowErrorPreNavNotReady');
+      showStatus(t('workflowStatusPreNavNotReady', [provider.name]));
       showButtons(true, false, false, true, false, false, true);
       startLoginPolling(preNavTab.id, provider);
     }
@@ -2342,7 +2354,7 @@ async function processCurrentSite() {
   // 2. If not found, open the billing URL; if found, navigate only if on wrong page
   let needsWaitForLoad = false;
   if (!targetTab) {
-    showStatus(`Opening ${provider.name}...`);
+    showStatus(t('workflowStatusOpening', [provider.name]));
     targetTab = await createTabInBrowser(billingUrl);
     needsWaitForLoad = true;
   } else {
@@ -2366,8 +2378,8 @@ async function processCurrentSite() {
   }
 
   if (!targetTab) {
-    lastProviderError = 'Could not open tab';
-    showStatus(`Could not open ${provider.name}`);
+    lastProviderError = t('workflowErrorOpenTab');
+    showStatus(t('workflowStatusCouldNotOpen', [provider.name]));
     showButtons(true, false, false, true);
     return;
   }
@@ -2377,7 +2389,7 @@ async function processCurrentSite() {
 
   // 3. Wait for tab to finish loading (prevents stale DOM detection)
   if (needsWaitForLoad) {
-    showStatus(`${provider.name}: loading page...`);
+    showStatus(t('workflowStatusLoadingPage', [provider.name]));
     await waitForTabReady(targetTab.id);
   }
 
@@ -2385,7 +2397,7 @@ async function processCurrentSite() {
   //    form appears on the main page (e.g. Holded redirects /home to /login when logged out).
   let iframeId = null;
   if (provider.iframe?.urlPattern) {
-    showStatus(`${provider.name}: waiting for iframe...`);
+    showStatus(t('workflowStatusWaitingIframe', [provider.name]));
     for (let i = 0; i < 15; i++) {
       iframeId = await findIframeId(targetTab.id, provider.iframe.urlPattern);
       if (iframeId != null) break;
@@ -2401,7 +2413,7 @@ async function processCurrentSite() {
   }
 
   // 5. Auto-detect: poll for readySelector (login detection)
-  showStatus(`${provider.name}: waiting for billing data...`);
+  showStatus(t('workflowStatusWaitingData', [provider.name]));
   showButtons(false, false, false, true); // only skip visible while waiting
 
   let result = (!provider.iframe?.urlPattern || iframeId != null)
@@ -2409,7 +2421,7 @@ async function processCurrentSite() {
         targetTab.id,
         provider.readySelector,
         8, // initial 8s check before attempting 1Password auto-login if login form is visible
-        (attempt) => showStatus(`${provider.name}: detecting billing page... (${attempt}s)`),
+        (attempt) => showStatus(t('workflowStatusDetecting', [provider.name, attempt])),
         iframeId
       )
     : { success: false };
@@ -2429,7 +2441,7 @@ async function processCurrentSite() {
           targetTab.id,
           provider.readySelector,
           20,
-          (attempt) => showStatus(`${provider.name}: detecting billing page... (${attempt + 8}s)`),
+          (attempt) => showStatus(t('workflowStatusDetecting', [provider.name, attempt + 8])),
           iframeId
         );
       }
@@ -2440,14 +2452,14 @@ async function processCurrentSite() {
     // Org/account verification lives inside executeDownload — every download path
     // (auto, login polling, manual "Ready", retry) must go through the same guard.
     // Page loaded with billing data visible — auto-download
-    showStatus(`${provider.name}: billing page loaded, starting download...`);
+    showStatus(t('workflowStatusLoadedStarting', [provider.name]));
     showButtons(false, true, false, false, true);
     await executeDownload(targetTab.id, provider);
   } else {
     // readySelector not found — probably needs login or wrong page
     // Show manual button as fallback, but keep polling in background
-    lastProviderError = 'Login required';
-    showStatus(`${provider.name}: log in (or click "🔑 Sign in with 1Password"), then click "Ready"`);
+    lastProviderError = t('workflowErrorLoginRequired');
+    showStatus(t('workflowStatusLoginPrompt', [provider.name]));
     showButtons(true, false, false, true, false, false, true);
     startLoginPolling(targetTab.id, provider, iframeId);
   }
@@ -2531,7 +2543,7 @@ async function purgeDomainCookies(urls = []) {
 }
 
 async function performProviderLogout(tabId, provider, creds = null) {
-  showStatus(`${provider.name}: logging out of previous account...`);
+  showStatus(t('workflowStatusLoggingOut', [provider.name]));
 
   // 1. Optional declarative UI logout steps
   if (provider.auth?.logoutSteps?.length) {
@@ -2620,7 +2632,7 @@ async function attemptProvider1PasswordLogin(
 
     let creds = preResolvedCreds;
     if (!creds) {
-      showStatus(`${provider.name}: fetching credentials from 1Password...`);
+      showStatus(t('workflowStatusFetchingCreds', [provider.name]));
       const liveProviderConfig = providerConfigs[provider.id] || {};
       const itemOverride = liveProviderConfig._onepasswordItem || '';
       const activeProfileName = profiles.find(p => p.id === loadedProfileId)?.name || '';
@@ -2634,14 +2646,14 @@ async function attemptProvider1PasswordLogin(
 
       if (!response?.ok || !response.data) {
         if (manual) {
-          showStatus(`${provider.name}: ${response?.error || '1Password credentials not found'}`);
+          showStatus(t('workflowStatusProviderMessage', [provider.name, response?.error || t('workflowOpCredsNotFound')]));
         }
         return { attempted: false, ready: false, error: response?.error };
       }
       creds = response.data;
     }
 
-    showStatus(`${provider.name}: signing in via 1Password (${creds.title || provider.name})...`);
+    showStatus(t('workflowStatusSigningIn', [provider.name, creds.title || provider.name]));
     let loginTabBefore;
     try { loginTabBefore = await chrome.tabs.get(tabId); } catch {}
     const loginStartUrl = loginTabBefore?.url || '';
@@ -2650,7 +2662,7 @@ async function attemptProvider1PasswordLogin(
     const loginRes = await callEngine(tabId, 'attemptAutoLogin', [creds, provider.auth || {}]);
     if (!loginRes?.attempted) {
       if (manual) {
-        showStatus(`${provider.name}: ${loginRes?.reason || 'No login fields found on page'}`);
+        showStatus(t('workflowStatusProviderMessage', [provider.name, loginRes?.reason || t('workflowNoLoginFields')]));
       }
       return { attempted: false, ready: false, error: loginRes?.reason };
     }
@@ -2692,7 +2704,7 @@ async function attemptProvider1PasswordLogin(
       tabId,
       provider.readySelector,
       15,
-      (attempt) => showStatus(`${provider.name}: verifying billing page... (${attempt}s)`),
+      (attempt) => showStatus(t('workflowStatusVerifying', [provider.name, attempt])),
       iframeId
     );
 
@@ -2713,7 +2725,7 @@ async function attemptProvider1PasswordLogin(
           tabId,
           provider.readySelector,
           15,
-          (attempt) => showStatus(`${provider.name}: loading billing page... (${attempt}s)`),
+          (attempt) => showStatus(t('workflowStatusLoadingBilling', [provider.name, attempt])),
           refreshedIframeId
         );
       }
@@ -2722,7 +2734,7 @@ async function attemptProvider1PasswordLogin(
     return { attempted: true, ready: readyRes.success, creds };
   } catch (err) {
     if (manual) {
-      showStatus(`${provider.name}: 1Password sign-in failed — ${err.message}`);
+      showStatus(t('workflowStatusOpSignInFailed', [provider.name, err.message]));
     }
     return { attempted: false, ready: false, error: err.message };
   }
@@ -2746,7 +2758,7 @@ async function signInWith1Password() {
   showButtons(false, false, false, true);
   const res = await attemptProvider1PasswordLogin(targetTab.id, provider, { manual: true });
   if (res.ready) {
-    showStatus(`${provider.name}: signed in with 1Password, starting download...`);
+    showStatus(t('workflowStatusSignedIn', [provider.name]));
     showButtons(false, true, false, false, true);
     await executeDownload(targetTab.id, provider);
   } else {
@@ -2775,7 +2787,7 @@ async function switchAccountWith1Password() {
   await performProviderLogout(targetTab.id, provider);
   const res = await attemptProvider1PasswordLogin(targetTab.id, provider, { manual: true });
   if (res.ready) {
-    showStatus(`${provider.name}: switched account via 1Password, starting download...`);
+    showStatus(t('workflowStatusSwitched', [provider.name]));
     showButtons(false, true, false, false, true);
     await executeDownload(targetTab.id, provider, { _afterAccountSwitch: true });
   } else {
@@ -2812,7 +2824,7 @@ function startLoginPolling(tabId, provider, iframeId) {
       if (await selectorExists(tabId, provider.readySelector, frameId)) {
         // readySelector found — user logged in, auto-continue
         stopLoginPolling();
-        showStatus(`${provider.name}: billing page detected, starting download...`);
+        showStatus(t('workflowStatusDetected', [provider.name]));
         showButtons(false, true, false, false, true);
         await executeDownload(tabId, provider);
         await saveState();
@@ -2935,11 +2947,11 @@ async function verifyOrg(tabId, provider) {
     });
     found = results[0]?.result;
   } catch (e) {
-    return useStorage ? { ok: false, expected, found: 'Account ID unavailable' } : { ok: true };
+    return useStorage ? { ok: false, expected, found: t('workflowAccountIdUnavailable') } : { ok: true };
   }
 
   if (useStorage) {
-    return { ok: found === expected, expected, found: found || 'Account ID unavailable' };
+    return { ok: found === expected, expected, found: found || t('workflowAccountIdUnavailable') };
   }
 
   if (!found) return { ok: true };
@@ -3067,7 +3079,7 @@ async function ensureCorrectProviderAccount(tabId, provider, { orgOk = true } = 
 
   _switchedProviderKeys.add(stepKey);
   showStatus(
-    `${provider.name}: wrong account detected — logging out and signing in as ${creds.title || activeProfileName || expectedUser}...`
+    t('workflowStatusWrongAccountSwitching', [provider.name, creds.title || activeProfileName || expectedUser])
   );
   await performProviderLogout(tabId, provider, creds);
   const loginRes = await attemptProvider1PasswordLogin(tabId, provider, {
@@ -3092,7 +3104,7 @@ async function executeDownload(tabId, provider, { skipDedup = false, _afterAccou
           return await executeDownload(tabId, provider, { skipDedup, _afterAccountSwitch: true });
         }
         const iframeId = provider.iframe?.urlPattern ? await findIframeId(tabId, provider.iframe.urlPattern) : null;
-        lastProviderError = 'Account switch requires login completion';
+        lastProviderError = t('workflowErrorSwitchNeedsLogin');
         showButtons(true, false, false, true, false, false, true);
         startLoginPolling(tabId, provider, iframeId);
         return;
@@ -3100,15 +3112,15 @@ async function executeDownload(tabId, provider, { skipDedup = false, _afterAccou
     }
 
     if (!org.ok) {
-      lastProviderError = `Wrong account: expected "${org.expected}", found "${org.found}"`;
-      showStatus(`${provider.name}: wrong account — expected "${org.expected}", found "${org.found}". Switch account in ${provider.name}, then click "Ready"`);
+      lastProviderError = t('workflowErrorWrongAccount', [org.expected, org.found]);
+      showStatus(t('workflowStatusWrongAccount', [provider.name, org.expected, org.found]));
       showButtons(true, false, false, true, false, false, true);
       // Keep watching: when the user switches account the poll retries this guard.
       startLoginPolling(tabId, provider);
       return;
     }
 
-    showStatus(`Scanning ${provider.name} for invoices...`);
+    showStatus(t('workflowStatusScanning', [provider.name]));
 
     // Provider-level skipDedup overrides the parameter
     if (provider.skipDedup) skipDedup = true;
@@ -3171,7 +3183,7 @@ async function executeDownload(tabId, provider, { skipDedup = false, _afterAccou
     async function downloadPageInvoices(invoices, currentFrameId) {
       for (const inv of invoices) {
         const idx = allInvoices.length + dlSuccess + dlErrors.length;
-        showStatus(`${provider.name}: downloading ${idx + 1}...`);
+        showStatus(t('workflowStatusDownloadingN', [provider.name, idx + 1]));
         try {
           const dlResult = await downloadInvoice(tabId, inv, provider, currentFrameId);
           if (dlResult.success) {
@@ -3179,10 +3191,10 @@ async function executeDownload(tabId, provider, { skipDedup = false, _afterAccou
             downloadedInvoices.push(inv);
             addToDownloadFeed(provider, inv);
           } else {
-            dlErrors.push(`Invoice: ${dlResult.error}`);
+            dlErrors.push(t('workflowInvoiceError', [dlResult.error]));
           }
         } catch (e) {
-          dlErrors.push(`Invoice: ${e.message}`);
+          dlErrors.push(t('workflowInvoiceError', [e.message]));
         }
         await new Promise(r => setTimeout(r, 300));
       }
@@ -3228,7 +3240,7 @@ async function executeDownload(tabId, provider, { skipDedup = false, _afterAccou
         if (!nextResult?.clicked) break;
 
         pageNum++;
-        showStatus(`${provider.name}: page ${pageNum} — scanning...`);
+        showStatus(t('workflowStatusPageScanning', [provider.name, pageNum]));
 
         const pageResult = await extractInvoices(tabId, provider, frameId, paginationState);
         if (!pageResult?.invoices?.length || pageResult.stoppedByDate) break;
@@ -3250,7 +3262,7 @@ async function executeDownload(tabId, provider, { skipDedup = false, _afterAccou
         if (!nextUrl) break;
 
         pageNum++;
-        showStatus(`${provider.name}: page ${pageNum} — loading...`);
+        showStatus(t('workflowStatusPageLoading', [provider.name, pageNum]));
         await chrome.tabs.update(tabId, { url: nextUrl });
         await new Promise(r => setTimeout(r, pagination.wait || 3000));
 
@@ -3266,7 +3278,7 @@ async function executeDownload(tabId, provider, { skipDedup = false, _afterAccou
           }
         }
 
-        showStatus(`${provider.name}: page ${pageNum} — scanning...`);
+        showStatus(t('workflowStatusPageScanning', [provider.name, pageNum]));
         const pageResult = await extractInvoices(tabId, provider, ifrId, paginationState);
         if (!pageResult?.invoices?.length || pageResult.stoppedByDate) break;
         paginationState.seen = pageResult.seen || paginationState.seen;
@@ -3287,19 +3299,23 @@ async function executeDownload(tabId, provider, { skipDedup = false, _afterAccou
       stopCapturingDownloads();
 
       let skipReason;
+      let showRetry = false;
       if (result?.rowsFound === 0) {
-        skipReason = 'No invoices found on page';
+        skipReason = t('workflowSkipNoInvoices');
       } else if (result?.rowsFilteredByDate > 0 && result?.rowsDeduped === 0) {
-        skipReason = `${result.rowsFound} invoices found, all before ${state.sinceDate || 'date filter'}`;
+        const since = state.sinceDate
+          ? new Date(`${state.sinceDate}T00:00:00`).toLocaleDateString(uiLanguage())
+          : t('workflowDateFilter');
+        skipReason = t('workflowSkipAllBeforeDate', [result.rowsFound, since]);
       } else if (result?.rowsDeduped > 0) {
-        skipReason = 'All invoices already downloaded';
+        skipReason = t('workflowSkipAllDownloaded');
+        showRetry = true;
       } else {
-        skipReason = 'No invoices matched filters';
+        skipReason = t('workflowSkipNoMatch');
       }
 
-      showStatus(`${provider.name}: ${skipReason.toLowerCase()}`);
+      showStatus(t('workflowStatusProviderMessage', [provider.name, skipReason.toLowerCase()]));
       addToSkipped(workflowKey(provider), skipReason);
-      const showRetry = skipReason === 'All invoices already downloaded';
       showButtons(false, false, true, false, false, showRetry);
       updateProgress();
       updateSitesList();
@@ -3315,11 +3331,11 @@ async function executeDownload(tabId, provider, { skipDedup = false, _afterAccou
 
     // 6. Download remaining non-click-download invoices (click-download already done per-page)
     if (allInvoices.length > 0) {
-      showStatus(`${provider.name}: found ${allInvoices.length} invoice${allInvoices.length !== 1 ? 's' : ''}, downloading...`);
+      showStatus(tp('workflowStatusFound', allInvoices.length, [provider.name, allInvoices.length]));
 
       for (let i = 0; i < allInvoices.length; i++) {
         const inv = allInvoices[i];
-        showStatus(`${provider.name}: downloading ${i + 1} of ${allInvoices.length}...`);
+        showStatus(t('workflowStatusDownloadingOf', [provider.name, i + 1, allInvoices.length]));
 
         try {
           const dlResult = await downloadInvoice(tabId, inv, provider, frameId);
@@ -3328,10 +3344,10 @@ async function executeDownload(tabId, provider, { skipDedup = false, _afterAccou
             downloadedInvoices.push(inv);
             addToDownloadFeed(provider, inv);
           } else {
-            dlErrors.push(`Invoice ${i + 1}: ${dlResult.error}`);
+            dlErrors.push(t('workflowInvoiceErrorN', [i + 1, dlResult.error]));
           }
         } catch (e) {
-          dlErrors.push(`Invoice ${i + 1}: ${e.message}`);
+          dlErrors.push(t('workflowInvoiceErrorN', [i + 1, e.message]));
         }
         await new Promise(r => setTimeout(r, 300));
       }
@@ -3339,9 +3355,9 @@ async function executeDownload(tabId, provider, { skipDedup = false, _afterAccou
 
     // 7. Final status
     if (dlErrors.length > 0) {
-      showStatus(`${provider.name}: ${dlSuccess} of ${totalInvoices} downloaded (${dlErrors.length} failed)`);
+      showStatus(t('workflowStatusPartial', [provider.name, dlSuccess, totalInvoices, dlErrors.length]));
     } else {
-      showStatus(`${provider.name}: ${dlSuccess} invoice${dlSuccess !== 1 ? 's' : ''} downloaded`);
+      showStatus(tp('workflowStatusDone', dlSuccess, [provider.name, dlSuccess]));
     }
 
     // Stop capturing and collect download IDs
@@ -3377,7 +3393,7 @@ async function executeDownload(tabId, provider, { skipDedup = false, _afterAccou
     stopCapturingDownloads();
     lastProviderError = error.message;
     console.error('Error executing script:', error);
-    showStatus(`Error: ${error.message}`);
+    showStatus(t('commonErrorPrefix', [error.message]));
     showButtons(true, false, false, true, false, true);
   }
 }
@@ -3387,7 +3403,7 @@ async function gotoBillingPage() {
   if (!provider) return;
 
   const billingUrl = resolveBillingUrl(provider);
-  showStatus(`Navigating to ${provider.name} billing page...`);
+  showStatus(t('workflowStatusNavigating', [provider.name]));
   showButtons(false, false, false, true);
 
   // Find existing provider tab or create one
@@ -3404,7 +3420,7 @@ async function gotoBillingPage() {
   refocusPopup();
 
   if (!targetTab) {
-    showStatus(`Could not open ${provider.name}`);
+    showStatus(t('workflowStatusCouldNotOpen', [provider.name]));
     showButtons(true, false, false, true, false, false, true);
     return;
   }
@@ -3412,26 +3428,26 @@ async function gotoBillingPage() {
   currentProviderTabId = targetTab.id;
 
   // Wait for tab to finish loading before polling readySelector
-  showStatus(`${provider.name}: loading page...`);
+  showStatus(t('workflowStatusLoadingPage', [provider.name]));
   await waitForTabLoad(targetTab.id, 15000);
   await new Promise(r => setTimeout(r, 2000));
 
   // Wait for readySelector
-  showStatus(`${provider.name}: waiting for billing data...`);
+  showStatus(t('workflowStatusWaitingData', [provider.name]));
   const result = await waitForSelector(
     targetTab.id,
     provider.readySelector,
     30,
-    (attempt, max) => showStatus(`${provider.name}: detecting billing page... (${attempt}s)`),
+    (attempt, max) => showStatus(t('workflowStatusDetecting', [provider.name, attempt])),
     provider.iframe?.urlPattern || null
   );
 
   if (result.success) {
-    showStatus(`${provider.name}: billing page loaded, starting download...`);
+    showStatus(t('workflowStatusLoadedStarting', [provider.name]));
     showButtons(false, true, false, false, true);
     await executeDownload(targetTab.id, provider);
   } else {
-    showStatus(`${provider.name}: billing page not detected — log in, then click "Ready"`);
+    showStatus(t('workflowStatusNotDetected', [provider.name]));
     showButtons(true, false, false, true, false, false, true);
   }
 }
@@ -3445,10 +3461,10 @@ async function handleLoggedIn() {
   let targetTab = await findProviderTab(provider.id, resolveBillingUrl(provider));
 
   if (!targetTab) {
-    showStatus(`No tab found for ${provider.name}. Opening billing page...`);
+    showStatus(t('workflowStatusNoTab', [provider.name]));
     const billingUrl = resolveBillingUrl(provider);
     await createTabInBrowser(billingUrl);
-    showStatus(`Log in to ${provider.name}, then click "Ready"`);
+    showStatus(t('workflowStatusLogInReady', [provider.name]));
     showButtons(true, false, false, true);
     return;
   }
@@ -3459,23 +3475,23 @@ async function handleLoggedIn() {
   await chrome.windows.update(targetTab.windowId, { focused: true });
   refocusPopup();
 
-  showStatus(`Waiting for ${provider.name} to load...`);
+  showStatus(t('workflowStatusWaitingLoad', [provider.name]));
   showButtons(false, false, false, false, false, false);
 
   const result = await waitForSelector(
     targetTab.id,
     provider.readySelector,
     60,
-    (attempt, max) => showStatus(`Waiting for ${provider.name} to load... (${attempt}/${max}s)`),
+    (attempt, max) => showStatus(t('workflowStatusWaitingLoadProgress', [provider.name, attempt, max])),
     provider.iframe?.urlPattern || null
   );
 
   if (result.success) {
-    showStatus(`Downloading invoices from ${provider.name}...`);
+    showStatus(t('workflowStatusDownloadingFrom', [provider.name]));
     showButtons(false, true, false, false, true);
     await executeDownload(targetTab.id, provider);
   } else {
-    showStatus(`Error: ${result.error}. Check selectors or page structure.`);
+    showStatus(t('workflowStatusSelectorError', [result.error]));
     showButtons(true, false, false, true, false, true);
   }
 }
@@ -3488,10 +3504,10 @@ async function retryDownload() {
   let targetTab = await findProviderTab(provider.id, resolveBillingUrl(provider));
 
   if (!targetTab) {
-    showStatus(`No tab found for ${provider.name}. Opening billing page...`);
+    showStatus(t('workflowStatusNoTab', [provider.name]));
     const billingUrl = resolveBillingUrl(provider);
     await createTabInBrowser(billingUrl);
-    showStatus(`Log in to ${provider.name}, then click "Retry download"`);
+    showStatus(t('workflowStatusLogInRetry', [provider.name]));
     showButtons(false, false, false, true, false, true);
     return;
   }
@@ -3503,23 +3519,23 @@ async function retryDownload() {
   await chrome.windows.update(targetTab.windowId, { focused: true });
   refocusPopup();
 
-  showStatus(`Waiting for ${provider.name} to load...`);
+  showStatus(t('workflowStatusWaitingLoad', [provider.name]));
   showButtons(false, false, false, false, false, false);
 
   const result = await waitForSelector(
     targetTab.id,
     provider.readySelector,
     60,
-    (attempt, max) => showStatus(`Waiting for ${provider.name} to load... (${attempt}/${max}s)`),
+    (attempt, max) => showStatus(t('workflowStatusWaitingLoadProgress', [provider.name, attempt, max])),
     provider.iframe?.urlPattern || null
   );
 
   if (result.success) {
-    showStatus(`Retrying download from ${provider.name}...`);
+    showStatus(t('workflowStatusRetrying', [provider.name]));
     showButtons(false, true, false, false, true);
     await executeDownload(targetTab.id, provider, { skipDedup: true });
   } else {
-    showStatus(`Error: ${result.error}. Check selectors or page structure.`);
+    showStatus(t('workflowStatusSelectorError', [result.error]));
     showButtons(false, false, false, true, false, true);
   }
 }
@@ -3540,8 +3556,8 @@ async function skipCurrent() {
   const provider = workflowProviders[state.currentIndex];
   if (provider) {
     const reason = lastProviderError
-      ? `Error: ${lastProviderError}`
-      : 'Skipped by user';
+      ? t('commonErrorPrefix', [lastProviderError])
+      : t('workflowSkippedByUser');
     addToSkipped(workflowKey(provider), reason);
     lastProviderError = null;
   }
@@ -3564,6 +3580,16 @@ async function processNextSite() {
 // =====================================================
 let historySort = { column: 'downloadedAt', asc: false };
 
+const CURRENCY_CODES = { '€': 'EUR', '$': 'USD', '£': 'GBP' };
+
+function formatAmountTotal(symbol, value) {
+  const code = CURRENCY_CODES[symbol];
+  if (code) {
+    return new Intl.NumberFormat(uiLanguage(), { style: 'currency', currency: code, currencyDisplay: 'narrowSymbol' }).format(value);
+  }
+  return `${symbol}${new Intl.NumberFormat(uiLanguage(), { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)}`;
+}
+
 async function renderHistory(filterProviderId = null) {
   const history = await loadDownloadHistory();
 
@@ -3574,7 +3600,8 @@ async function renderHistory(filterProviderId = null) {
   for (const h of history) {
     if (!providerMap.has(h.providerId)) providerMap.set(h.providerId, h.providerName || h.providerId);
   }
-  select.innerHTML = '<option value="">All providers</option>';
+  select.innerHTML = '';
+  select.append(new Option(t('historyAllProviders'), ''));
   for (const [id, name] of providerMap) {
     select.innerHTML += `<option value="${escapeHtml(id)}">${escapeHtml(name)}</option>`;
   }
@@ -3628,7 +3655,7 @@ async function renderHistory(filterProviderId = null) {
     const key = currency || '?';
     totals[key] = (totals[key] || 0) + value;
   }
-  const parts = Object.entries(totals).map(([cur, val]) => `${cur}${val.toFixed(2)}`);
+  const parts = Object.entries(totals).map(([cur, val]) => formatAmountTotal(cur, val));
   document.getElementById('hist-stat-amount').textContent = parts.length > 0 ? parts.join(' + ') : '\u2014';
 
   // Sort
@@ -3643,15 +3670,16 @@ async function renderHistory(filterProviderId = null) {
   // Render table
   const container = document.getElementById('history-table-container');
   if (filtered.length === 0) {
-    container.innerHTML = '<div class="empty-state"><div class="emoji">\ud83d\udced</div><p>No invoices found</p></div>';
+    const emptyText = history.length === 0 ? t('historyEmpty') : t('historyNoMatches');
+    container.innerHTML = `<div class="empty-state"><div class="emoji" aria-hidden="true">\ud83d\udced</div><p>${escapeHtml(emptyText)}</p></div>`;
     return;
   }
 
   let html = `<table class="history-table"><thead><tr>
     <th></th>
-    <th data-sort="providerName">Provider</th>
-    <th data-sort="date">Date</th>
-    <th data-sort="amount">Amount</th>
+    <th data-sort="providerName">${escapeHtml(t('historyColProvider'))}</th>
+    <th data-sort="date">${escapeHtml(t('historyColDate'))}</th>
+    <th data-sort="amount">${escapeHtml(t('historyColAmount'))}</th>
     <th></th>
   </tr></thead><tbody>`;
   for (let idx = 0; idx < filtered.length; idx++) {
@@ -3663,7 +3691,7 @@ async function renderHistory(filterProviderId = null) {
       <td>${escapeHtml(e.providerName || e.providerId)}</td>
       <td>${escapeHtml(e.date || '\u2014')}</td>
       <td class="amount-cell">${escapeHtml(e.amount || '\u2014')}</td>
-      <td class="delete-cell"><button class="btn-delete-row" data-idx="${idx}" title="Delete">\u00d7</button></td>
+      <td class="delete-cell"><button class="btn-delete-row" data-idx="${idx}" title="${escapeHtml(t('commonDelete'))}">\u00d7</button></td>
     </tr>`;
   }
   html += '</tbody></table>';
@@ -3812,11 +3840,11 @@ function showRecordStep(step) {
   const backBtn = document.getElementById('record-back');
   if (backBtn) {
     if (step === 'recording') {
-      backBtn.textContent = '\u2190 Cancel';
+      backBtn.textContent = t('commonCancelBack');
     } else if (step === 'result') {
-      backBtn.textContent = '\u2190 Done';
+      backBtn.textContent = t('commonDoneBack');
     } else {
-      backBtn.textContent = '\u2190 Back';
+      backBtn.textContent = t('commonBack');
     }
   }
 }
@@ -3851,7 +3879,7 @@ async function startRecording() {
   const durationEl = document.getElementById('record-duration');
   if (clickEl) clickEl.textContent = '0';
   if (networkEl) networkEl.textContent = '0';
-  if (durationEl) durationEl.textContent = '0s';
+  if (durationEl) durationEl.textContent = t('recordDurationValue', [0]);
   await saveRecordState();
 
   recordState.tabIds = new Set([tab.id]);
@@ -3992,7 +4020,7 @@ async function updateRecordStatus() {
   // Duration always from popup.js startTime — never freezes
   const durationEl = document.getElementById('record-duration');
   if (durationEl && recordState.startTime) {
-    durationEl.textContent = `${Math.floor((Date.now() - recordState.startTime) / 1000)}s`;
+    durationEl.textContent = t('recordDurationValue', [Math.floor((Date.now() - recordState.startTime) / 1000)]);
   }
 
   // Aggregate click/network counts from ALL frames (main + iframes) in one call
@@ -4253,7 +4281,7 @@ async function stopRecording() {
     if (actionsEl) actionsEl.textContent = data.actions?.length || 0;
     if (networkEl) networkEl.textContent = data.networkRequests?.length || 0;
     if (downloadsEl) downloadsEl.textContent = data.downloads?.length || 0;
-    if (durationEl) durationEl.textContent = `${Math.floor((data.duration || 0) / 1000)}s`;
+    if (durationEl) durationEl.textContent = t('recordDurationValue', [Math.floor((data.duration || 0) / 1000)]);
   }
   showRecordStep('result');
 }
@@ -4380,7 +4408,7 @@ async function renderProfiles() {
   container.innerHTML = '';
 
   if (profiles.length === 0) {
-    container.innerHTML = '<div class="empty-state"><p>No profiles yet. Create one to save your current setup.</p></div>';
+    container.innerHTML = `<div class="empty-state"><p>${escapeHtml(t('profilesEmpty'))}</p></div>`;
     return;
   }
 
@@ -4391,19 +4419,19 @@ async function renderProfiles() {
     const div = document.createElement('div');
     div.className = `profile-item${isLoaded ? ' active' : ''}`;
     const metaText = hasSaved
-      ? `${provCount} provider${provCount !== 1 ? 's' : ''}`
-      : 'Pending configuration — set up providers, then Save';
+      ? tp('commonProvidersCount', provCount)
+      : t('profilesPending');
     div.innerHTML = `
       <div style="flex: 1; min-width: 0;">
         <span class="profile-item-name"></span>
-        <div class="profile-item-meta">${metaText}</div>
+        <div class="profile-item-meta">${escapeHtml(metaText)}</div>
       </div>
-      ${isLoaded ? '<span class="profile-item-badge">Loaded</span>' : ''}
+      ${isLoaded ? `<span class="profile-item-badge">${escapeHtml(t('profilesLoaded'))}</span>` : ''}
       <div class="profile-item-actions">
-        ${hasSaved ? '<button class="btn-load-profile" title="Load this profile">Load</button>' : ''}
-        <button class="btn-save-profile" title="Save current settings to this profile">Save</button>
-        <button class="btn-rename-profile" title="Rename">&#9998;</button>
-        <button class="btn-delete-profile" title="Delete">&times;</button>
+        ${hasSaved ? `<button class="btn-load-profile" title="${escapeHtml(t('profilesLoadTitle'))}">${escapeHtml(t('profilesLoad'))}</button>` : ''}
+        <button class="btn-save-profile" title="${escapeHtml(t('homeProfileSaveTitle'))}">${escapeHtml(t('commonSave'))}</button>
+        <button class="btn-rename-profile" title="${escapeHtml(t('profilesRename'))}">&#9998;</button>
+        <button class="btn-delete-profile" title="${escapeHtml(t('commonDelete'))}">&times;</button>
       </div>
     `;
     div.querySelector('.profile-item-name').textContent = p.name;
@@ -4425,7 +4453,7 @@ async function renderProfiles() {
     btn.addEventListener('click', async () => {
       const id = btn.dataset.id;
       const profile = profiles.find(p => p.id === id);
-      if (profile?.snapshot && !confirm(`Overwrite "${profile.name}" with current settings?`)) return;
+      if (profile?.snapshot && !confirm(t('profilesConfirmOverwrite', [profile.name]))) return;
       await saveCurrentToProfile(id);
       renderProfiles();
       renderHome();
@@ -4437,7 +4465,7 @@ async function renderProfiles() {
     btn.addEventListener('click', async () => {
       const id = btn.dataset.id;
       const current = profiles.find(p => p.id === id);
-      const newName = prompt('Rename profile:', current?.name || '');
+      const newName = prompt(t('profilesPromptRename'), current?.name || '');
       if (newName && newName.trim()) {
         await renameProfile(id, newName.trim());
         renderProfiles();
@@ -4451,7 +4479,7 @@ async function renderProfiles() {
     btn.addEventListener('click', async () => {
       const id = btn.dataset.id;
       const profile = profiles.find(p => p.id === id);
-      if (!confirm(`Delete profile "${profile?.name}"?`)) return;
+      if (!confirm(t('profilesConfirmDelete', [profile?.name]))) return;
       await deleteProfile(id);
       renderProfiles();
       renderHome();
@@ -4476,15 +4504,15 @@ function setupEventListeners() {
     }
     const profile = profiles.find(p => p.id === id);
     if (!profile?.snapshot) {
-      alert(`Profile "${profile?.name}" has no saved settings yet. Use Edit → Save to save current settings.`);
+      alert(t('homeProfileNoSnapshot', [profile?.name]));
       e.target.value = loadedProfileId || '';
       return;
     }
     // Warn about unsaved changes
     if (isProfileDirty()) {
       const currentProfile = profiles.find(p => p.id === loadedProfileId);
-      const currentName = currentProfile?.name || 'current profile';
-      if (!confirm(`You have unsaved changes in "${currentName}".\n\nSwitch to "${profile.name}" and discard changes?`)) {
+      const currentName = currentProfile?.name || t('homeCurrentProfile');
+      if (!confirm(t('homeConfirmDiscard', [currentName, profile.name]))) {
         e.target.value = loadedProfileId || '';
         return;
       }
@@ -4516,7 +4544,7 @@ function setupEventListeners() {
   });
 
   document.getElementById('btn-new-profile-quick').addEventListener('click', async () => {
-    const name = prompt('New profile name:');
+    const name = prompt(t('profilesPromptNew'));
     if (!name || !name.trim()) return;
     await createProfile(name.trim(), false);
     renderProfiles();
@@ -4553,7 +4581,7 @@ function setupEventListeners() {
     const tab = await getActiveBrowserTab();
     if (tab) {
       recordState.pendingTab = tab;
-      document.getElementById('confirm-tab-title').textContent = tab.title || 'Unknown';
+      document.getElementById('confirm-tab-title').textContent = tab.title || t('recordUnknownTab');
       document.getElementById('confirm-tab-url').textContent = tab.url || '';
     }
   });
@@ -4589,7 +4617,7 @@ function setupEventListeners() {
   // Workflow
   document.getElementById('workflow-back').addEventListener('click', () => {
     if (state.isRunning) {
-      if (!confirm('Stop the current download?')) return;
+      if (!confirm(t('workflowConfirmStop'))) return;
       state.isRunning = false;
     }
     nav.home();
@@ -4659,14 +4687,14 @@ function setupEventListeners() {
     if (toDelete.length === 0) return;
 
     const label = provFilter
-      ? `Delete ${toDelete.length} invoice(s) from ${provFilter}?`
-      : `Delete ${toDelete.length} filtered invoice(s)?`;
+      ? t('historyConfirmDeleteProvider', [toDelete.length, provFilter])
+      : t('historyConfirmDeleteFiltered', [toDelete.length]);
     if (!confirm(label)) return;
 
     // Delete files from disk
     const filesWithId = toDelete.filter(e => e.downloadId);
     if (filesWithId.length > 0) {
-      const deleteFiles = confirm(`Also delete ${filesWithId.length} file(s) from disk?`);
+      const deleteFiles = confirm(t('historyConfirmDeleteFiles', [filesWithId.length]));
       if (deleteFiles) {
         for (const entry of filesWithId) {
           try { await chrome.downloads.removeFile(entry.downloadId); } catch (e) {}
@@ -4683,13 +4711,13 @@ function setupEventListeners() {
 
   // Clear all history
   document.getElementById('btn-clear-history').addEventListener('click', async () => {
-    if (!confirm('Clear all download history?')) return;
+    if (!confirm(t('historyConfirmClear'))) return;
 
     const history = await loadDownloadHistory();
     const filesWithId = history.filter(e => e.downloadId);
 
     if (filesWithId.length > 0) {
-      const deleteFiles = confirm(`Also delete ${filesWithId.length} downloaded file(s) from disk?`);
+      const deleteFiles = confirm(t('historyConfirmDeleteDownloadedFiles', [filesWithId.length]));
       if (deleteFiles) {
         for (const entry of filesWithId) {
           try { await chrome.downloads.removeFile(entry.downloadId); } catch (e) {}
@@ -4754,6 +4782,12 @@ function setupEventListeners() {
 // =====================================================
 // INIT
 // =====================================================
+
+// Lucide-style icons for the floating-window toggle (no emoji in UI)
+const ICON_SVG_OPEN = '<svg class="ie-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">';
+const ICON_PIN = `${ICON_SVG_OPEN}<path d="M12 17v5"/><path d="M9 10.8a2 2 0 0 1-1.1 1.8l-1.8.9A2 2 0 0 0 5 15.2V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.8a2 2 0 0 0-1.1-1.8l-1.8-.9a2 2 0 0 1-1.1-1.8V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1Z"/></svg>`;
+const ICON_WINDOW = `${ICON_SVG_OPEN}<rect x="2" y="4" width="20" height="16" rx="2"/><path d="M10 4v4"/><path d="M2 8h20"/><path d="M6 4v4"/></svg>`;
+
 async function init() {
   // Floating window logic (keep existing auto-float behavior)
   const currentWindow = await chrome.windows.getCurrent();
@@ -4761,7 +4795,7 @@ async function init() {
   const floatBtn = document.getElementById('btn-toggle-float');
 
   if (isFloating) {
-    if (floatBtn) { floatBtn.textContent = '\ud83d\udccc'; floatBtn.title = 'Switch to popup mode'; }
+    if (floatBtn) { floatBtn.innerHTML = ICON_PIN; setButtonLabel(floatBtn, t('homeFloatToPopup')); }
     // Save this window ID so future clicks can refocus it
     await chrome.storage.local.set({ floatingWindowId: currentWindow.id });
   } else {
@@ -4788,7 +4822,7 @@ async function init() {
       window.close();
       return;
     }
-    if (floatBtn) { floatBtn.textContent = '\ud83e\ude9f'; floatBtn.title = 'Open as floating window'; }
+    if (floatBtn) { floatBtn.innerHTML = ICON_WINDOW; setButtonLabel(floatBtn, t('homeFloatOpen')); }
   }
 
   // Store popup window ID for refocusing

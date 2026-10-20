@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "Invoice Extractor",
+  "name": "__MSG_extName__",
+  "default_locale": "en",
   "version": "2.4",
-  "description": "Automatically download invoices from SaaS billing pages using declarative JSON providers",
+  "description": "__MSG_extDescription__",
   "permissions": [
     "activeTab",
     "scripting",
@@ -24,6 +25,7 @@
   },
   "action": {
     "default_popup": "popup.html",
+    "default_title": "__MSG_extActionTitle__",
     "default_icon": {
       "16": "icons/icon16.png",
       "32": "icons/icon32.png",

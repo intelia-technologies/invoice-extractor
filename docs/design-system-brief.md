@@ -1,5 +1,7 @@
 # Invoice Extractor — Briefing para el design system
 
+> **Estado (octubre de 2026):** este briefing ya se ha resuelto con el design system «Calco». La referencia vigente está en `design/README.md` y `design/specimen.html`; este documento se conserva como contexto histórico.
+
 > Documento para el diseñador o estudio que va a crear el design system de Invoice Extractor. Se puede leer sin contexto previo.
 > Fecha: octubre de 2026 · Responsable de producto: Pablo Muñiz (Intelia) · Estado del producto: **beta pública**
 

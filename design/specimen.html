@@ -1,0 +1,570 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Calco Design System</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="fonts.css">
+<link rel="stylesheet" href="tokens.css">
+<style>
+/* Specimen of the "Calco" design system. Everything here is built only from --ie-* tokens. */
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--ie-bg);
+  color: var(--ie-text);
+  font: var(--ie-weight-regular) var(--ie-fs-md)/var(--ie-lh-body) var(--ie-font-sans);
+  font-variant-numeric: tabular-nums;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 var(--ie-space-16);
+}
+.wrap { max-width: var(--ie-size-content); margin: 0 auto; }
+a { color: var(--ie-accent-text); text-underline-offset: 3px; }
+:focus-visible { outline: 2px solid var(--ie-focus); outline-offset: 2px; }
+code, .mono { font-family: var(--ie-font-mono); font-size: 0.88em; }
+
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10; display: flex; align-items: center; justify-content: space-between; gap: var(--ie-space-4); margin: 0 calc(-1 * max(16px, env(safe-area-inset-left, 0px))); padding: var(--ie-space-3) max(16px, env(safe-area-inset-left, 0px)); background: var(--ie-bg); border-bottom: 1px solid var(--ie-border); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 11; background: var(--ie-bg); }
+.brand { display: flex; align-items: center; gap: var(--ie-space-2); font: var(--ie-weight-black) 20px/1 var(--ie-font-display); letter-spacing: -0.02em; }
+.brand img { width: 28px; height: 28px; }
+.top nav { display: flex; gap: var(--ie-space-1); flex-wrap: wrap; }
+.top nav a { padding: var(--ie-space-1) var(--ie-space-2); border-radius: var(--ie-radius-sm); color: var(--ie-text-2); font-size: var(--ie-fs-xs); text-decoration: none; }
+.top nav a:hover { background: var(--ie-surface-2); color: var(--ie-text); }
+@media (max-width: 760px) { .top nav { display: none; } }
+
+.hero { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: var(--ie-space-10); align-items: center; padding: var(--ie-space-16) 0 var(--ie-space-12); }
+@media (max-width: 760px) { .hero { grid-template-columns: minmax(0, 1fr); padding-top: var(--ie-space-10); } }
+.eyebrow { font: var(--ie-weight-semibold) var(--ie-fs-xs)/1 var(--ie-font-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ie-text-3); }
+h1 { margin: var(--ie-space-3) 0 var(--ie-space-4); font: var(--ie-weight-black) var(--ie-fs-display)/var(--ie-lh-tight) var(--ie-font-display); letter-spacing: -0.035em; text-wrap: balance; }
+h1 em { font-style: normal; color: var(--ie-accent-text); }
+.lede { max-width: 56ch; margin: 0; font-size: var(--ie-fs-lg); color: var(--ie-text-2); }
+.hero-art { position: relative; justify-self: center; width: min(320px, 80vw); aspect-ratio: 1; max-width: 100%; }
+.hero-art img { width: 100%; height: 100%; }
+.hero-art .stamp { position: absolute; right: 4%; bottom: 8%; padding: var(--ie-space-2) var(--ie-space-3); border: 3px solid var(--ie-success); border-radius: var(--ie-radius-sm); color: var(--ie-success); font: var(--ie-weight-black) var(--ie-fs-lg)/1 var(--ie-font-display); letter-spacing: 0.08em; text-transform: uppercase; background: var(--ie-bg); transform: rotate(-10deg); animation: stamp var(--ie-duration-stamp) var(--ie-ease-stamp) 300ms both; }
+
+section { padding: var(--ie-space-12) 0; border-top: 1px solid var(--ie-border); }
+.sec-head { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: var(--ie-space-6); margin-bottom: var(--ie-space-8); }
+@media (max-width: 760px) { .sec-head { grid-template-columns: minmax(0, 1fr); gap: var(--ie-space-2); } }
+h2 { margin: 0; font: var(--ie-weight-black) var(--ie-fs-2xl)/var(--ie-lh-snug) var(--ie-font-display); letter-spacing: -0.02em; }
+h3 { margin: 0 0 var(--ie-space-3); font: var(--ie-weight-bold) var(--ie-fs-md)/var(--ie-lh-snug) var(--ie-font-sans); }
+.sec-head p { max-width: var(--ie-size-measure); margin: 0; color: var(--ie-text-2); }
+.grid { display: grid; gap: var(--ie-space-4); }
+.g2 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); }
+.g3 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); }
+.g4 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); }
+.panel { min-width: 0; padding: var(--ie-space-5); background: var(--ie-surface); border: 1px solid var(--ie-border); border-radius: var(--ie-radius-md); }
+.note { font-size: var(--ie-fs-xs); color: var(--ie-text-3); }
+
+/* Theme switch */
+.theme-switch { display: inline-flex; padding: 2px; border: 1px solid var(--ie-border-strong); border-radius: var(--ie-radius-pill); background: var(--ie-surface); }
+.theme-switch button { min-height: 28px; padding: 0 var(--ie-space-3); border: 0; border-radius: var(--ie-radius-pill); background: none; color: var(--ie-text-2); font: var(--ie-weight-bold) var(--ie-fs-xs)/1 var(--ie-font-sans); cursor: pointer; }
+.theme-switch button[aria-pressed="true"] { background: var(--ie-text); color: var(--ie-bg); }
+
+/* Swatches */
+.swatch { display: grid; grid-template-rows: 72px auto; overflow: hidden; border: 1px solid var(--ie-border); border-radius: var(--ie-radius-sm); background: var(--ie-surface); }
+.swatch .chip { display: flex; align-items: end; padding: var(--ie-space-2); font: var(--ie-weight-bold) var(--ie-fs-xs)/1 var(--ie-font-sans); }
+.swatch .meta { padding: var(--ie-space-2) var(--ie-space-3); font-size: var(--ie-fs-xs); }
+.swatch .meta b { display: block; font-family: var(--ie-font-mono); font-weight: var(--ie-weight-semibold); }
+.swatch .meta span { color: var(--ie-text-3); font-family: var(--ie-font-mono); }
+.ramp { display: grid; grid-template-columns: repeat(auto-fit, minmax(64px, 1fr)); border-radius: var(--ie-radius-sm); overflow: hidden; border: 1px solid var(--ie-border); }
+.ramp div { min-height: 56px; padding: var(--ie-space-1) var(--ie-space-2); font: var(--ie-fs-2xs)/1.3 var(--ie-font-mono); display: flex; align-items: end; }
+.ramp-label { margin: var(--ie-space-4) 0 var(--ie-space-1); font: var(--ie-weight-semibold) var(--ie-fs-xs)/1 var(--ie-font-mono); color: var(--ie-text-2); }
+
+.table-box { overflow-x: auto; border: 1px solid var(--ie-border); border-radius: var(--ie-radius-md); background: var(--ie-surface); }
+table { width: 100%; min-width: 520px; border-collapse: collapse; font-size: var(--ie-fs-sm); }
+th, td { padding: var(--ie-space-2) var(--ie-space-3); border-bottom: 1px solid var(--ie-border); text-align: left; }
+th { font: var(--ie-weight-semibold) var(--ie-fs-2xs)/1.3 var(--ie-font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ie-text-3); }
+tr:last-child td { border-bottom: 0; }
+.pass { color: var(--ie-success); font-weight: var(--ie-weight-bold); }
+.fail { color: var(--ie-danger); font-weight: var(--ie-weight-bold); }
+
+/* Type */
+.type-row { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: var(--ie-space-4); align-items: baseline; padding: var(--ie-space-3) 0; border-bottom: 1px dashed var(--ie-border); }
+.type-row:last-child { border-bottom: 0; }
+.type-row .mono { color: var(--ie-text-3); font-size: var(--ie-fs-xs); }
+@media (max-width: 560px) { .type-row { grid-template-columns: minmax(0, 1fr); gap: var(--ie-space-1); } }
+
+/* Spacing / radius / shadow */
+.space-row { display: flex; align-items: center; gap: var(--ie-space-3); font: var(--ie-fs-xs)/1 var(--ie-font-mono); color: var(--ie-text-2); }
+.space-row i { display: block; height: 12px; background: var(--ie-accent); border-radius: 2px; }
+.shape { display: grid; place-items: center; height: 88px; border: 1px solid var(--ie-border-strong); background: var(--ie-surface-2); font: var(--ie-fs-xs)/1 var(--ie-font-mono); color: var(--ie-text-2); }
+
+/* Components (reference implementations, same rules as popup.css and site/styles.css) */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--ie-space-2); min-height: 40px; padding: 0 var(--ie-space-4); border-radius: var(--ie-radius-sm); border: 1px solid transparent; font: var(--ie-weight-bold) var(--ie-fs-sm)/1.2 var(--ie-font-sans); cursor: pointer; transition: transform var(--ie-duration-fast) var(--ie-ease-out), box-shadow var(--ie-duration-fast) var(--ie-ease-out), background var(--ie-duration-fast) var(--ie-ease-out); }
+.btn svg { width: 18px; height: 18px; }
+.btn-primary { background: var(--ie-accent); border-color: var(--ie-accent); color: var(--ie-on-accent); box-shadow: var(--ie-shadow-copy); }
+.btn-primary:hover, .btn-primary.is-hover { background: var(--ie-accent-hover); transform: translate(-2px, -2px); box-shadow: var(--ie-shadow-copy-hover); }
+.btn-primary:active, .btn-primary.is-active { transform: translate(2px, 2px); box-shadow: var(--ie-shadow-copy-pressed); }
+.btn-secondary { background: var(--ie-surface); border-color: var(--ie-border-strong); color: var(--ie-text); }
+.btn-secondary:hover { background: var(--ie-surface-2); }
+.btn-quiet { background: none; color: var(--ie-accent-text); }
+.btn-quiet:hover { background: var(--ie-accent-soft); }
+.btn-danger { background: var(--ie-danger); border-color: var(--ie-danger); color: var(--ie-on-danger); }
+.btn-icon { width: 32px; min-height: 32px; padding: 0; background: var(--ie-surface); border-color: var(--ie-border); color: var(--ie-text-2); }
+.btn[disabled] { background: var(--ie-surface-2); border-color: var(--ie-border); color: var(--ie-text-3); box-shadow: none; transform: none; cursor: not-allowed; }
+.btn.is-loading::before { content: ""; width: 14px; height: 14px; border: 2px solid var(--ie-border-strong); border-top-color: var(--ie-accent); border-radius: 50%; animation: spin .8s linear infinite; }
+.btn.is-focus { outline: 2px solid var(--ie-focus); outline-offset: 2px; }
+.btn-states { display: flex; flex-wrap: wrap; gap: var(--ie-space-4); align-items: center; }
+.state-label { display: block; margin-top: var(--ie-space-2); font: var(--ie-fs-2xs)/1 var(--ie-font-mono); color: var(--ie-text-3); text-align: center; }
+
+.popup { width: 100%; max-width: 420px; margin: 0 auto; background: var(--ie-bg); border: 1px solid var(--ie-border-strong); border-radius: var(--ie-radius-md); overflow: hidden; font-size: var(--ie-fs-sm); }
+.popup-head { display: flex; align-items: center; justify-content: space-between; padding: var(--ie-space-4); border-bottom: 1px solid var(--ie-border); }
+.popup-body { padding: var(--ie-space-3) var(--ie-space-4) var(--ie-space-5); display: grid; gap: var(--ie-space-2); }
+.profile { display: flex; align-items: center; gap: var(--ie-space-2); min-height: 44px; padding: 0 var(--ie-space-2) 0 var(--ie-space-3); background: var(--ie-surface); border: 1px solid var(--ie-accent); box-shadow: inset 3px 0 0 var(--ie-accent); border-radius: var(--ie-radius-md); }
+.label { font: var(--ie-weight-semibold) var(--ie-fs-2xs)/1 var(--ie-font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ie-accent-text); }
+.profile b { flex: 1; }
+.profile .link { padding: var(--ie-space-1) var(--ie-space-2); border-radius: var(--ie-radius-sm); color: var(--ie-text-2); font-size: var(--ie-fs-xs); font-weight: var(--ie-weight-bold); }
+.download-all { display: flex; align-items: center; gap: var(--ie-space-3); margin: var(--ie-space-2) 3px var(--ie-space-2) 0; padding: var(--ie-space-3) var(--ie-space-4); background: var(--ie-accent); color: var(--ie-on-accent); border-radius: var(--ie-radius-md); box-shadow: var(--ie-shadow-copy); }
+.download-all b { display: block; font: var(--ie-weight-black) var(--ie-fs-lg)/1.2 var(--ie-font-display); }
+.download-all small { font: var(--ie-fs-2xs)/1.3 var(--ie-font-mono); opacity: .85; }
+.section-title { margin-top: var(--ie-space-3); font: var(--ie-weight-semibold) var(--ie-fs-2xs)/1 var(--ie-font-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ie-text-3); }
+.provider { display: flex; align-items: center; gap: var(--ie-space-3); min-height: 60px; padding: var(--ie-space-3) var(--ie-space-4); background: var(--ie-surface); border: 1px solid var(--ie-border); border-radius: var(--ie-radius-md); }
+.logo { display: grid; place-items: center; flex: none; width: 36px; height: 36px; background: var(--ie-logo-plate); border: 1px solid var(--ie-border); border-radius: var(--ie-radius-sm); font: var(--ie-weight-black) var(--ie-fs-sm)/1 var(--ie-font-display); color: #16181d; }
+.logo.fallback { background: var(--ie-surface-2); color: var(--ie-text-2); }
+.provider .info { flex: 1; min-width: 0; }
+.provider .info b { display: block; }
+.status { display: inline-flex; align-items: center; gap: 4px; font-size: var(--ie-fs-xs); color: var(--ie-text-2); }
+.status svg { width: 14px; height: 14px; flex: none; }
+.status.ok { color: var(--ie-success); }
+.status.warn { color: var(--ie-warning); }
+.status.err { color: var(--ie-danger); }
+.toggle { position: relative; flex: none; width: 36px; height: 22px; border-radius: var(--ie-radius-pill); background: var(--ie-surface-2); border: 1px solid var(--ie-border-strong); }
+.toggle::after { content: ""; position: absolute; top: 3px; left: 3px; width: 14px; height: 14px; border-radius: 50%; background: var(--ie-text-3); }
+.toggle.on { background: var(--ie-accent); border-color: var(--ie-accent); }
+.toggle.on::after { left: 17px; background: var(--ie-on-accent); }
+.chev { color: var(--ie-text-3); }
+
+.field { display: grid; gap: var(--ie-space-1); }
+.field label { font-size: var(--ie-fs-xs); font-weight: var(--ie-weight-bold); color: var(--ie-text-2); }
+.input { min-height: 36px; padding: var(--ie-space-2) var(--ie-space-3); background: var(--ie-surface); border: 1px solid var(--ie-border-strong); border-radius: var(--ie-radius-sm); color: var(--ie-text); font: inherit; }
+.input.is-focus { border-color: var(--ie-accent); box-shadow: 0 0 0 3px var(--ie-accent-soft); outline: none; }
+.input.is-error { border-color: var(--ie-danger); }
+.err-msg { display: flex; gap: 4px; font-size: var(--ie-fs-xs); color: var(--ie-danger); }
+.chips { display: flex; flex-wrap: wrap; gap: var(--ie-space-1); }
+.chip-v { display: inline-flex; align-items: center; gap: var(--ie-space-1); min-height: 28px; padding: 0 var(--ie-space-1) 0 var(--ie-space-3); background: var(--ie-surface-2); border: 1px solid var(--ie-border); border-radius: var(--ie-radius-pill); font: var(--ie-fs-xs)/1 var(--ie-font-mono); }
+.chip-v button { width: 22px; height: 22px; border: 0; border-radius: 50%; background: none; color: var(--ie-text-3); cursor: pointer; }
+.check { display: inline-flex; align-items: center; gap: var(--ie-space-2); font-size: var(--ie-fs-sm); }
+.box { display: grid; place-items: center; width: 18px; height: 18px; border: 1.5px solid var(--ie-border-strong); border-radius: var(--ie-radius-xs); background: var(--ie-surface); color: var(--ie-on-accent); font-size: 12px; }
+.box.on { background: var(--ie-accent); border-color: var(--ie-accent); }
+.radio { border-radius: 50%; }
+.radio.on { background: var(--ie-surface); border: 5px solid var(--ie-accent); }
+
+.progress { height: 8px; border-radius: var(--ie-radius-pill); background: var(--ie-surface-2); border: 1px solid var(--ie-border); overflow: hidden; }
+.progress i { display: block; height: 100%; width: 62%; border-radius: inherit; background: var(--ie-accent) repeating-linear-gradient(-45deg, transparent 0 6px, rgb(255 255 255 / .18) 6px 12px); background-size: 17px 17px; animation: feed .9s linear infinite; }
+.wf-counts { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--ie-space-2); }
+.wf-counts div { padding: var(--ie-space-2) var(--ie-space-3); background: var(--ie-surface); border: 1px solid var(--ie-border); border-radius: var(--ie-radius-sm); }
+.wf-counts b { display: block; font: var(--ie-weight-black) 22px/1.1 var(--ie-font-display); }
+.wf-counts span { font: var(--ie-fs-2xs)/1 var(--ie-font-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--ie-text-3); }
+
+.banner { display: flex; gap: var(--ie-space-3); padding: var(--ie-space-3) var(--ie-space-4); border: 1px solid; border-radius: var(--ie-radius-md); font-size: var(--ie-fs-sm); }
+.banner svg { flex: none; width: 20px; height: 20px; }
+.banner b { display: block; }
+.banner p { margin: 2px 0 0; color: var(--ie-text-2); }
+.banner.info { background: var(--ie-info-soft); border-color: var(--ie-info); }
+.banner.info svg { color: var(--ie-info); }
+.banner.warning { background: var(--ie-warning-soft); border-color: var(--ie-warning); }
+.banner.warning svg { color: var(--ie-warning); }
+.banner.danger { background: var(--ie-danger-soft); border-color: var(--ie-danger); }
+.banner.danger svg { color: var(--ie-danger); }
+.banner.rec { background: var(--ie-surface); border-color: var(--ie-danger); }
+.rec-dot { width: 10px; height: 10px; margin-top: 5px; flex: none; border-radius: 50%; background: var(--ie-danger); animation: rec 1.2s var(--ie-ease-in-out) infinite; }
+
+.history-row { display: grid; grid-template-columns: 76px 24px minmax(0, 1fr) auto; gap: var(--ie-space-2); align-items: center; padding: var(--ie-space-2) 0; border-bottom: 1px dashed var(--ie-border); font-size: var(--ie-fs-xs); }
+.history-row .mono { color: var(--ie-text-2); }
+.history-row .logo { width: 24px; height: 24px; font-size: 10px; border-radius: var(--ie-radius-xs); }
+.history-row .file { display: block; color: var(--ie-text-3); font-family: var(--ie-font-mono); font-size: var(--ie-fs-2xs); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.history-row .amt { font-family: var(--ie-font-mono); font-weight: var(--ie-weight-semibold); text-align: right; }
+
+.center { text-align: center; }
+.mascot-sm { width: 88px; height: 88px; margin: 0 auto var(--ie-space-3); }
+.mascot-md { position: relative; width: 120px; height: 120px; margin: 0 auto var(--ie-space-4); }
+.mascot-md img, .mascot-sm img { width: 100%; height: 100%; }
+.mascot-md .seal { position: absolute; right: -14px; bottom: 2px; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: var(--ie-success); color: var(--ie-bg); font-size: 24px; font-weight: 700; box-shadow: 0 0 0 4px var(--ie-bg); animation: stamp var(--ie-duration-stamp) var(--ie-ease-stamp) both; }
+.big-title { margin: 0; font: var(--ie-weight-black) var(--ie-fs-xl)/1.2 var(--ie-font-display); letter-spacing: -0.02em; }
+
+.term { overflow-x: auto; margin: 0; padding: var(--ie-space-4); background: #0f1115; color: #eceef2; border-radius: var(--ie-radius-md); font: var(--ie-fs-xs)/1.7 var(--ie-font-mono); }
+.term .ok { color: #5fd392; } .term .go { color: #8a8fff; } .term .no { color: #ff8a86; } .term .dim { color: #7c8290; } .term .warn { color: #f5b456; }
+
+.icons { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: var(--ie-space-2); }
+.icons figure { margin: 0; display: grid; justify-items: center; gap: var(--ie-space-2); padding: var(--ie-space-3) var(--ie-space-2); background: var(--ie-surface); border: 1px solid var(--ie-border); border-radius: var(--ie-radius-sm); }
+.icons svg { width: 24px; height: 24px; }
+.icons figcaption { font: var(--ie-fs-2xs)/1 var(--ie-font-mono); color: var(--ie-text-3); }
+.icon-sizes { display: flex; gap: var(--ie-space-4); align-items: end; }
+
+.brand-row { display: flex; flex-wrap: wrap; gap: var(--ie-space-6); align-items: end; }
+.brand-row figure { margin: 0; display: grid; justify-items: center; gap: var(--ie-space-2); }
+.brand-row figcaption { font: var(--ie-fs-2xs)/1 var(--ie-font-mono); color: var(--ie-text-3); }
+.px16 { image-rendering: pixelated; }
+.wordmark { display: flex; align-items: center; gap: var(--ie-space-3); font: var(--ie-weight-black) clamp(28px, 5vw, 44px)/1 var(--ie-font-display); letter-spacing: -0.03em; }
+.wordmark img { width: 1.1em; height: 1.1em; }
+.wordmark.compact { font-size: 22px; gap: var(--ie-space-2); }
+.wordmark small { display: block; font: var(--ie-weight-regular) var(--ie-fs-xs)/1.2 var(--ie-font-mono); letter-spacing: 0; color: var(--ie-text-3); }
+
+.dodont { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: var(--ie-space-4); }
+.dodont ul { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--ie-space-2); }
+.dodont li { position: relative; padding-left: 1.5em; }
+.do li::before { content: "✓"; position: absolute; left: 0; color: var(--ie-success); font-weight: 700; }
+.dont li::before { content: "✕"; position: absolute; left: 0; color: var(--ie-danger); font-weight: 700; }
+.do h3 { color: var(--ie-success); } .dont h3 { color: var(--ie-danger); }
+
+.copy-table td:first-child { font-family: var(--ie-font-mono); font-size: var(--ie-fs-xs); color: var(--ie-text-3); white-space: nowrap; }
+.motion-demo { display: flex; flex-wrap: wrap; gap: var(--ie-space-6); align-items: center; }
+.sheet-stack { position: relative; width: 140px; height: 90px; }
+.sheet { position: absolute; inset: 0; padding: var(--ie-space-2); background: var(--ie-surface); border: 1px solid var(--ie-border-strong); border-radius: var(--ie-radius-xs); font: var(--ie-fs-2xs)/1.6 var(--ie-font-mono); color: var(--ie-text-2); }
+.sheet.copy { background: var(--ie-accent-soft); border-color: var(--ie-accent); transform: translate(6px, 6px); z-index: -1; }
+.replay .sheet.copy { animation: copyout var(--ie-duration-slow) var(--ie-ease-stamp) both; }
+.replay .seal-demo { animation: stamp var(--ie-duration-stamp) var(--ie-ease-stamp) var(--ie-duration-slow) both; }
+.seal-demo { position: absolute; right: -16px; top: -14px; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: var(--ie-success); color: var(--ie-bg); font-weight: 700; transform: rotate(-8deg); }
+
+@keyframes stamp { 0% { opacity: 0; transform: scale(1.8) rotate(-18deg); } 60% { opacity: 1; } 100% { opacity: 1; transform: scale(1) rotate(-8deg); } }
+@keyframes copyout { from { transform: translate(0, 0); } to { transform: translate(6px, 6px); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes feed { to { background-position: 17px 0; } }
+@keyframes rec { 0%, 100% { box-shadow: 0 0 0 0 var(--ie-danger-soft); } 50% { box-shadow: 0 0 0 6px var(--ie-danger-soft); } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; } }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="m7 10 5 5 5-5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-6"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.7 18-8-14a2 2 0 0 0-3.4 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></symbol>
+    <symbol id="i-key" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></symbol>
+    <symbol id="i-history" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></symbol>
+    <symbol id="i-record" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3" fill="currentColor"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.8a2 2 0 0 1-1.1 1.8l-1.8.9A2 2 0 0 0 5 15.2V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.8a2 2 0 0 0-1.1-1.8l-1.8-.9a2 2 0 0 1-1.1-1.8V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1Z"/></symbol>
+    <symbol id="i-sync" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 13H8"/><path d="M16 17H8"/></symbol>
+    <symbol id="i-terminal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 17 6-6-6-6"/><path d="M12 19h8"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+  </defs>
+</svg>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand"><img src="brand/app-icon.svg" alt="">Calco</div>
+    <nav aria-label="Secciones">
+      <a href="#color">Color</a><a href="#type">Tipografía</a><a href="#space">Espacio</a><a href="#motion">Movimiento</a><a href="#icons">Iconos</a><a href="#brand">Marca</a><a href="#components">Componentes</a><a href="#voice">Voz</a><a href="#rules">Reglas</a>
+    </nav>
+    <div class="theme-switch" role="group" aria-label="Tema">
+      <button type="button" data-theme-set="" aria-pressed="true">Auto</button>
+      <button type="button" data-theme-set="light" aria-pressed="false">Claro</button>
+      <button type="button" data-theme-set="dark" aria-pressed="false">Oscuro</button>
+    </div>
+  </header>
+
+  <div class="hero">
+    <div>
+      <span class="eyebrow">Invoice Extractor · Design system · v1.0</span>
+      <h1>Calco: el papeleo, <em>por duplicado</em> y sin ti.</h1>
+      <p class="lede">«Calco» es el papel de calco con el que se hacían las copias de las facturas. El producto hace exactamente eso: saca una copia de cada factura y la archiva. El azul ultramar del calco es la marca; la sombra desplazada de la copia es la firma; Bonobot, el mono robot, hace el trabajo de mono.</p>
+    </div>
+    <div class="hero-art"><img src="brand/bonobot.svg" alt="Bonobot, la mascota: un bonobo robot con antena y ojos LED (provisional)"><span class="stamp">Filed</span></div>
+  </div>
+
+  <section id="color">
+    <div class="sec-head"><h2>Color</h2><p>Los componentes solo usan tokens <b>semánticos</b> (por uso). Los primitivos (por tono) existen para construir los semánticos. Cambia el tema arriba: cada token tiene valor en claro y en oscuro, y la extensión y la web siguen al sistema operativo.</p></div>
+    <h3>Semánticos</h3>
+    <div class="grid g4" id="semantic-swatches"></div>
+    <p class="ramp-label">Primitivos</p>
+    <div id="ramps"></div>
+    <h3 style="margin-top: var(--ie-space-8)">Contraste WCAG AA, calculado en vivo para el tema activo</h3>
+    <div class="table-box"><table><thead><tr><th>Texto</th><th>Fondo</th><th>Ratio</th><th>Mínimo</th><th>Resultado</th></tr></thead><tbody id="contrast-body"></tbody></table></div>
+    <p class="note" style="margin-top: var(--ie-space-2)">El test <code>npm test</code> repite esta comprobación en los dos temas y falla si una pareja baja de AA.</p>
+  </section>
+
+  <section id="type">
+    <div class="sec-head"><h2>Tipografía</h2><p>Tres familias con licencia OFL, empaquetadas dentro de la extensión y de la web (sin Google Fonts). <b>Bricolage Grotesque</b> para titulares y cifras grandes, con carácter; <b>Atkinson Hyperlegible Next</b> para la interfaz, diseñada para que 0/O y 1/l/I no se confundan, que importa cuando se leen números de factura; <b>JetBrains Mono</b> para importes, IDs y comandos.</p></div>
+    <div class="panel">
+      <div class="type-row"><span class="mono">display · web</span><span style="font: var(--ie-weight-black) var(--ie-fs-display)/1 var(--ie-font-display); letter-spacing: -0.035em">14 facturas</span></div>
+      <div class="type-row"><span class="mono">3xl · 32–56</span><span style="font: var(--ie-weight-black) var(--ie-fs-3xl)/1.1 var(--ie-font-display); letter-spacing: -0.03em">Cerrar el mes en un clic</span></div>
+      <div class="type-row"><span class="mono">2xl · 24–36</span><span style="font: var(--ie-weight-black) var(--ie-fs-2xl)/1.2 var(--ie-font-display); letter-spacing: -0.02em">Cómo funciona</span></div>
+      <div class="type-row"><span class="mono">xl · 20–24</span><span style="font: var(--ie-weight-black) var(--ie-fs-xl)/1.2 var(--ie-font-display)">Hecho. Todas las facturas archivadas.</span></div>
+      <div class="type-row"><span class="mono">lg · 18</span><span style="font-size: var(--ie-fs-lg)">Lede de la web y títulos de tarjeta en la extensión.</span></div>
+      <div class="type-row"><span class="mono">md · 16</span><span>Texto de la web. Invoice Extractor entra con las credenciales de tu gestor de contraseñas.</span></div>
+      <div class="type-row"><span class="mono">sm · 14 (base ext.)</span><span style="font-size: var(--ie-fs-sm)">Texto base de la extensión, a 420 px de ancho fijo.</span></div>
+      <div class="type-row"><span class="mono">xs · 12</span><span style="font-size: var(--ie-fs-xs); color: var(--ie-text-2)">Ayudas, subtítulos y metadatos.</span></div>
+      <div class="type-row"><span class="mono">2xs · 11 mono</span><span style="font: var(--ie-weight-semibold) var(--ie-fs-2xs)/1 var(--ie-font-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ie-text-3)">Etiquetas de sección · mínimo absoluto</span></div>
+      <div class="type-row"><span class="mono">mono · importes</span><span style="font: var(--ie-weight-semibold) var(--ie-fs-sm)/1 var(--ie-font-mono)">INV-0918 · 1.240,00 € · 0O 1lI</span></div>
+    </div>
+  </section>
+
+  <section id="space">
+    <div class="sec-head"><h2>Espacio, forma y sombra</h2><p>Retícula de 4 px común a las dos superficies. Radios pequeños: es papeleo, no un juguete. Una sola sombra con personalidad, la <b>copia</b>: un desplazamiento sólido sin difuminar, solo en la acción principal.</p></div>
+    <div class="grid g3">
+      <div class="panel" id="space-scale" style="display:grid; gap: var(--ie-space-2)"></div>
+      <div class="grid g2" style="gap: var(--ie-space-3)">
+        <div class="shape" style="border-radius: var(--ie-radius-xs)">xs · 4</div>
+        <div class="shape" style="border-radius: var(--ie-radius-sm)">sm · 6</div>
+        <div class="shape" style="border-radius: var(--ie-radius-md)">md · 10</div>
+        <div class="shape" style="border-radius: var(--ie-radius-lg)">lg · 16</div>
+      </div>
+      <div class="panel" style="display:grid; gap: var(--ie-space-5); justify-items: start">
+        <div><span class="btn btn-primary">shadow-copy</span><span class="state-label" style="text-align:left">3 px · acción principal</span></div>
+        <div><span class="btn btn-primary is-hover">shadow-copy-hover</span><span class="state-label" style="text-align:left">5 px · al pasar el ratón</span></div>
+        <div style="padding: var(--ie-space-3); border-radius: var(--ie-radius-md); background: var(--ie-surface); box-shadow: var(--ie-shadow-raised); border: 1px solid var(--ie-border)">shadow-raised · paneles flotantes</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="motion">
+    <div class="sec-head"><h2>Movimiento</h2><p>Rápido y con un pequeño rebote, como un sello de caucho. <b>Firma:</b> la copia sale de debajo del original (<code>ie-copy-in</code>) y, al terminar el lote, cae el sello (<code>ie-stamp</code>). Con <code>prefers-reduced-motion</code> todo se reduce a 1 ms.</p></div>
+    <div class="grid g2">
+      <div class="panel motion-demo">
+        <div class="sheet-stack" id="demo-stack"><div class="sheet">INV-0918<br>Stripe · 49,00 €</div><div class="sheet copy"></div><span class="seal-demo">✓</span></div>
+        <button class="btn btn-secondary" type="button" id="replay">Repetir animación</button>
+      </div>
+      <div class="table-box"><table><thead><tr><th>Token</th><th>Valor</th><th>Uso</th></tr></thead><tbody>
+        <tr><td><code>duration-instant</code></td><td class="mono">80 ms</td><td>Color al pasar el ratón</td></tr>
+        <tr><td><code>duration-fast</code></td><td class="mono">140 ms</td><td>Botones, bordes, interruptores</td></tr>
+        <tr><td><code>duration-base</code></td><td class="mono">220 ms</td><td>Entrada de filas y tarjetas</td></tr>
+        <tr><td><code>duration-slow</code></td><td class="mono">360 ms</td><td>Barra de progreso, paneles</td></tr>
+        <tr><td><code>duration-stamp</code></td><td class="mono">520 ms</td><td>El sello final (una vez por lote)</td></tr>
+        <tr><td><code>ease-stamp</code></td><td class="mono">(.3, 1.6, .5, 1)</td><td>Rebote del sello y la copia</td></tr>
+      </tbody></table></div>
+    </div>
+  </section>
+
+  <section id="icons">
+    <div class="sec-head"><h2>Iconos</h2><p>Estilo <b>Lucide</b> (licencia ISC, compatible con MIT): retícula de 24, trazo de 2 px, extremos redondeados, siempre en <code>currentColor</code>. Tamaños 16, 20 y 24 px. Sin emoji en la interfaz.</p></div>
+    <div class="icons" id="icon-grid"></div>
+    <div class="icon-sizes" style="margin-top: var(--ie-space-4)">
+      <svg style="width:16px;height:16px"><use href="#i-download"/></svg><svg style="width:20px;height:20px"><use href="#i-download"/></svg><svg style="width:24px;height:24px"><use href="#i-download"/></svg><span class="note">16 · 20 · 24</span>
+    </div>
+  </section>
+
+  <section id="brand">
+    <div class="sec-head"><h2>Marca</h2><p>Invoice Extractor es una marca propia con un «by Intelia» discreto. La cara de Bonobot es el icono de la aplicación sobre una placa ultramar. <b>Todo el arte de Bonobot es provisional</b>: lo sustituirá el ilustrador (ver el encargo).</p></div>
+    <div class="grid g2">
+      <div class="panel">
+        <h3>Icono de la aplicación</h3>
+        <div class="brand-row">
+          <figure><img class="px16" src="brand/app-icon-16.svg" width="16" height="16" alt=""><figcaption>16</figcaption></figure>
+          <figure><img class="px16" src="brand/app-icon-16.svg" width="32" height="32" alt=""><figcaption>32</figcaption></figure>
+          <figure><img src="brand/app-icon.svg" width="48" height="48" alt=""><figcaption>48</figcaption></figure>
+          <figure><img src="brand/app-icon.svg" width="128" height="128" alt=""><figcaption>128</figcaption></figure>
+        </div>
+        <p class="note" style="margin-top: var(--ie-space-3)">16 y 32 se dibujan píxel a píxel, no se reducen desde el grande.</p>
+      </div>
+      <div class="panel">
+        <h3>Wordmark</h3>
+        <div style="display:grid; gap: var(--ie-space-5)">
+          <div class="wordmark"><img src="brand/app-icon.svg" alt=""><span>Invoice Extractor<small>by Intelia</small></span></div>
+          <div class="wordmark compact"><img src="brand/app-icon.svg" alt="">Invoice Extractor</div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>Bonobot</h3>
+        <div class="brand-row">
+          <figure><img src="brand/bonobot.svg" width="120" height="120" alt=""><figcaption>trabajando · éxito</figcaption></figure>
+          <figure><img src="brand/bonobot-waiting.svg" width="120" height="120" alt=""><figcaption>esperando · vacío</figcaption></figure>
+        </div>
+        <p class="note" style="margin-top: var(--ie-space-3)">Aparece en éxito, estados vacíos, web y tienda. Nunca en contraseñas ni errores.</p>
+      </div>
+      <div class="panel">
+        <h3>Logos de proveedores</h3>
+        <div style="display:flex; gap: var(--ie-space-2); flex-wrap: wrap">
+          <span class="logo" style="color:#635bff">S</span><span class="logo" style="color:#24292f">GH</span><span class="logo" style="color:#d50c2d">H</span><span class="logo fallback">AC</span>
+        </div>
+        <p class="note" style="margin-top: var(--ie-space-3)">Cápsula neutra (<code>logo-plate</code>) de 36 px, radio sm, padding 5 px. Sin logo: iniciales sobre <code>surface-2</code>.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="components">
+    <div class="sec-head"><h2>Componentes</h2><p>Implementaciones de referencia con HTML y CSS puros. La extensión (<code>popup.css</code>) y la web (<code>site/styles.css</code>) aplican estas mismas reglas.</p></div>
+
+    <h3>Botones</h3>
+    <div class="panel" style="margin-bottom: var(--ie-space-4)">
+      <div class="btn-states">
+        <div><button class="btn btn-primary" type="button"><svg><use href="#i-download"/></svg>Descargar todo</button><span class="state-label">normal</span></div>
+        <div><button class="btn btn-primary is-hover" type="button">Descargar todo</button><span class="state-label">hover</span></div>
+        <div><button class="btn btn-primary is-focus" type="button">Descargar todo</button><span class="state-label">foco</span></div>
+        <div><button class="btn btn-primary is-active" type="button">Descargar todo</button><span class="state-label">activo</span></div>
+        <div><button class="btn btn-primary" type="button" disabled>Descargar todo</button><span class="state-label">deshabilitado</span></div>
+        <div><button class="btn btn-primary is-loading" type="button" disabled>Descargando…</button><span class="state-label">cargando</span></div>
+      </div>
+      <div class="btn-states" style="margin-top: var(--ie-space-5)">
+        <div><button class="btn btn-secondary" type="button">Reintentar</button><span class="state-label">secundario</span></div>
+        <div><button class="btn btn-quiet" type="button">Omitir este proveedor</button><span class="state-label">discreto</span></div>
+        <div><button class="btn btn-icon" type="button" aria-label="Fijar ventana"><svg><use href="#i-pin"/></svg></button><span class="state-label">icono</span></div>
+        <div><button class="btn btn-danger" type="button"><svg><use href="#i-trash"/></svg>Borrar historial</button><span class="state-label">destructivo</span></div>
+      </div>
+    </div>
+
+    <div class="grid g2">
+      <div>
+        <h3>Inicio de la extensión (420 px)</h3>
+        <div class="popup">
+          <div class="popup-head"><div class="wordmark compact" style="font-size:20px"><img src="brand/app-icon.svg" alt="">Invoice Extractor</div><button class="btn btn-icon" type="button" aria-label="Fijar ventana"><svg><use href="#i-pin"/></svg></button></div>
+          <div class="popup-body">
+            <div class="profile"><span class="label">Perfil</span><b>Acme S.L.</b><span class="link">1Password</span><span class="link">Editar</span><span class="link">Nuevo</span></div>
+            <div class="download-all"><svg width="24" height="24"><use href="#i-download"/></svg><div><b>Descargar todo</b><small>6 proveedores · desde el 1 sep 2026</small></div></div>
+            <div class="section-title">Proveedores</div>
+            <div class="provider"><span class="logo" style="color:#635bff">S</span><div class="info"><b>Stripe</b><span class="status ok"><svg><use href="#i-check"/></svg>12 facturas</span></div><span class="toggle on" aria-hidden="true"></span><svg class="chev" width="18" height="18"><use href="#i-chevron"/></svg></div>
+            <div class="provider"><span class="logo" style="color:#24292f">GH</span><div class="info"><b>GitHub</b><span class="status warn"><svg><use href="#i-alert"/></svg>Necesita configuración</span></div><span class="toggle on" aria-hidden="true"></span><svg class="chev" width="18" height="18"><use href="#i-chevron"/></svg></div>
+            <div class="provider"><span class="logo fallback">HE</span><div class="info"><b>Hetzner</b><span class="status">Sin descargas</span></div><span class="toggle" aria-hidden="true"></span><svg class="chev" width="18" height="18"><use href="#i-chevron"/></svg></div>
+          </div>
+        </div>
+      </div>
+      <div style="display:grid; gap: var(--ie-space-4); align-content: start">
+        <div class="panel">
+          <h3>Campos</h3>
+          <div style="display:grid; gap: var(--ie-space-4)">
+            <div class="field"><label for="f1">Organización de GitHub</label><input class="input is-focus" id="f1" value="acme-labs"></div>
+            <div class="field"><label>Varias organizaciones</label><div class="chips"><span class="chip-v">acme-labs<button type="button" aria-label="Quitar acme-labs">×</button></span><span class="chip-v">acme-sandbox<button type="button" aria-label="Quitar acme-sandbox">×</button></span></div></div>
+            <div class="field"><label for="f2">ID de cuenta de facturación</label><input class="input is-error" id="f2" value="12-34"><span class="err-msg">✕ Debe tener 18 dígitos. Cópialo de la URL de facturación.</span></div>
+            <div style="display:flex; gap: var(--ie-space-5); flex-wrap: wrap">
+              <span class="check"><span class="box on">✓</span>Solo nuevas</span><span class="check"><span class="box"></span>Reemplazar</span>
+              <span class="check"><span class="box radio on"></span>Este mes</span><span class="check"><span class="box radio"></span>Todo</span>
+              <span class="check"><span class="toggle on"></span>Activo</span>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <h3>Flujo de trabajo</h3>
+          <div style="display:grid; gap: var(--ie-space-3)">
+            <div class="provider" style="border-color: var(--ie-accent); box-shadow: inset 3px 0 0 var(--ie-accent)"><span class="logo" style="color:#635bff">S</span><div class="info"><b>Stripe</b><span class="status">Descargando 4 de 12…</span></div></div>
+            <div class="progress" role="progressbar" aria-valuenow="62" aria-valuemin="0" aria-valuemax="100"><i></i></div>
+            <div class="wf-counts"><div><b>12</b><span>Encontradas</span></div><div><b>8</b><span>Guardadas</span></div><div><b>1</b><span>Errores</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h3 style="margin-top: var(--ie-space-8)">Avisos</h3>
+    <div class="grid g2">
+      <div class="banner warning"><svg><use href="#i-alert"/></svg><div><b>Descarga interrumpida (8 de 12)</b><p>Puedes seguir donde lo dejaste.</p></div></div>
+      <div class="banner info"><svg><use href="#i-lock"/></svg><div><b>La sesión de Stripe ha caducado</b><p>Inicia sesión con 1Password y seguiremos solos.</p></div></div>
+      <div class="banner danger"><svg><use href="#i-x"/></svg><div><b>Conflicto de sincronización</b><p>Este equipo y la nube tienen perfiles distintos. Elige cuál conservar; el otro se guarda como copia.</p></div></div>
+      <div class="banner rec"><span class="rec-dot"></span><div><b>Grabando en esta pestaña</b><p>Ve a la página de facturación y descarga una o dos facturas.</p></div></div>
+    </div>
+
+    <div class="grid g3" style="margin-top: var(--ie-space-8)">
+      <div class="panel">
+        <h3>Historial</h3>
+        <div class="history-row"><span class="mono">12 sep 2026</span><span class="logo" style="color:#635bff">S</span><span>Stripe · INV-0918<span class="file">2026-09-12_Stripe_INV-0918.pdf</span></span><span class="amt">49,00 €</span></div>
+        <div class="history-row"><span class="mono">03 sep 2026</span><span class="logo" style="color:#24292f">GH</span><span>GitHub · #58213<span class="file">2026-09-03_GitHub_58213.pdf</span></span><span class="amt">21,00 $</span></div>
+        <div class="history-row"><span class="mono">01 sep 2026</span><span class="logo fallback">HE</span><span>Hetzner · R0021<span class="file">2026-09-01_Hetzner_R0021.pdf</span></span><span class="amt">7,40 €</span></div>
+      </div>
+      <div class="panel center">
+        <h3>Estado vacío</h3>
+        <div class="mascot-sm"><img src="brand/bonobot-waiting.svg" alt=""></div>
+        <p style="margin:0; color: var(--ie-text-2); font-size: var(--ie-fs-sm)">Aún no hay nada archivado. Tu primera tanda aparecerá aquí.</p>
+      </div>
+      <div class="panel center">
+        <h3>Éxito</h3>
+        <div class="mascot-md"><img src="brand/bonobot.svg" alt=""><span class="seal">✓</span></div>
+        <p class="big-title">Hecho. Todas las facturas archivadas.</p>
+        <p style="margin: var(--ie-space-1) 0 0; font: var(--ie-fs-xs)/1.4 var(--ie-font-mono); color: var(--ie-text-3)">El trabajo de mono, para el mono.</p>
+      </div>
+    </div>
+
+    <h3 style="margin-top: var(--ie-space-8)">Terminal y agentes (CLI)</h3>
+    <div class="grid g2">
+<pre class="term"><span class="dim">$</span> invoice-extractor run --profile acme --since 2026-09-01
+<span class="go">→</span> Stripe            <span class="dim">buscando…</span>
+<span class="ok">✓</span> Stripe            12 facturas   <span class="dim">~/Facturas/Acme/2026-09</span>
+<span class="ok">✓</span> GitHub             1 factura
+<span class="warn">!</span> Google Workspace  <span class="warn">necesita configuración</span>  <span class="dim">--set billingAccount=…</span>
+<span class="no">✗</span> Hetzner           <span class="no">sesión caducada</span>  <span class="dim">vuelve a iniciar sesión en 1Password</span>
+
+<span class="ok">14 guardadas</span> · 1 aviso · 1 error · 38 s</pre>
+      <div class="table-box"><table><thead><tr><th>Símbolo</th><th>ANSI</th><th>Significado</th></tr></thead><tbody>
+        <tr><td class="mono">✓</td><td class="mono">green (32)</td><td>Hecho, guardado</td></tr>
+        <tr><td class="mono">→</td><td class="mono">blue/magenta (94)</td><td>En curso (acento)</td></tr>
+        <tr><td class="mono">!</td><td class="mono">yellow (33)</td><td>Aviso, requiere acción</td></tr>
+        <tr><td class="mono">✗</td><td class="mono">red (31)</td><td>Error, con la solución detrás</td></tr>
+        <tr><td class="mono">dim</td><td class="mono">2</td><td>Rutas, pistas y metadatos</td></tr>
+      </tbody></table><p class="note" style="padding: 0 var(--ie-space-3) var(--ie-space-3)">Nombres alineados a 18 columnas, cifras alineadas a la derecha. Sin color si <code>NO_COLOR</code> está definido o la salida no es una terminal; los símbolos se mantienen.</p></div>
+    </div>
+  </section>
+
+  <section id="voice">
+    <div class="sec-head"><h2>Voz y tono</h2><p>Fiable, sobrio y con un punto de humor administrativo. Bonobot habla en primera persona solo en éxito y estados vacíos. El chiste va sobre la tarea, nunca sobre el usuario. Seguridad y errores: neutros, concretos y con la solución. Interfaz en inglés y español según el idioma del navegador; en español, tú.</p></div>
+    <div class="table-box"><table class="copy-table"><thead><tr><th>Momento</th><th>English</th><th>Español</th></tr></thead><tbody>
+      <tr><td>éxito</td><td>Done. Every invoice filed.</td><td>Hecho. Todas las facturas archivadas.</td></tr>
+      <tr><td>quip</td><td>Monkey work is Bonobot's job.</td><td>El trabajo de mono, para el mono.</td></tr>
+      <tr><td>vacío</td><td>Nothing filed yet. Your first batch will show up here.</td><td>Aún no hay nada archivado. Tu primera tanda aparecerá aquí.</td></tr>
+      <tr><td>aviso</td><td>GitHub needs your organization name.</td><td>GitHub necesita el nombre de tu organización.</td></tr>
+      <tr><td>error</td><td>Hetzner's session expired. Sign in with 1Password to continue.</td><td>La sesión de Hetzner ha caducado. Inicia sesión con 1Password para seguir.</td></tr>
+      <tr><td>seguridad</td><td>Passwords stay in your vault. The extension reads them only while signing in.</td><td>Las contraseñas se quedan en tu bóveda. La extensión solo las lee al iniciar sesión.</td></tr>
+    </tbody></table></div>
+    <div class="grid g3" style="margin-top: var(--ie-space-4)">
+      <div class="panel"><h3>Glosario fijo</h3><p class="mono" style="margin:0; font-size: var(--ie-fs-xs); line-height: 1.9">invoice → factura<br>provider → proveedor<br>billing page → página de facturación<br>profile → perfil<br>vault → bóveda<br>record → grabar<br>skip → omitir<br>retry → reintentar</p></div>
+      <div class="panel"><h3>Errores</h3><p style="margin:0; font-size: var(--ie-fs-sm); color: var(--ie-text-2)">Qué ha pasado + qué hacer. Sin disculpas, sin «Ups», sin culpar al usuario. El botón dice lo que hace («Reintentar», no «Aceptar»).</p></div>
+      <div class="panel"><h3>Español</h3><p style="margin:0; font-size: var(--ie-fs-sm); color: var(--ie-text-2)">Los textos crecen ~30 %: botones con ancho flexible, nada de texto dentro de imágenes, fechas con el formato del idioma (12 sep 2026 · Sep 12, 2026).</p></div>
+    </div>
+  </section>
+
+  <section id="rules">
+    <div class="sec-head"><h2>Reglas</h2><p>Lo que no se negocia. Si una pantalla nueva necesita algo que no está aquí, se añade un token a <code>design/tokens.json</code>, no un color suelto.</p></div>
+    <div class="dodont">
+      <div class="panel do"><h3>Sí</h3><ul>
+        <li>Usar solo tokens semánticos en componentes.</li>
+        <li>Acento ultramar para acciones, enlaces, foco y selección.</li>
+        <li>Estados con color + icono + texto (✓ ! ✕).</li>
+        <li>Sombra copia solo en la acción principal de cada pantalla.</li>
+        <li>Importes, IDs y fechas en mono con cifras tabulares.</li>
+        <li>Logos de terceros siempre dentro de la cápsula neutra.</li>
+        <li>Objetivos de 32 px mínimo en la extensión.</li>
+      </ul></div>
+      <div class="panel dont"><h3>No</h3><ul>
+        <li>Rellenar un estado (error, aviso, éxito) con el ultramar.</li>
+        <li>Colores hexadecimales sueltos en <code>popup.css</code> o <code>site/styles.css</code>.</li>
+        <li>Degradados, brillos o «chispas» de IA.</li>
+        <li>Emoji como iconos de interfaz.</li>
+        <li>Bonobot en pantallas de contraseñas o errores.</li>
+        <li>Texto por debajo de 11 px.</li>
+        <li>Cargar fuentes o scripts remotos en la extensión.</li>
+      </ul></div>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+  const root = document.documentElement;
+  const semantic = ['bg','surface','surface-2','border','border-strong','text','text-2','text-3','accent','accent-hover','accent-text','accent-soft','on-accent','copy','focus','success','success-soft','warning','warning-soft','danger','danger-soft','info','info-soft','logo-plate'];
+  const usage = { 'bg':'Fondo de página','surface':'Tarjetas y paneles','surface-2':'Rellenos sutiles','border':'Divisores','border-strong':'Bordes de controles','text':'Texto principal','text-2':'Texto secundario','text-3':'Metadatos','accent':'Acción principal','accent-hover':'Hover de acción','accent-text':'Enlaces','accent-soft':'Selección','on-accent':'Texto sobre acento','copy':'Sombra copia','focus':'Anillo de foco','success':'Éxito','success-soft':'Fondo éxito','warning':'Aviso','warning-soft':'Fondo aviso','danger':'Error','danger-soft':'Fondo error','info':'Información','info-soft':'Fondo info','logo-plate':'Cápsula de logos' };
+  const ramps = { steel: ['50','100','200','400','500','600','900'], night: ['950','900','850','700','500','300','200','50'], calco: ['100','300','400','500','600','700','900'], green: ['100','400','700','900'], orange: ['100','400','700','900'], red: ['100','400','700','900'], teal: ['100','400','700','900'], bonobot: ['fur','fur-light','face','lip','metal','metal-dark'] };
+  const pairs = [['text','bg'],['text-2','bg'],['text-3','bg'],['text-3','surface'],['accent-text','bg'],['on-accent','accent'],['accent-text','accent-soft'],['success','bg'],['success','success-soft'],['warning','bg'],['warning','warning-soft'],['danger','bg'],['danger','danger-soft'],['on-danger','danger'],['info','bg'],['info','info-soft'],['border-strong','bg',3],['focus','surface',3]];
+  const css = (name) => getComputedStyle(root).getPropertyValue('--ie-' + name).trim();
+  const lum = (hex) => { const v = [1,3,5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255).map(c => c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4); return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2]; };
+  const ratio = (a, b) => { const [h, l] = [lum(a), lum(b)].sort((x, y) => y - x); return (h + 0.05) / (l + 0.05); };
+  const readable = (hex) => lum(hex) > 0.35 ? '#16181d' : '#ffffff';
+
+  function render() {
+    document.getElementById('semantic-swatches').innerHTML = semantic.map(n => { const v = css(n); return `<div class="swatch"><div class="chip" style="background:var(--ie-${n});color:${readable(v)}">Aa</div><div class="meta"><b>--ie-${n}</b><span>${v}</span><br>${usage[n]}</div></div>`; }).join('');
+    document.getElementById('ramps').innerHTML = Object.entries(ramps).map(([hue, steps]) => `<p class="ramp-label">${hue}</p><div class="ramp">${steps.map(s => { const v = css(`${hue}-${s}`); return `<div style="background:${v};color:${readable(v)}">${s}<br>${v}</div>`; }).join('')}</div>`).join('');
+    document.getElementById('contrast-body').innerHTML = pairs.map(([f, b, min = 4.5]) => { const r = ratio(css(f), css(b)); return `<tr><td><code>${f}</code></td><td><code>${b}</code></td><td class="mono">${r.toFixed(2)}</td><td class="mono">${min}</td><td class="${r >= min ? 'pass' : 'fail'}">${r >= min ? '✓ Pasa' : '✕ Falla'}</td></tr>`; }).join('');
+  }
+
+  document.getElementById('space-scale').innerHTML = ['1','2','3','4','5','6','8','10','12','16'].map(s => `<div class="space-row"><i style="width:var(--ie-space-${s})"></i>space-${s} · ${css('space-' + s)}</div>`).join('');
+  document.getElementById('icon-grid').innerHTML = ['download','check','alert','x','info','key','history','record','pin','sync','chevron','file','terminal','user','trash','lock'].map(i => `<figure><svg><use href="#i-${i}"/></svg><figcaption>${i}</figcaption></figure>`).join('');
+
+  document.querySelectorAll('[data-theme-set]').forEach(btn => btn.addEventListener('click', () => {
+    const value = btn.dataset.themeSet;
+    if (value) root.dataset.theme = value; else delete root.dataset.theme;
+    document.querySelectorAll('[data-theme-set]').forEach(b => b.setAttribute('aria-pressed', String(b === btn)));
+    render();
+  }));
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
+
+  document.getElementById('replay').addEventListener('click', () => {
+    const stack = document.getElementById('demo-stack');
+    stack.classList.remove('replay'); void stack.offsetWidth; stack.classList.add('replay');
+  });
+  render();
+})();
+</script>
+</body>
+</html>
