@@ -53,7 +53,8 @@
       <nav class="topnav" aria-label="Main">
         <a class="nav-section" href="#how">How it works</a>
         <a class="nav-section" href="#providers">Providers</a>
-        <a class="nav-section" href="#agents">For agents</a>
+        <a class="nav-section" href="#agents">AI assistants</a>
+        <a class="nav-section" href="#security">Security</a>
         <a class="nav-section nav-keep" href="#install">Install</a>
         <a class="gh" href="https://github.com/intelia-technologies/invoice-extractor" rel="noopener">
           <svg class="icon sm" aria-hidden="true"><use href="#i-github"/></svg><span class="gh-label">GitHub</span><span class="sr-only"> (source code)</span>
@@ -73,7 +74,7 @@
         <p class="lede">
           Invoice Extractor signs into each provider's billing page with the logins you already keep in
           <strong>1Password</strong> or <strong>Bitwarden</strong>, finds every invoice and saves it as a named PDF on your disk.
-          Use the Chrome extension, or hand the job to your AI agent.
+          Use the Chrome extension, or just ask your AI assistant.
         </p>
         <div class="cta">
           <a class="btn btn-primary" href="https://github.com/intelia-technologies/invoice-extractor/releases/latest/download/invoice-extractor.zip">
@@ -170,7 +171,7 @@
       <div class="wrap">
         <header class="section-head">
           <h2>Twenty billing pages Bonobot already knows by heart.</h2>
-          <p class="section-lede">Each provider is a recipe: a small public JSON file that says where the billing page lives, how to read the invoice table and how to download. When a site changes, one fix to its recipe fixes it for everyone. Missing one? Record it once in the extension, or let your agent write the recipe, and send it back.</p>
+          <p class="section-lede">Each provider is a recipe: a small public JSON file that says where the billing page lives, how to read the invoice table and how to download. When a site changes, one fix to its recipe fixes it for everyone. Missing one? Record it once in the extension, or let a coding assistant write the recipe, and send it back.</p>
         </header>
         <ul class="providers">
           <li><span class="logo lg"><img src="assets/providers/amazon.png" alt="" data-name="Amazon" /></span>Amazon</li>
@@ -201,36 +202,70 @@
     <section id="agents" class="section">
       <div class="wrap agents">
         <div class="agents-copy">
-          <h2>Or hand the chore to your AI agent.</h2>
-          <p>The same recipes and the same vault logins work from the command line and from AI agents. The installer sets up both connections: Claude Desktop gets the <b>MCP server</b> (MCP is the standard way an AI app plugs in an outside tool), and Claude Code, OMP and Antigravity get the <b>Skill</b> (written instructions the agent loads to know how to use it). Then just ask:</p>
-          <blockquote class="ask">“Sync my providers from 1Password and download last month's invoices for Acme.”</blockquote>
-          <p>Agents can also add a provider on their own: they inspect the billing page, write the recipe and check it with one real download.</p>
+          <h2>Works with your AI assistant.</h2>
+          <p>Connect it to <b>Claude</b>, <b>Codex</b>, <b>Cursor</b> or any assistant that speaks <b>MCP</b>, the standard way AI apps plug in an outside tool. Then ask in your own words:</p>
+          <blockquote class="ask">“Download last month's invoices for Acme.”</blockquote>
+          <p>The assistant starts the run on your computer and tells you what came back: which PDFs were saved and where, and anything that needs you, like a 2FA code. Missing a provider? Any assistant can inspect the billing page; a coding assistant with the repository open (Claude Code, Codex, Cursor) can also write the recipe and check it with one real download.</p>
+          <p class="agents-note">The ChatGPT app connects only to remote MCP servers for now, and this one runs on your computer. From OpenAI, use Codex.</p>
         </div>
-        <pre class="term"><code><span class="p">$</span> invoice-extractor profiles --sync-1p
-<span class="ok">✓</span> 3 profiles · 41 logins matched
-<span class="p">$</span> invoice-extractor run --profile Acme --since 2026-09-01
-<span class="ok">✓</span> stripe 2 · github 1 · openai 1 · hetzner 3
-<span class="p">$</span> invoice-extractor onboard --provider vercel
-<span class="go">→</span> needs_creation <span class="dim">· recipe draft ready</span></code></pre>
+        <div class="agents-side">
+          <figure class="term-fig">
+            <figcaption>Setup</figcaption>
+            <pre class="term"><code><span class="dim"># Claude Desktop, Claude Code:
+# the installer connects them.</span>
+
+<span class="dim"># Codex</span>
+<span class="p">$</span> codex mcp add invoice-extractor -- \
+    node /path/to/invoice-extractor/bin/invoice-extractor-mcp.mjs
+
+<span class="dim"># Cursor and other clients: add to mcp.json</span>
+"invoice-extractor": {
+  "command": "node",
+  "args": [
+    "/path/to/invoice-extractor/bin/invoice-extractor-mcp.mjs"
+  ]
+}</code></pre>
+          </figure>
+          <figure class="term-fig">
+            <figcaption>What your assistant gets back <span>(a run result, shortened)</span></figcaption>
+            <pre class="term"><code>{
+  "profile": "Acme",
+  "downloadedFiles": [
+    { "providerId": "stripe",
+      "filename": "Stripe_TaxInvoice_INV-0918.pdf",
+      "date": "2026-09-03", "amount": "€29.00" }
+  ],
+  "skippedProviders": [],
+  "errors": [
+    { "providerId": "hetzner",
+      "error": "Billing page readySelector not reached…" }
+  ]
+}</code></pre>
+          </figure>
+        </div>
       </div>
     </section>
 
-    <section id="privacy" class="section">
+    <section id="security" class="section">
       <div class="wrap trust">
         <div class="trust-copy">
-          <h2>Boring on purpose.</h2>
-          <p>Invoice Extractor runs on your computer. We never receive your passwords, your invoices or your browsing. The code is public, so every line of this receipt can be checked.</p>
+          <h2>Your passwords never reach us or your AI.</h2>
+          <p>Everything runs on your computer. At sign-in, Invoice Extractor asks 1Password or Bitwarden for the login and types it into the billing page, in a browser on your computer: your Chrome with the extension, or a separate automation browser when an assistant runs it.</p>
+          <p>Your assistant only asks for a run and reads the result. Passwords and 2FA codes are not part of any result it receives. When setup needs a vault token, a system dialog asks for it, so it never passes through the chat.</p>
+          <p>The code is open source (MIT), so every line of this receipt can be checked.</p>
           <a class="more-link" href="privacy.html">Read the privacy policy <svg class="icon sm" aria-hidden="true"><use href="#i-arrow"/></svg></a>
         </div>
         <div class="receipt">
-          <div class="sheet-head"><span>Receipt</span><span>What we keep</span></div>
+          <div class="sheet-head"><span>Receipt</span><span>What stays where</span></div>
           <dl>
-            <div><dt>Your passwords</dt><dd><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>Not stored</span><span class="why">Read from your vault at login, written nowhere else.</span></dd></div>
+            <div><dt>Passwords and 2FA codes</dt><dd><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>In your vault</span><span class="why">Read at sign-in, typed into the login page, written nowhere else.</span></dd></div>
+            <div><dt>Your AI assistant</dt><dd><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>Results only</span><span class="why">File names, dates, amounts and errors. It can see profile and account names and login emails, so it can tell accounts apart. Those results go to the AI you use, under its terms.</span></dd></div>
+            <div><dt>Vault access</dt><dd><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>On this computer</span><span class="why">Touch ID or Windows Hello saves nothing. A service-account token or Bitwarden session, if you choose one, is saved in your home folder and sent nowhere else.</span></dd></div>
             <div><dt>Cloud account</dt><dd><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>Not needed</span><span class="why">Profiles and history live in <code>~/.config/invoice-extractor</code>. Optional profile sync exists; everything works without it.</span></dd></div>
-            <div><dt>Phone-home</dt><dd><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>None</span><span class="why">The only traffic is your browser talking to your providers.</span></dd></div>
+            <div><dt>Phone-home</dt><dd><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>None</span><span class="why">Traffic goes to your providers and to your password manager. Nothing goes to us unless you turn on profile sync.</span></dd></div>
             <div><dt>Your invoices</dt><dd><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>On your disk</span><span class="why">In your download folder, never sent to us.</span></dd></div>
           </dl>
-          <div class="sheet-total"><span>Passwords stored by us</span><span>0</span></div>
+          <div class="sheet-total"><span>Passwords sent to us or your AI</span><span>0</span></div>
         </div>
       </div>
     </section>

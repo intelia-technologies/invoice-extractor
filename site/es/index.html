@@ -47,7 +47,8 @@
       <nav class="topnav" aria-label="Principal">
         <a class="nav-section" href="#how">Cómo funciona</a>
         <a class="nav-section" href="#providers">Proveedores</a>
-        <a class="nav-section" href="#agents">Para agentes</a>
+        <a class="nav-section" href="#agents">Asistentes de IA</a>
+        <a class="nav-section" href="#security">Seguridad</a>
         <a class="nav-section nav-keep" href="#install">Instalar</a>
         <a class="gh" href="https://github.com/intelia-technologies/invoice-extractor" rel="noopener">
           <svg class="icon sm" aria-hidden="true"><use href="#i-github"/></svg><span class="gh-label">GitHub</span><span class="sr-only"> (código fuente)</span>
@@ -67,7 +68,7 @@
         <p class="lede">
           Invoice Extractor entra en la página de facturación de cada proveedor con los accesos que ya guardas en
           <strong>1Password</strong> o <strong>Bitwarden</strong>, localiza cada factura y la guarda en PDF, con su nombre, en tu ordenador.
-          Úsalo desde la extensión de Chrome o encárgaselo a tu agente de IA.
+          Úsalo desde la extensión de Chrome o pídeselo a tu asistente de IA.
         </p>
         <div class="cta">
           <a class="btn btn-primary" href="https://github.com/intelia-technologies/invoice-extractor/releases/latest/download/invoice-extractor.zip">
@@ -164,7 +165,7 @@
       <div class="wrap">
         <header class="section-head">
           <h2>Veinte páginas de facturación que Bonobot ya se sabe de memoria.</h2>
-          <p class="section-lede">Cada proveedor es una receta: un pequeño fichero JSON público que dice dónde está la página de facturación, cómo leer la tabla de facturas y cómo descargarlas. Si una web cambia, un solo arreglo en su receta lo arregla para todo el mundo. ¿Te falta alguno? Grábalo una vez en la extensión, o deja que tu agente escriba la receta, y compártelo.</p>
+          <p class="section-lede">Cada proveedor es una receta: un pequeño fichero JSON público que dice dónde está la página de facturación, cómo leer la tabla de facturas y cómo descargarlas. Si una web cambia, un solo arreglo en su receta lo arregla para todo el mundo. ¿Te falta alguno? Grábalo una vez en la extensión, o deja que un asistente de programación escriba la receta, y compártelo.</p>
         </header>
         <ul class="providers">
           <li><span class="logo lg"><img src="../assets/providers/amazon.png" alt="" data-name="Amazon" /></span>Amazon</li>
@@ -195,36 +196,70 @@
     <section id="agents" class="section">
       <div class="wrap agents">
         <div class="agents-copy">
-          <h2>O encárgaselo a tu agente de IA.</h2>
-          <p>Las mismas recetas y los mismos accesos de tu bóveda funcionan desde la línea de comandos y desde agentes de IA. El instalador deja listas las dos conexiones: Claude Desktop recibe el <b>servidor MCP</b> (MCP es el estándar con el que una app de IA se conecta a una herramienta externa), y Claude Code, OMP y Antigravity reciben la <b>Skill</b> (unas instrucciones que el agente carga para saber usarla). Luego solo tienes que pedirlo:</p>
-          <blockquote class="ask">«Sincroniza mis proveedores desde 1Password y descarga las facturas del mes pasado de Acme.»</blockquote>
-          <p>Los agentes también pueden añadir un proveedor por su cuenta: inspeccionan la página de facturación, escriben la receta y la comprueban con una descarga real.</p>
+          <h2>Funciona con tu asistente de IA.</h2>
+          <p>Conéctalo a <b>Claude</b>, <b>Codex</b>, <b>Cursor</b> o cualquier asistente que hable <b>MCP</b>, el estándar con el que una app de IA se conecta a una herramienta externa. Luego pídelo con tus palabras:</p>
+          <blockquote class="ask">«Descarga las facturas del mes pasado de Acme.»</blockquote>
+          <p>El asistente lanza la ejecución en tu ordenador y te cuenta qué ha salido: qué PDF se han guardado y dónde, y lo que necesite de ti, como un código 2FA. ¿Te falta un proveedor? Cualquier asistente puede inspeccionar la página de facturación; uno de programación con el repositorio abierto (Claude Code, Codex, Cursor) además escribe la receta y la comprueba con una descarga real.</p>
+          <p class="agents-note">La app de ChatGPT de momento solo se conecta a servidores MCP remotos, y este funciona en tu ordenador. De OpenAI, usa Codex.</p>
         </div>
-        <pre class="term"><code><span class="p">$</span> invoice-extractor profiles --sync-1p
-<span class="ok">✓</span> 3 perfiles · 41 accesos encontrados
-<span class="p">$</span> invoice-extractor run --profile Acme --since 2026-09-01
-<span class="ok">✓</span> stripe 2 · github 1 · openai 1 · hetzner 3
-<span class="p">$</span> invoice-extractor onboard --provider vercel
-<span class="go">→</span> needs_creation <span class="dim">· borrador de receta listo</span></code></pre>
+        <div class="agents-side">
+          <figure class="term-fig">
+            <figcaption>Configuración</figcaption>
+            <pre class="term"><code><span class="dim"># Claude Desktop, Claude Code:
+# el instalador ya los conecta.</span>
+
+<span class="dim"># Codex</span>
+<span class="p">$</span> codex mcp add invoice-extractor -- \
+    node /ruta/a/invoice-extractor/bin/invoice-extractor-mcp.mjs
+
+<span class="dim"># Cursor y otros clientes: añádelo a mcp.json</span>
+"invoice-extractor": {
+  "command": "node",
+  "args": [
+    "/ruta/a/invoice-extractor/bin/invoice-extractor-mcp.mjs"
+  ]
+}</code></pre>
+          </figure>
+          <figure class="term-fig">
+            <figcaption>Lo que recibe tu asistente <span>(resultado de una ejecución, recortado)</span></figcaption>
+            <pre class="term"><code>{
+  "profile": "Acme",
+  "downloadedFiles": [
+    { "providerId": "stripe",
+      "filename": "Stripe_TaxInvoice_INV-0918.pdf",
+      "date": "2026-09-03", "amount": "29,00 €" }
+  ],
+  "skippedProviders": [],
+  "errors": [
+    { "providerId": "hetzner",
+      "error": "Billing page readySelector not reached…" }
+  ]
+}</code></pre>
+          </figure>
+        </div>
       </div>
     </section>
 
-    <section id="privacy" class="section">
+    <section id="security" class="section">
       <div class="wrap trust">
         <div class="trust-copy">
-          <h2>Aburrido a propósito.</h2>
-          <p>Invoice Extractor funciona en tu ordenador. Nunca recibimos tus contraseñas, tus facturas ni tu navegación. El código es público: cada línea de este recibo se puede comprobar.</p>
+          <h2>Tus contraseñas no nos llegan. Ni a tu IA.</h2>
+          <p>Todo funciona en tu ordenador. Al iniciar sesión, Invoice Extractor pide el acceso a 1Password o Bitwarden y lo escribe en la página de facturación, en un navegador de tu ordenador: tu Chrome con la extensión, o un navegador de automatización aparte cuando lo lanza un asistente.</p>
+          <p>Tu asistente solo pide una ejecución y lee el resultado. Las contraseñas y los códigos 2FA no forman parte de ningún resultado que reciba. Si la configuración necesita un token de tu bóveda, lo pide un diálogo del sistema, así que nunca pasa por el chat.</p>
+          <p>El código es abierto (MIT): cada línea de este recibo se puede comprobar.</p>
           <a class="more-link" href="privacy.html">Lee la política de privacidad <svg class="icon sm" aria-hidden="true"><use href="#i-arrow"/></svg></a>
         </div>
         <div class="receipt">
-          <div class="sheet-head"><span>Recibo</span><span>Lo que guardamos</span></div>
+          <div class="sheet-head"><span>Recibo</span><span>Qué se queda dónde</span></div>
           <dl>
-            <div><dt>Tus contraseñas</dt><dd><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>No se guardan</span><span class="why">Se leen de tu bóveda al iniciar sesión y no se escriben en ningún otro sitio.</span></dd></div>
+            <div><dt>Contraseñas y códigos 2FA</dt><dd><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>En tu bóveda</span><span class="why">Se leen al iniciar sesión, se escriben en la página de acceso y en ningún otro sitio.</span></dd></div>
+            <div><dt>Tu asistente de IA</dt><dd><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>Solo resultados</span><span class="why">Nombres de fichero, fechas, importes y errores. Puede ver nombres de perfiles y cuentas y los emails de acceso, para distinguir unas cuentas de otras. Esos resultados van a la IA que uses, con sus condiciones.</span></dd></div>
+            <div><dt>Acceso a la bóveda</dt><dd><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>En este ordenador</span><span class="why">Con Touch ID o Windows Hello no se guarda nada. Un token de cuenta de servicio o una sesión de Bitwarden, si eliges uno, se guarda en tu carpeta personal y no se envía a ningún sitio.</span></dd></div>
             <div><dt>Cuenta en la nube</dt><dd><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>No hace falta</span><span class="why">Los perfiles y el historial viven en <code>~/.config/invoice-extractor</code>. Hay sincronización opcional de perfiles; todo funciona sin ella.</span></dd></div>
-            <div><dt>Llamadas a casa</dt><dd><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>Ninguna</span><span class="why">El único tráfico es tu navegador hablando con tus proveedores.</span></dd></div>
+            <div><dt>Llamadas a casa</dt><dd><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>Ninguna</span><span class="why">El tráfico va a tus proveedores y a tu gestor de contraseñas. A nosotros no nos llega nada salvo que actives la sincronización de perfiles.</span></dd></div>
             <div><dt>Tus facturas</dt><dd><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>En tu disco</span><span class="why">En tu carpeta de descargas; nunca nos llegan.</span></dd></div>
           </dl>
-          <div class="sheet-total"><span>Contraseñas guardadas por nosotros</span><span>0</span></div>
+          <div class="sheet-total"><span>Contraseñas enviadas a nosotros o a tu IA</span><span>0</span></div>
         </div>
       </div>
     </section>

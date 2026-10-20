@@ -80,6 +80,7 @@ strong, b { font-weight: var(--ie-weight-bold); }
   display: inline-flex; align-items: center; gap: var(--ie-space-2); min-height: var(--ie-size-target);
   padding: 0 var(--ie-space-3); border-radius: var(--ie-radius-sm);
   color: var(--ie-text-2); text-decoration: none; font-size: var(--ie-fs-sm); font-weight: var(--ie-weight-medium);
+  white-space: nowrap;
 }
 .topnav a:hover { color: var(--ie-text); background: var(--ie-surface-2); }
 .topnav .gh { color: var(--ie-text); }
@@ -247,10 +248,16 @@ h3 { font-size: var(--ie-fs-xl); font-weight: var(--ie-weight-bold); line-height
 .status.warn { color: var(--ie-warning); }
 
 /* For agents */
-.agents { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--ie-space-12); align-items: center; }
+.agents { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--ie-space-12); align-items: start; }
 .agents-copy { display: grid; gap: var(--ie-space-5); max-width: var(--site-measure); }
 .agents-copy p { color: var(--ie-text-2); }
 .agents-copy b { color: var(--ie-text); }
+.agents-copy .agents-note { font-size: var(--ie-fs-sm); color: var(--ie-text-3); padding-top: var(--ie-space-4); border-top: 1px dashed var(--ie-border-strong); }
+.agents-side { display: grid; gap: var(--ie-space-6); min-width: 0; }
+.term-fig { display: grid; gap: var(--ie-space-2); min-width: 0; }
+.term-fig figcaption { font-size: var(--ie-fs-sm); font-weight: var(--ie-weight-bold); color: var(--ie-text); }
+.term-fig figcaption span { font-weight: var(--ie-weight-regular); color: var(--ie-text-3); }
+.term-fig .term { font-size: var(--ie-fs-xs); white-space: pre-wrap; overflow-wrap: anywhere; }
 .ask {
   margin: 0; padding: var(--ie-space-5) var(--ie-space-6); border: 1px solid var(--ie-border-strong); border-radius: var(--ie-radius-md); background: var(--ie-surface);
   font-family: var(--ie-font-display); font-weight: var(--ie-weight-bold); font-size: var(--ie-fs-xl); line-height: 1.35; letter-spacing: -0.01em;
@@ -387,6 +394,10 @@ h3 { font-size: var(--ie-fs-xl); font-weight: var(--ie-weight-bold); line-height
 .back .icon { transform: scaleX(-1); }
 
 /* ---------- Responsive ---------- */
+@media (max-width: 1060px) {
+  /* Five section links, GitHub and the language switch stop fitting beside the wordmark here. */
+  .topnav .nav-section:not(.nav-keep) { display: none; }
+}
 @media (max-width: 1100px) {
   .run { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
@@ -415,6 +426,7 @@ h3 { font-size: var(--ie-fs-xl); font-weight: var(--ie-weight-bold); line-height
   .beta-note { order: 5; }
   .run { grid-template-columns: minmax(0, 1fr); }
   .ui { min-height: 0; }
+  .term-fig .term { padding-inline: var(--ie-space-4); }
 }
 @media (max-width: 560px) {
   .topbar .wrap { gap: var(--ie-space-2); }
