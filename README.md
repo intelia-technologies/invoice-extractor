@@ -1,5 +1,8 @@
 # Invoice Downloader — Chrome Extension
 
+🌐 **Website & installers:** https://invoice-extractor.noscomelaia.com · [Latest release](https://github.com/intelia-technologies/invoice-extractor/releases/latest)
+
+
 Automatically download invoices from SaaS billing pages. Providers are defined declaratively in JSON files — the engine interprets them generically.
 
 **Key advantage:** Downloads use the provider sessions already open in Chrome. Optional profile synchronization has its own independent login; it never transfers provider sessions.
