@@ -171,7 +171,7 @@
       <div class="wrap">
         <header class="section-head">
           <h2>Twenty billing pages Bonobot already knows by heart.</h2>
-          <p class="section-lede">Each provider is a recipe: a small public JSON file that says where the billing page lives, how to read the invoice table and how to download. When a site changes, one fix to its recipe fixes it for everyone. Missing one? Record it once in the extension, or let your agent write the recipe, and send it back.</p>
+          <p class="section-lede">Each provider is a recipe: a small public JSON file that says where the billing page lives, how to read the invoice table and how to download. When a site changes, one fix to its recipe fixes it for everyone. Missing one? Record it once in the extension, or let a coding assistant write the recipe, and send it back.</p>
         </header>
         <ul class="providers">
           <li><span class="logo lg"><img src="assets/providers/amazon.png" alt="" data-name="Amazon" /></span>Amazon</li>
@@ -205,7 +205,7 @@
           <h2>Works with your AI assistant.</h2>
           <p>Connect it to <b>Claude</b>, <b>Codex</b>, <b>Cursor</b> or any assistant that speaks <b>MCP</b>, the standard way AI apps plug in an outside tool. Then ask in your own words:</p>
           <blockquote class="ask">“Download last month's invoices for Acme.”</blockquote>
-          <p>The assistant starts the run on your computer and tells you what came back: which PDFs were saved and where, and anything that needs you, like a 2FA code. Missing a provider? It can inspect the billing page, write the recipe and check it with one real download.</p>
+          <p>The assistant starts the run on your computer and tells you what came back: which PDFs were saved and where, and anything that needs you, like a 2FA code. Missing a provider? Any assistant can inspect the billing page; a coding assistant with the repository open (Claude Code, Codex, Cursor) can also write the recipe and check it with one real download.</p>
           <p class="agents-note">The ChatGPT app connects only to remote MCP servers for now, and this one runs on your computer. From OpenAI, use Codex.</p>
         </div>
         <div class="agents-side">
@@ -216,7 +216,7 @@
 
 <span class="dim"># Codex</span>
 <span class="p">$</span> codex mcp add invoice-extractor -- \
-    node ~/invoice-extractor/bin/invoice-extractor-mcp.mjs
+    node /path/to/invoice-extractor/bin/invoice-extractor-mcp.mjs
 
 <span class="dim"># Cursor and other clients: add to mcp.json</span>
 "invoice-extractor": {

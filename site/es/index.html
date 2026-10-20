@@ -165,7 +165,7 @@
       <div class="wrap">
         <header class="section-head">
           <h2>Veinte páginas de facturación que Bonobot ya se sabe de memoria.</h2>
-          <p class="section-lede">Cada proveedor es una receta: un pequeño fichero JSON público que dice dónde está la página de facturación, cómo leer la tabla de facturas y cómo descargarlas. Si una web cambia, un solo arreglo en su receta lo arregla para todo el mundo. ¿Te falta alguno? Grábalo una vez en la extensión, o deja que tu agente escriba la receta, y compártelo.</p>
+          <p class="section-lede">Cada proveedor es una receta: un pequeño fichero JSON público que dice dónde está la página de facturación, cómo leer la tabla de facturas y cómo descargarlas. Si una web cambia, un solo arreglo en su receta lo arregla para todo el mundo. ¿Te falta alguno? Grábalo una vez en la extensión, o deja que un asistente de programación escriba la receta, y compártelo.</p>
         </header>
         <ul class="providers">
           <li><span class="logo lg"><img src="../assets/providers/amazon.png" alt="" data-name="Amazon" /></span>Amazon</li>
@@ -199,7 +199,7 @@
           <h2>Funciona con tu asistente de IA.</h2>
           <p>Conéctalo a <b>Claude</b>, <b>Codex</b>, <b>Cursor</b> o cualquier asistente que hable <b>MCP</b>, el estándar con el que una app de IA se conecta a una herramienta externa. Luego pídelo con tus palabras:</p>
           <blockquote class="ask">«Descarga las facturas del mes pasado de Acme.»</blockquote>
-          <p>El asistente lanza la ejecución en tu ordenador y te cuenta qué ha salido: qué PDF se han guardado y dónde, y lo que necesite de ti, como un código 2FA. ¿Te falta un proveedor? Puede inspeccionar la página de facturación, escribir la receta y comprobarla con una descarga real.</p>
+          <p>El asistente lanza la ejecución en tu ordenador y te cuenta qué ha salido: qué PDF se han guardado y dónde, y lo que necesite de ti, como un código 2FA. ¿Te falta un proveedor? Cualquier asistente puede inspeccionar la página de facturación; uno de programación con el repositorio abierto (Claude Code, Codex, Cursor) además escribe la receta y la comprueba con una descarga real.</p>
           <p class="agents-note">La app de ChatGPT de momento solo se conecta a servidores MCP remotos, y este funciona en tu ordenador. De OpenAI, usa Codex.</p>
         </div>
         <div class="agents-side">
@@ -210,7 +210,7 @@
 
 <span class="dim"># Codex</span>
 <span class="p">$</span> codex mcp add invoice-extractor -- \
-    node ~/invoice-extractor/bin/invoice-extractor-mcp.mjs
+    node /ruta/a/invoice-extractor/bin/invoice-extractor-mcp.mjs
 
 <span class="dim"># Cursor y otros clientes: añádelo a mcp.json</span>
 "invoice-extractor": {
