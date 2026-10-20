@@ -1,12 +1,15 @@
 /* ============================================
-   Invoice Extractor — Intelia Dark Theme
-   Palette: Intelia brand (Azul + Verde Eficiencia)
+   Invoice Extractor — extension popup styles
+   Theme: interim "Ledger" system, dark ("ink") mode.
+   Colors and fonts come from design/tokens.css (shared with the website);
+   the override layer at the end of this file maps legacy variables to them.
    ============================================ */
 
-/* --- Google Font import --- */
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+/* --- Fonts + shared design tokens (design/tokens.css) --- */
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+@import url('design/tokens.css');
 
-/* --- CSS Variables — Intelia brand --- */
+/* --- Legacy CSS variables (overridden by the Ledger layer at the end) --- */
 :root {
   /* Surfaces */
   --bg-base: #0F172A;
@@ -19,12 +22,12 @@
   /* Borders */
   --border-subtle: rgba(255, 255, 255, 0.07);
   --border-medium: rgba(255, 255, 255, 0.12);
-  --border-focus: rgba(62, 142, 222, 0.5);
+  --border-focus: rgba(216, 67, 43, 0.5);
 
   /* Accent — Azul Intelia */
   --accent: #3E8EDE;
-  --accent-dim: rgba(62, 142, 222, 0.15);
-  --accent-glow: rgba(62, 142, 222, 0.25);
+  --accent-dim: rgba(216, 67, 43, 0.15);
+  --accent-glow: rgba(216, 67, 43, 0.25);
   --accent-solid: #2C6DC3;
   --accent-text: #B5D4F5;
   --accent-light: #60A5FA;
@@ -100,7 +103,7 @@ body::after {
   transform: translateX(-50%);
   width: 380px;
   height: 300px;
-  background: radial-gradient(ellipse, rgba(62, 142, 222, 0.08) 0%, transparent 70%);
+  background: radial-gradient(ellipse, rgba(216, 67, 43, 0.08) 0%, transparent 70%);
   pointer-events: none;
   z-index: 0;
 }
@@ -214,7 +217,7 @@ body::after {
 
 .profile-bar.has-profile {
   border-color: var(--accent);
-  background: rgba(62, 142, 222, 0.06);
+  background: rgba(216, 67, 43, 0.06);
 }
 
 .profile-bar.has-profile .profile-label {
@@ -322,7 +325,7 @@ body::after {
 
 .profile-item.active {
   border-color: var(--accent-primary);
-  background: rgba(96, 165, 250, 0.05);
+  background: rgba(232, 102, 76, 0.05);
 }
 
 .profile-item-name {
@@ -336,7 +339,7 @@ body::after {
   font-family: var(--font-mono);
   font-size: 9px;
   color: var(--accent-text);
-  background: rgba(96, 165, 250, 0.1);
+  background: rgba(232, 102, 76, 0.1);
   padding: 2px 6px;
   border-radius: 4px;
   text-transform: uppercase;
@@ -384,7 +387,7 @@ body::after {
 }
 
 .profile-item-actions .btn-load-profile:hover {
-  background: rgba(96, 165, 250, 0.1);
+  background: rgba(232, 102, 76, 0.1);
 }
 
 .profile-item-actions .btn-save-profile {
@@ -478,7 +481,7 @@ body::after {
 
 .card-primary {
   background: linear-gradient(135deg, var(--accent) 0%, var(--accent-solid) 100%);
-  border: 1px solid rgba(62, 142, 222, 0.3);
+  border: 1px solid rgba(216, 67, 43, 0.3);
   color: #fff;
   font-weight: 600;
 }
@@ -492,8 +495,8 @@ body::after {
 }
 
 .card-primary:hover {
-  background: linear-gradient(135deg, var(--accent-solid) 0%, #1E5BA8 100%);
-  border-color: rgba(62, 142, 222, 0.5);
+  background: linear-gradient(135deg, var(--accent-solid) 0%, #b8361f 100%);
+  border-color: rgba(216, 67, 43, 0.5);
   box-shadow: var(--shadow-glow);
   transform: translateY(-2px);
 }
@@ -931,7 +934,7 @@ select.config-input {
 
 .toggle-switch input:checked + .toggle-slider {
   background: var(--accent-dim);
-  border-color: rgba(62, 142, 222, 0.3);
+  border-color: rgba(216, 67, 43, 0.3);
 }
 
 .toggle-switch input:checked + .toggle-slider::before {
@@ -1017,7 +1020,7 @@ select.config-input {
 }
 
 .site-item.current {
-  border-color: rgba(62, 142, 222, 0.3);
+  border-color: rgba(216, 67, 43, 0.3);
   background: var(--accent-dim);
   box-shadow: 0 0 12px var(--accent-dim);
 }
@@ -1456,7 +1459,7 @@ select.config-input {
 
 .btn-accent {
   color: var(--accent) !important;
-  border-color: rgba(62, 142, 222, 0.3) !important;
+  border-color: rgba(216, 67, 43, 0.3) !important;
 }
 
 .btn-accent:hover {
@@ -1811,3 +1814,95 @@ select.config-input {
 .sync-actions button { flex: 1 1 120px; font-size: 12px; }
 .sync-panel [hidden] { display: none !important; }
 .sync-panel button:disabled { opacity: 0.55; cursor: wait; }
+
+/* =====================================================================
+   LEDGER THEME LAYER (interim) — aligns the popup with the website.
+   Maps the legacy variables above onto design/tokens.css. Remove or
+   replace this block when the final design system ships.
+   ===================================================================== */
+:root {
+  --bg-base: var(--ie-dark-bg);
+  --bg-raised: rgba(242, 237, 227, 0.025);
+  --bg-card: var(--ie-dark-surface);
+  --bg-card-hover: var(--ie-dark-surface-2);
+  --bg-input: rgba(242, 237, 227, 0.05);
+  --bg-glass: rgba(242, 237, 227, 0.03);
+
+  --border-subtle: var(--ie-dark-border);
+  --border-medium: var(--ie-dark-border-strong);
+  --border-focus: rgba(232, 102, 76, 0.55);
+
+  --accent: var(--ie-stamp-light);
+  --accent-dim: rgba(232, 102, 76, 0.16);
+  --accent-glow: rgba(232, 102, 76, 0.22);
+  --accent-solid: var(--ie-stamp);
+  --accent-text: #f4c2b5;
+  --accent-light: var(--ie-stamp-light);
+
+  --success: var(--ie-ledger-light);
+  --success-dim: rgba(111, 195, 154, 0.13);
+  --warning: var(--ie-amber);
+  --warning-dim: rgba(227, 168, 61, 0.13);
+  --danger: var(--ie-alert);
+  --danger-dim: rgba(255, 93, 115, 0.13);
+  --amount: var(--ie-ledger-light);
+
+  --text-primary: var(--ie-dark-text);
+  --text-secondary: var(--ie-dark-text-2);
+  --text-tertiary: var(--ie-dark-text-3);
+  --text-muted: rgba(242, 237, 227, 0.24);
+
+  --font-sans: var(--ie-font-sans);
+  --font-mono: var(--ie-font-mono);
+
+  --radius-sm: var(--ie-radius-sm);
+  --radius-md: var(--ie-radius-md);
+  --radius-lg: var(--ie-radius-lg);
+
+  --shadow-card: 0 0 0 1px var(--border-subtle);
+  --shadow-elevated: 0 10px 30px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--border-subtle);
+  --shadow-glow: var(--ie-shadow-stamp);
+}
+
+/* Warm paper grain instead of the blue ambient glow */
+body::before { opacity: 0.05; }
+body::after { background: radial-gradient(ellipse, rgba(216, 67, 43, 0.07) 0%, transparent 70%); }
+
+/* Wordmark: serif display face, no gradient (same as website headlines) */
+.header h1 {
+  font-family: var(--ie-font-display);
+  font-weight: 400;
+  font-size: 26px;
+  letter-spacing: -0.01em;
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  color: var(--ie-dark-text);
+}
+
+/* Primary actions: paper button with the offset stamp shadow (website signature) */
+.btn-primary,
+.card-primary {
+  background: var(--ie-paper);
+  color: var(--ie-ink);
+  border: 1px solid var(--ie-paper);
+  box-shadow: var(--ie-shadow-stamp);
+}
+.btn-primary::before,
+.card-primary::before { display: none; }
+.btn-primary:hover,
+.card-primary:hover {
+  background: var(--ie-paper);
+  border-color: var(--ie-paper);
+  transform: translate(-2px, -2px);
+  box-shadow: var(--ie-shadow-stamp-hover);
+}
+.btn-primary:active,
+.card-primary:active { transform: translate(0, 0); box-shadow: 2px 2px 0 var(--ie-stamp); }
+.card-primary .card-title { color: var(--ie-ink); }
+.card-primary .card-subtitle { color: var(--ie-ink-2); font-family: var(--ie-font-mono); }
+
+/* On/off state uses ledger green ("active"); the stamp red is reserved for the primary action and brand */
+.toggle-switch input:checked + .toggle-slider { background: rgba(111, 195, 154, 0.18); border-color: rgba(111, 195, 154, 0.45); }
+.toggle-switch input:checked + .toggle-slider::before { background: var(--ie-ledger-light); box-shadow: none; }
+.progress-fill { background: var(--ie-stamp-light); box-shadow: none; }
+

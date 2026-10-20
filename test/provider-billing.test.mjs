@@ -299,7 +299,7 @@ function startTestServer() {
 // --- Main Test Runner --------------------------------------
 
 async function runTests() {
-  console.log('\nInvoice Downloader - Provider Billing Regression Tests\n');
+  console.log('\nInvoice Extractor - Provider Billing Regression Tests\n');
 
   let context;
   let server;

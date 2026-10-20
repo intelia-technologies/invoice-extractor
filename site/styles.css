@@ -1,16 +1,17 @@
 :root {
-  --paper: #f2ede3;
-  --paper-2: #e9e2d3;
-  --ink: #16140f;
-  --ink-2: #4a463d;
-  --ink-3: #8a8476;
-  --rule: #d6cdb9;
-  --stamp: #d8432b;
-  --ledger: #1d6b4c;
-  --receipt: #fbf8f1;
-  --serif: "Instrument Serif", "Iowan Old Style", Georgia, serif;
-  --sans: "IBM Plex Sans", system-ui, sans-serif;
-  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* Aliases onto the shared design tokens (site/tokens.css <- design/tokens.css) */
+  --paper: var(--ie-paper);
+  --paper-2: var(--ie-paper-2);
+  --ink: var(--ie-ink);
+  --ink-2: var(--ie-ink-2);
+  --ink-3: var(--ie-ink-3);
+  --rule: var(--ie-rule);
+  --stamp: var(--ie-stamp);
+  --ledger: var(--ie-ledger);
+  --receipt: var(--ie-receipt);
+  --serif: var(--ie-font-display);
+  --sans: var(--ie-font-sans);
+  --mono: var(--ie-font-mono);
   --wrap: min(1160px, calc(100vw - 48px));
 }
 
@@ -57,6 +58,8 @@ main { width: var(--wrap); margin: 0 auto; }
   padding: 88px 0 96px;
 }
 .kicker { font-family: var(--mono); font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2); margin: 0 0 22px; display: flex; align-items: center; gap: 10px; }
+.kicker .beta { background: var(--stamp); color: var(--paper); padding: 2px 8px; border-radius: var(--ie-radius-sm); font-weight: 600; }
+.beta-note { margin: 18px 0 0; font-size: 14px; color: var(--ink-3); max-width: 46em; }
 .kicker .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ledger); box-shadow: 0 0 0 4px rgba(29,107,76,0.15); }
 h1 {
   font-family: var(--serif); font-weight: 400; font-size: clamp(48px, 6.4vw, 86px); line-height: 0.98; letter-spacing: -0.015em;

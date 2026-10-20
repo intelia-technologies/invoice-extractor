@@ -1,0 +1,59 @@
+/* =====================================================================
+   Invoice Extractor — design tokens (interim "Ledger" system)
+   ---------------------------------------------------------------------
+   SINGLE SOURCE OF TRUTH for the website (site/) and the Chrome
+   extension (popup.css). Edit this file, then run:
+       node scripts/sync-design-tokens.mjs
+   which copies it to site/tokens.css. `npm test` fails if they diverge.
+
+   Concept: paper, ink and a rubber stamp. Invoices are paperwork; the
+   product turns paperwork into a filed, stamped "DONE".
+   - Light mode ("paper")  -> website, docs, marketing.
+   - Dark mode  ("ink")    -> the extension popup, terminals, agent UI.
+   This is an interim system until the full design system is delivered
+   (see docs/design-system-brief.md).
+   ===================================================================== */
+
+:root {
+  /* ---- Brand primitives ---- */
+  --ie-paper: #f2ede3;         /* page background, light mode            */
+  --ie-paper-2: #e9e2d3;       /* inline code, subtle fills              */
+  --ie-receipt: #fbf8f1;       /* raised cards on paper                  */
+  --ie-ink: #16140f;           /* primary text on paper, dark background */
+  --ie-ink-2: #4a463d;         /* secondary text on paper                */
+  --ie-ink-3: #8a8476;         /* tertiary text / metadata on paper      */
+  --ie-rule: #d6cdb9;          /* hairlines and dividers on paper        */
+
+  --ie-stamp: #d8432b;         /* brand accent: CTA, "DONE", emphasis    */
+  --ie-stamp-light: #e8664c;   /* accent on dark surfaces                */
+  --ie-stamp-deep: #b8361f;    /* pressed / hover on accent              */
+  --ie-ledger: #1d6b4c;        /* success on paper ("saved", ticks)      */
+  --ie-ledger-light: #6fc39a;  /* success on dark                        */
+  --ie-amber: #e3a83d;         /* warning / needs configuration          */
+  --ie-alert: #ff5d73;         /* error on dark (distinct from stamp)    */
+  --ie-alert-deep: #b4232f;    /* error on paper                         */
+
+  /* ---- Dark mode ("ink") surfaces ---- */
+  --ie-dark-bg: #16140f;
+  --ie-dark-surface: #1f1c16;
+  --ie-dark-surface-2: #29251d;
+  --ie-dark-border: rgba(242, 237, 227, 0.10);
+  --ie-dark-border-strong: rgba(242, 237, 227, 0.20);
+  --ie-dark-text: rgba(242, 237, 227, 0.94);
+  --ie-dark-text-2: rgba(242, 237, 227, 0.64);
+  --ie-dark-text-3: rgba(242, 237, 227, 0.40);
+
+  /* ---- Typography ---- */
+  --ie-font-display: "Instrument Serif", "Iowan Old Style", Georgia, serif;   /* headlines, numbers */
+  --ie-font-sans: "IBM Plex Sans", system-ui, -apple-system, sans-serif;      /* UI and body text  */
+  --ie-font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace; /* labels, IDs, code */
+
+  /* ---- Shape ---- */
+  --ie-radius-sm: 4px;
+  --ie-radius-md: 6px;
+  --ie-radius-lg: 10px;
+
+  /* ---- Signature: the offset "stamp" shadow on primary actions ---- */
+  --ie-shadow-stamp: 4px 4px 0 var(--ie-stamp);
+  --ie-shadow-stamp-hover: 6px 6px 0 var(--ie-stamp);
+}

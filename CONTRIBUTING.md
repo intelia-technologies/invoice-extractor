@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for helping make Invoice Downloader better. The most valuable contributions are **new
+Thanks for helping make Invoice Extractor better. The most valuable contributions are **new
 providers** and **fixes for providers that broke** when a billing page changed its markup.
 
 The whole extension is driven by declarative JSON in `providers/` — a generic engine interprets

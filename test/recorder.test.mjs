@@ -1,5 +1,5 @@
 /**
- * Playwright E2E test for the Invoice Downloader recorder.
+ * Playwright E2E test for the Invoice Extractor recorder.
  *
  * Launches Chromium with the extension loaded unpacked, opens the popup
  * as a floating window, navigates to a local test billing page, and
@@ -47,7 +47,7 @@ async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 // ─── Main Test ─────────────────────────────────────────────
 
 async function runTests() {
-  console.log('\n🧪 Invoice Downloader — Recorder E2E Tests\n');
+  console.log('\n🧪 Invoice Extractor — Recorder E2E Tests\n');
 
   // Start local test server
   const server = startTestServer(8766);

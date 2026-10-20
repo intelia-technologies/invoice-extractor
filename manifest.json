@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "Invoice Downloader",
-  "version": "2.3",
+  "name": "Invoice Extractor",
+  "version": "2.4",
   "description": "Automatically download invoices from SaaS billing pages using declarative JSON providers",
   "permissions": [
     "activeTab",
@@ -37,8 +37,18 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["providers/*.json", "providers/index.json", "utils.js", "engine.js", "recorder.js", "recorder-autostart.js", "icons/providers/*.png"],
-      "matches": ["<all_urls>"]
+      "resources": [
+        "providers/*.json",
+        "providers/index.json",
+        "utils.js",
+        "engine.js",
+        "recorder.js",
+        "recorder-autostart.js",
+        "icons/providers/*.png"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
     }
   ]
 }

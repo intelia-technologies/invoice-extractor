@@ -57,7 +57,7 @@ function discoverExtensionIdsFromProfileDir(userDataDir) {
           if (
             extPath === repoRoot ||
             extPath.endsWith('/invoice-extractor') ||
-            extName === 'Invoice Downloader'
+            extName === 'Invoice Extractor'
           ) {
             found.add(id);
           }
@@ -156,7 +156,7 @@ export function installNativeMessagingHost({ extraIds = [], targetDirs = null } 
   const allowedOrigins = collectAllowedOrigins({ extraIds });
   const manifest = {
     name: NATIVE_HOST_NAME,
-    description: 'Invoice Downloader 1Password Service Account Native Messaging Host',
+    description: 'Invoice Extractor 1Password Service Account Native Messaging Host',
     path: hostScriptPath,
     type: 'stdio',
     allowed_origins: allowedOrigins,

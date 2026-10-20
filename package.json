@@ -1,6 +1,6 @@
 {
   "name": "invoice-extractor",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Automatically download invoices from SaaS billing pages. Providers are defined declaratively in JSON files — the engine interprets them generically.",
   "main": "background.js",
   "bin": {
@@ -10,7 +10,7 @@
     "test": "test"
   },
   "scripts": {
-    "test": "node scripts/validate-providers.mjs && node --test test/profile-sync.test.mjs",
+    "test": "node scripts/validate-providers.mjs && node scripts/sync-design-tokens.mjs --check && node --test test/profile-sync.test.mjs",
     "validate": "node scripts/validate-providers.mjs",
     "test:sync": "node --test test/profile-sync.test.mjs",
     "install:1password": "node scripts/install-onepassword-host.mjs",

@@ -1,4 +1,4 @@
-# Invoice Downloader — Chrome Extension
+# Invoice Extractor — Chrome Extension
 
 🌐 **Website & installers:** https://invoice-extractor.noscomelaia.com · [Latest release](https://github.com/intelia-technologies/invoice-extractor/releases/latest)
 

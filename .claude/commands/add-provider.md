@@ -1,6 +1,6 @@
 # Add Provider from Recording
 
-Generate a provider JSON from a recording file exported by the Invoice Downloader extension.
+Generate a provider JSON from a recording file exported by the Invoice Extractor extension.
 
 ## Arguments
 
