@@ -1,0 +1,78 @@
+name: "✨ New provider request"
+description: Request support for a SaaS billing page that isn't covered yet
+title: "[New provider] <name>"
+labels: ["new-provider"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a new provider. Providers are declarative JSON files interpreted by a
+        generic engine — see [CONTRIBUTING.md](../blob/main/CONTRIBUTING.md) if you'd like to try
+        writing one yourself. The details below help whoever picks this up build and test it.
+
+        **Do not include tokens, cookies, account numbers, or personal data anywhere in this issue.**
+  - type: input
+    id: name
+    attributes:
+      label: Provider name
+      description: The service whose invoices you want to download.
+      placeholder: "e.g. Cloudflare"
+    validations:
+      required: true
+  - type: input
+    id: billing-url
+    attributes:
+      label: Billing / invoices page URL
+      description: The page where the invoice list is shown once you're logged in.
+      placeholder: "https://example.com/account/billing"
+    validations:
+      required: true
+  - type: dropdown
+    id: sso
+    attributes:
+      label: Are invoices behind SSO?
+      description: Do you have to log in through a single sign-on provider (Google, Okta, SAML, etc.) to reach them?
+      options:
+        - "No — normal email/password login"
+        - "Yes — SSO (Google / Okta / SAML / etc.)"
+        - "Not sure"
+    validations:
+      required: true
+  - type: textarea
+    id: list-description
+    attributes:
+      label: What does the invoice list look like?
+      description: |
+        Describe how invoices are presented and how you download one today. For example:
+        a table with one row per month and a PDF icon; a list of cards with a "Download" button;
+        a receipt page that opens in a new tab and has to be printed; etc.
+    validations:
+      required: true
+  - type: dropdown
+    id: can-share-dom
+    attributes:
+      label: Can you share sanitized DOM snippets?
+      description: Reviewers usually need the page's HTML (with personal data removed) to write reliable selectors.
+      options:
+        - "Yes, I can capture and sanitize DOM snippets"
+        - "No"
+        - "Not sure how"
+    validations:
+      required: true
+  - type: dropdown
+    id: wants-to-attempt
+    attributes:
+      label: Do you want to attempt the JSON yourself?
+      description: We're happy to guide you through writing the provider file (or you can leave it to a maintainer).
+      options:
+        - "Yes — I'd like to try it with guidance"
+        - "No — I'm just requesting it"
+    validations:
+      required: true
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Confirmation
+      options:
+        - label: This issue contains no tokens, cookies, account numbers, or personal data.
+          required: true

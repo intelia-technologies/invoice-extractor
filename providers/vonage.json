@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "vonage",
+  "name": "Vonage/TokBox",
+  "icon": "📞",
+  "billingUrl": "https://tokbox.com/account/#/billing",
+  "readySelector": "tr.ac-invoice",
+  "extract": {
+    "rows": "tr.ac-invoice",
+    "fields": {
+      "month": { "selector": "td:nth-child(1)" },
+      "date": { "selector": "td:nth-child(2)" },
+      "amount": { "selector": "td:nth-child(3)" },
+      "downloadUrl": {
+        "selector": "a[href*=\"/pdf\"]",
+        "attr": "href",
+        "resolve": true
+      }
+    },
+    "dateFormat": "M/D/YYYY",
+    "dedup": "downloadUrl"
+  },
+  "download": {
+    "method": "fetch-blob",
+    "filenameTemplate": "Vonage_Invoice_{{month}}_{{amount}}.pdf"
+  }
+}

@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "id": "coderabbit",
+  "name": "CodeRabbit",
+  "icon": "🐰",
+  "billingUrl": "https://app.coderabbit.ai/settings/billing?tab=invoices",
+  "readySelector": "button[role='tab']",
+  "config": {
+    "org": {
+      "title": "Organization",
+      "hint": "Name of the CodeRabbit organization (shown in the header dropdown).",
+      "hintUrl": "https://app.coderabbit.ai/settings/organization",
+      "type": "string",
+      "default": ""
+    }
+  },
+  "orgCheck": {
+    "selector": "a[href='/']",
+    "configField": "org"
+  },
+  "preNavigation": {
+    "url": "https://app.coderabbit.ai/settings/repositories",
+    "readySelector": "button[aria-haspopup='menu']:has(img[alt$=' avatar'])",
+    "steps": [
+      { "action": "click", "selector": "button[aria-haspopup='menu']:has(img[alt$=' avatar'])", "wait": 1000 },
+      { "action": "click", "selector": "[role='menuitem'][data-org]", "text": "{{config.org}}", "wait": 3000 }
+    ]
+  },
+  "extract": {
+    "preSteps": [
+      {
+        "action": "click",
+        "selector": "button[role='tab']",
+        "text": "Invoices",
+        "wait": 2000
+      },
+      {
+        "action": "waitFor",
+        "selector": "table tbody tr:has(button[aria-label='Download invoice'])",
+        "timeout": 10000
+      }
+    ],
+    "rows": "table tbody tr:has(button[aria-label='Download invoice'])",
+    "fields": {
+      "id": { "selector": "td:nth-child(1)" },
+      "date": { "selector": "td:nth-child(2)" },
+      "amount": { "selector": "td:nth-child(6)" }
+    },
+    "dateFormat": "auto",
+    "dedup": "id",
+    "pagination": {
+      "type": "click-next",
+      "nextSelector": "button[aria-label='Next page']",
+      "wait": 2000
+    },
+    "allowMissingUrl": true
+  },
+  "download": {
+    "method": "click-download",
+    "steps": [
+      {
+        "selector": "button[aria-label='Download invoice']",
+        "scope": "row",
+        "wait": 2000
+      }
+    ],
+    "filenameTemplate": "CodeRabbit_Invoice_{{id}}_{{date}}.pdf"
+  }
+}

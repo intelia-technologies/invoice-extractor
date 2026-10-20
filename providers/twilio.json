@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "id": "twilio",
+  "name": "Twilio",
+  "icon": "📞",
+  "billingUrl": "https://1console.twilio.com/organization/{{config.organizationId}}/billing/group/{{config.billingGroupId}}/payments/bills",
+  "readySelector": "table.border-collapse.text-left",
+  "config": {
+    "organizationId": {
+      "title": "Organization ID (OR...)",
+      "type": "string",
+      "default": "",
+      "multi": true,
+      "hint": "Open Twilio Billing. Copy the 'OR...' ID from the browser address bar (e.g., OR21c66197b453bee0e044a8f05fbcbaf6).",
+      "hintUrl": "https://1console.twilio.com/"
+    },
+    "billingGroupId": {
+      "title": "Billing Group ID (billing_group_...)",
+      "type": "string",
+      "default": "",
+      "multi": true,
+      "hint": "Open Twilio Billing. Copy the 'billing_group_...' ID from the browser address bar (e.g., billing_group_5ht50ezp9ezd7djr0chknbfzss).",
+      "hintUrl": "https://1console.twilio.com/"
+    }
+  },
+  "extract": {
+    "rows": "table.border-collapse.text-left tbody tr",
+    "fields": {
+      "date": { "selector": "td:nth-child(1)" },
+      "amount": { "selector": "td:nth-child(6)" }
+    },
+    "dateFormat": "Month YYYY",
+    "dedup": "date",
+    "allowMissingUrl": true
+  },
+  "download": {
+    "method": "click-download",
+    "steps": [
+      {
+        "selector": "button[aria-label='Open menu'], button[aria-haspopup='menu']",
+        "scope": "row",
+        "wait": 500
+      },
+      {
+        "selector": "button[role='menuitem'], [role='menuitem'], button",
+        "text": "PDF",
+        "scope": "document",
+        "visible": true,
+        "wait": 3000
+      }
+    ],
+    "filenameTemplate": "Twilio_Statement_{{date}}.pdf"
+  }
+}

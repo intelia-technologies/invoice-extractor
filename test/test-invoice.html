@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Invoice Detail</title>
+  <style>
+    body { font-family: -apple-system, sans-serif; max-width: 600px; margin: 60px auto; padding: 20px; text-align: center; }
+    .card { border: 1px solid #ddd; border-radius: 12px; padding: 40px; margin: 20px 0; }
+    .paid { color: #22c55e; font-size: 14px; }
+    .amount { font-size: 36px; font-weight: 700; margin: 10px 0; }
+    .details { text-align: left; margin: 20px 0; font-size: 14px; color: #666; }
+    .details div { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
+    .details span:last-child { color: #333; font-weight: 500; }
+    .buttons { display: flex; gap: 12px; justify-content: center; margin-top: 20px; }
+    .btn { padding: 12px 24px; border-radius: 8px; border: 1px solid #ddd; cursor: pointer; font-size: 14px; }
+    .btn-primary { background: #2563eb; color: white; border-color: #2563eb; }
+    .powered { margin-top: 30px; color: #999; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <h2>ACME Corp</h2>
+  <div class="card">
+    <div class="paid">Paid</div>
+    <div class="amount" id="amount">$99.00</div>
+    <div class="details">
+      <div><span>Invoice number</span><span id="inv-num">INV-2026-003</span></div>
+      <div><span>Date</span><span id="inv-date">Mar 1, 2026</span></div>
+      <div><span>Payment method</span><span>Visa •••• 4242</span></div>
+    </div>
+    <div class="buttons">
+      <button class="btn" onclick="downloadInvoice()">Download invoice</button>
+      <button class="btn btn-primary" onclick="downloadReceipt()">Download receipt</button>
+    </div>
+  </div>
+  <div class="powered">Powered by <b>stripe</b></div>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const id = params.get('id') || '003';
+    const invoices = {
+      '003': { num: 'INV-2026-003', amount: '$99.00', date: 'Mar 1, 2026' },
+      '002': { num: 'INV-2026-002', amount: '$99.00', date: 'Feb 1, 2026' },
+      '001': { num: 'INV-2026-001', amount: '$49.00', date: 'Jan 1, 2026' },
+      '012': { num: 'INV-2025-012', amount: '$49.00', date: 'Dec 1, 2025' },
+      '011': { num: 'INV-2025-011', amount: '$49.00', date: 'Nov 1, 2025' }
+    };
+    const inv = invoices[id] || invoices['003'];
+    document.getElementById('amount').textContent = inv.amount;
+    document.getElementById('inv-num').textContent = inv.num;
+    document.getElementById('inv-date').textContent = inv.date;
+    document.title = `Invoice ${inv.num}`;
+
+    function downloadInvoice() {
+      const a = document.createElement('a');
+      a.href = 'data:application/pdf;base64,JVBERi0xLjQKMSAwIG9iago8PAovVHlwZSAvQ2F0YWxvZwovUGFnZXMgMiAwIFIKPj4KZW5kb2Jq';
+      a.download = `invoice_${inv.num}.pdf`;
+      a.click();
+    }
+    function downloadReceipt() {
+      const a = document.createElement('a');
+      a.href = 'data:application/pdf;base64,JVBERi0xLjQKMSAwIG9iago8PAovVHlwZSAvQ2F0YWxvZwovUGFnZXMgMiAwIFIKPj4KZW5kb2Jq';
+      a.download = `receipt_${inv.num}.pdf`;
+      a.click();
+    }
+  </script>
+</body>
+</html>

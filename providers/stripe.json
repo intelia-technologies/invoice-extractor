@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "id": "stripe",
+  "name": "Stripe",
+  "icon": "💳",
+  "billingUrl": "https://dashboard.stripe.com/{{config.accountId}}/settings/plans-and-fees/invoice-history",
+  "readySelector": "table tbody tr.sail-table-row",
+  "auth": {
+    "logoutUrl": "https://dashboard.stripe.com/logout"
+  },
+  "config": {
+    "accountId": {
+      "title": "Account ID (acct_...)",
+      "hint": "The ID is in the URL: dashboard.stripe.com/<acct_...>/... (starts with acct_)",
+      "hintUrl": "https://dashboard.stripe.com/settings",
+      "type": "string",
+      "default": ""
+    }
+  },
+  "extract": {
+    "rows": "table tbody tr.sail-table-row",
+    "fields": {
+      "name": {
+        "selector": "td:nth-child(1)",
+        "attr": "innerText"
+      },
+      "invoiceNumber": {
+        "selector": "td:nth-child(2)",
+        "attr": "innerText"
+      },
+      "date": {
+        "selector": "td:nth-child(1)",
+        "attr": "innerText",
+        "regex": "for\\s+(.+)$",
+        "regexGroup": 1
+      }
+    },
+    "dateFormat": "Month YYYY",
+    "dedup": "invoiceNumber",
+    "allowMissingUrl": true,
+    "pagination": {
+      "type": "click-next",
+      "nextSelector": "a[role='button']:not(.row-actions-trigger)",
+      "nextText": ["siguiente", "next"],
+      "pick": "last",
+      "wait": 3000
+    }
+  },
+  "download": {
+    "method": "click-download",
+    "steps": [
+      {
+        "selector": "a.row-actions-trigger",
+        "wait": 800
+      },
+      {
+        "selector": "[role='menu'] [role='menuitem']",
+        "text": ["descargar", "download"],
+        "scope": "document",
+        "visible": true,
+        "pollTimeout": 5000,
+        "wait": 600
+      }
+    ],
+    "filenameTemplate": "Stripe_TaxInvoice_{{invoiceNumber}}.pdf"
+  }
+}

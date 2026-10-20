@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "zerossl",
+  "name": "ZeroSSL",
+  "icon": "🔐",
+  "billingUrl": "https://app.zerossl.com/billing",
+  "readySelector": "li.paid",
+  "extract": {
+    "rows": "li.paid",
+    "fields": {
+      "id": {
+        "selector": ".meta",
+        "regex": "\\d+"
+      },
+      "date": { "selector": ".date" },
+      "amount": { "selector": ".price, .amount, .total" },
+      "downloadUrl": {
+        "selector": "a[title=\"Download PDF Invoice\"]",
+        "attr": "href",
+        "resolve": true
+      }
+    },
+    "dateFormat": "Month YYYY",
+    "dedup": "downloadUrl"
+  },
+  "download": {
+    "method": "direct-link",
+    "filenameTemplate": "ZeroSSL_Invoice_{{date}}_{{amount}}.pdf"
+  }
+}

@@ -1,0 +1,1418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Invoice Extractor — Technical Architecture</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bg-primary: #08090d;
+  --bg-secondary: #0e1017;
+  --bg-tertiary: #141620;
+  --bg-card: #12141e;
+  --border: #1e2235;
+  --border-bright: #2a2f4a;
+  --text-primary: #e8eaf0;
+  --text-secondary: #8b90a8;
+  --text-dim: #555a74;
+  --accent: #f97316;
+  --accent-dim: #f9731622;
+  --accent-glow: #f9731640;
+  --green: #22c55e;
+  --blue: #3b82f6;
+  --purple: #a855f7;
+  --red: #ef4444;
+  --yellow: #eab308;
+  --cyan: #06b6d4;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-serif: 'Instrument Serif', serif;
+  --font-body: 'DM Sans', sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-bright) var(--bg-primary);
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--bg-primary);
+}
+
+/* ─── NAV SIDEBAR ─── */
+nav {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 260px;
+  height: 100vh;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border);
+  padding: 32px 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+nav .nav-brand {
+  padding: 0 24px 24px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+
+nav .nav-brand .brand-icon {
+  width: 36px;
+  height: 36px;
+  background: var(--accent);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  margin-bottom: 12px;
+}
+
+nav .nav-brand h2 {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--text-primary);
+}
+
+nav .nav-brand span {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+nav a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 24px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 400;
+  transition: all 0.2s;
+  border-left: 2px solid transparent;
+}
+
+nav a:hover {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+}
+
+nav a.active {
+  color: var(--accent);
+  border-left-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+nav a .nav-num {
+  color: var(--text-dim);
+  font-size: 10px;
+  min-width: 20px;
+}
+
+nav .nav-footer {
+  margin-top: auto;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+}
+
+nav .nav-footer a {
+  padding: 6px 0;
+  font-size: 11px;
+  border: none;
+  color: var(--text-dim);
+}
+
+/* ─── MAIN CONTENT ─── */
+main {
+  margin-left: 260px;
+  min-height: 100vh;
+}
+
+section {
+  padding: 80px 64px;
+  border-bottom: 1px solid var(--border);
+  max-width: 1100px;
+}
+
+section:last-child { border-bottom: none; }
+
+/* ─── HERO ─── */
+.hero {
+  padding: 120px 64px 100px;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -200px;
+  right: -200px;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.hero-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hero-eyebrow::before {
+  content: '';
+  width: 40px;
+  height: 1px;
+  background: var(--accent);
+}
+
+.hero h1 {
+  font-family: var(--font-serif);
+  font-size: 56px;
+  font-weight: 400;
+  line-height: 1.1;
+  color: var(--text-primary);
+  margin-bottom: 20px;
+  max-width: 700px;
+}
+
+.hero h1 em {
+  font-style: italic;
+  color: var(--accent);
+}
+
+.hero .hero-sub {
+  font-size: 17px;
+  color: var(--text-secondary);
+  max-width: 600px;
+  margin-bottom: 40px;
+  line-height: 1.8;
+}
+
+.hero-callout {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-bright);
+  border-radius: 8px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--green);
+}
+
+.hero-callout .callout-icon {
+  width: 8px;
+  height: 8px;
+  background: var(--green);
+  border-radius: 50%;
+  box-shadow: 0 0 12px var(--green);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.hero-stats {
+  display: flex;
+  gap: 48px;
+  margin-top: 48px;
+  padding-top: 32px;
+  border-top: 1px solid var(--border);
+}
+
+.hero-stat {
+  display: flex;
+  flex-direction: column;
+}
+
+.hero-stat .stat-num {
+  font-family: var(--font-serif);
+  font-size: 36px;
+  color: var(--text-primary);
+}
+
+.hero-stat .stat-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* ─── SECTION HEADERS ─── */
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+h2 {
+  font-family: var(--font-serif);
+  font-size: 40px;
+  font-weight: 400;
+  line-height: 1.15;
+  margin-bottom: 16px;
+}
+
+.section-desc {
+  color: var(--text-secondary);
+  max-width: 640px;
+  margin-bottom: 48px;
+  font-size: 15px;
+}
+
+/* ─── ARCHITECTURE LAYERS ─── */
+.layers-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.layer {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 32px;
+  position: relative;
+  transition: all 0.3s;
+}
+
+.layer:hover {
+  border-color: var(--border-bright);
+  transform: translateX(4px);
+}
+
+.layer-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.layer-num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--bg-primary);
+  background: var(--accent);
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.layer-title {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.layer-file {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-left: auto;
+  padding: 4px 10px;
+  background: var(--bg-primary);
+  border-radius: 4px;
+}
+
+.layer-body {
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.8;
+  padding-left: 44px;
+}
+
+.layer-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 16px;
+  padding-left: 44px;
+}
+
+.tag {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 4px 10px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-secondary);
+}
+
+.tag.tag-accent {
+  border-color: var(--accent-dim);
+  color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.layer-connector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  position: relative;
+}
+
+.layer-connector::before {
+  content: '';
+  width: 1px;
+  height: 100%;
+  background: linear-gradient(to bottom, var(--border-bright), var(--accent), var(--border-bright));
+  position: absolute;
+  left: 78px;
+}
+
+.layer-connector .conn-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  background: var(--bg-primary);
+  padding: 2px 8px;
+  position: relative;
+  z-index: 1;
+  margin-left: 44px;
+}
+
+/* ─── DOWNLOAD METHODS TABLE ─── */
+.methods-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.methods-table th {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  text-align: left;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-bright);
+}
+
+.methods-table td {
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.methods-table tr:hover td {
+  background: var(--bg-card);
+}
+
+.methods-table .method-name {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--accent);
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.methods-table .method-desc {
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.methods-table .method-providers {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+/* ─── EXECUTION TIMELINE ─── */
+.timeline {
+  position: relative;
+  padding-left: 40px;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 15px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: linear-gradient(to bottom, var(--accent), var(--border-bright), var(--border));
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 8px;
+  padding: 16px 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.timeline-item:hover {
+  border-color: var(--border-bright);
+}
+
+.timeline-item::before {
+  content: '';
+  position: absolute;
+  left: -33px;
+  top: 22px;
+  width: 11px;
+  height: 11px;
+  background: var(--bg-primary);
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+}
+
+.timeline-item.phase::before {
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
+.timeline-step {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+
+.timeline-title {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.timeline-desc {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.timeline-sub {
+  margin-top: 8px;
+  padding-left: 16px;
+  border-left: 1px solid var(--border);
+}
+
+.timeline-sub .sub-item {
+  padding: 6px 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+}
+
+.timeline-sub .sub-item span {
+  color: var(--text-dim);
+  margin-right: 6px;
+}
+
+/* ─── RECORDER ─── */
+.recorder-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.recorder-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  transition: border-color 0.2s;
+}
+
+.recorder-card:hover {
+  border-color: var(--border-bright);
+}
+
+.recorder-card.card-wide {
+  grid-column: 1 / -1;
+}
+
+.recorder-card h4 {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.recorder-card h4 .card-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.recorder-card p, .recorder-card li {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.recorder-card ul {
+  list-style: none;
+  padding: 0;
+}
+
+.recorder-card li {
+  padding: 3px 0;
+  padding-left: 16px;
+  position: relative;
+}
+
+.recorder-card li::before {
+  content: '>';
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+/* ─── CODE BLOCKS ─── */
+.code-block {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.code-header {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border);
+  gap: 8px;
+}
+
+.code-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--border-bright);
+}
+
+.code-dot:nth-child(1) { background: var(--red); opacity: 0.7; }
+.code-dot:nth-child(2) { background: var(--yellow); opacity: 0.7; }
+.code-dot:nth-child(3) { background: var(--green); opacity: 0.7; }
+
+.code-filename {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-left: 8px;
+}
+
+.code-body {
+  padding: 20px 24px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.9;
+  color: var(--text-secondary);
+}
+
+.code-body .c-key { color: #7dd3fc; }
+.code-body .c-str { color: #86efac; }
+.code-body .c-comment { color: var(--text-dim); font-style: italic; }
+.code-body .c-num { color: #fbbf24; }
+.code-body .c-bool { color: #c084fc; }
+.code-body .c-accent { color: var(--accent); }
+
+/* ─── DECISION CARDS ─── */
+.decisions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.decision-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s;
+}
+
+.decision-card:hover {
+  border-color: var(--border-bright);
+  transform: translateY(-2px);
+}
+
+.decision-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+}
+
+.decision-num {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+}
+
+.decision-card h4 {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: var(--text-primary);
+}
+
+.decision-card p {
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+/* ─── ALTERNATIVES ─── */
+.alt-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.alt-row {
+  display: grid;
+  grid-template-columns: 200px 1fr 120px;
+  align-items: center;
+  padding: 20px 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  gap: 24px;
+  transition: border-color 0.2s;
+}
+
+.alt-row:hover {
+  border-color: var(--border-bright);
+}
+
+.alt-row.alt-winner {
+  border-color: var(--accent-dim);
+  background: linear-gradient(135deg, var(--bg-card), var(--accent-dim));
+}
+
+.alt-name {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.alt-desc {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.alt-verdict {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-align: right;
+}
+
+.alt-verdict.v-red { color: var(--red); }
+.alt-verdict.v-yellow { color: var(--yellow); }
+.alt-verdict.v-green { color: var(--green); }
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 1024px) {
+  nav { display: none; }
+  main { margin-left: 0; }
+  section, .hero { padding: 48px 24px; }
+  .hero h1 { font-size: 36px; }
+  h2 { font-size: 28px; }
+  .decisions-grid { grid-template-columns: 1fr; }
+  .recorder-grid { grid-template-columns: 1fr; }
+  .alt-row { grid-template-columns: 1fr; gap: 8px; }
+  .hero-stats { flex-direction: column; gap: 16px; }
+  .methods-table { font-size: 12px; }
+  .methods-table td, .methods-table th { padding: 10px 8px; }
+}
+
+/* ─── SCROLL ANIMATION ─── */
+.fade-in {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s, transform 0.6s;
+}
+
+.fade-in.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+</style>
+</head>
+<body>
+
+<!-- NAVIGATION -->
+<nav>
+  <div class="nav-brand">
+    <div class="brand-icon">IE</div>
+    <h2>Invoice Extractor</h2>
+    <span>Technical Docs v2.1</span>
+  </div>
+  <a href="#overview" class="active"><span class="nav-num">01</span> Overview</a>
+  <a href="#architecture"><span class="nav-num">02</span> Architecture</a>
+  <a href="#downloads"><span class="nav-num">03</span> Download Methods</a>
+  <a href="#flow"><span class="nav-num">04</span> Execution Flow</a>
+  <a href="#recorder"><span class="nav-num">05</span> Recorder</a>
+  <a href="#schema"><span class="nav-num">06</span> Provider Schema</a>
+  <a href="#decisions"><span class="nav-num">07</span> Key Decisions</a>
+  <a href="#alternatives"><span class="nav-num">08</span> Alternatives</a>
+  <div class="nav-footer">
+    <a href="https://github.com">GitHub Repository</a>
+  </div>
+</nav>
+
+<main>
+
+<!-- ═══ HERO ═══ -->
+<section class="hero" id="overview">
+  <div class="hero-eyebrow">Chrome MV3 Extension</div>
+  <h1>Invoice Extractor<br><em>Technical Architecture</em></h1>
+  <p class="hero-sub">
+    A Chrome extension that automatically downloads invoices from 20+ SaaS billing pages
+    using declarative JSON definitions and a generic execution engine.
+  </p>
+  <div class="hero-callout">
+    <span class="callout-icon"></span>
+    The user is already logged into Chrome. No auth management needed.
+  </div>
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <span class="stat-num">20</span>
+      <span class="stat-label">Providers</span>
+    </div>
+    <div class="hero-stat">
+      <span class="stat-num">7</span>
+      <span class="stat-label">Download Methods</span>
+    </div>
+    <div class="hero-stat">
+      <span class="stat-num">9</span>
+      <span class="stat-label">Date Formats</span>
+    </div>
+    <div class="hero-stat">
+      <span class="stat-num">~3,745</span>
+      <span class="stat-label">Lines in popup.js</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ ARCHITECTURE ═══ -->
+<section id="architecture">
+  <div class="section-label">02 &mdash; Architecture</div>
+  <h2>Three-Layer Stack</h2>
+  <p class="section-desc">
+    All provider-specific logic lives in JSON. The engine interprets it generically.
+    The popup orchestrates the workflow. No hardcoded provider logic anywhere.
+  </p>
+
+  <div class="layers-stack">
+    <div class="layer fade-in">
+      <div class="layer-header">
+        <span class="layer-num">1</span>
+        <span class="layer-title">Provider JSON</span>
+        <span class="layer-file">providers/*.json</span>
+      </div>
+      <div class="layer-body">
+        Purely declarative definitions &mdash; one JSON file per SaaS provider. Each defines the billing URL,
+        CSS selectors for the invoice table, field extraction rules, date format, download method, and
+        filename template. Config fields support multi-account setups with template interpolation.
+      </div>
+      <div class="layer-tags">
+        <span class="tag tag-accent">20 providers</span>
+        <span class="tag">billingUrl</span>
+        <span class="tag">readySelector</span>
+        <span class="tag">extract.rows</span>
+        <span class="tag">extract.fields</span>
+        <span class="tag">download.method</span>
+        <span class="tag">config (multi)</span>
+        <span class="tag">preNavigation</span>
+        <span class="tag">orgCheck</span>
+      </div>
+    </div>
+
+    <div class="layer-connector">
+      <span class="conn-label">chrome.scripting.executeScript &darr; MAIN world</span>
+    </div>
+
+    <div class="layer fade-in">
+      <div class="layer-header">
+        <span class="layer-num">2</span>
+        <span class="layer-title">Generic Engine</span>
+        <span class="layer-file">engine.js</span>
+      </div>
+      <div class="layer-body">
+        Self-contained IIFE injected into the target tab's MAIN world. Exposes
+        <code>window.__invoiceEngine.execute(provider, config)</code>.
+        Runs preSteps, extracts fields from rows using CSS selectors, parses dates (9 formats including
+        Spanish &amp; European), handles click simulation with full pointer/mouse events for React/Radix
+        components, intercepts <code>window.open()</code> for click-download, and supports select-based pagination.
+      </div>
+      <div class="layer-tags">
+        <span class="tag">preSteps</span>
+        <span class="tag">simulateRealClick</span>
+        <span class="tag">parseDate (9 formats)</span>
+        <span class="tag">extractField</span>
+        <span class="tag">window.open intercept</span>
+        <span class="tag">pagination</span>
+        <span class="tag">dedup</span>
+      </div>
+    </div>
+
+    <div class="layer-connector">
+      <span class="conn-label">{ count, invoices } &uarr; results</span>
+    </div>
+
+    <div class="layer fade-in">
+      <div class="layer-header">
+        <span class="layer-num">3</span>
+        <span class="layer-title">Popup Orchestrator</span>
+        <span class="layer-file">popup.js &nbsp;~3,745 lines</span>
+      </div>
+      <div class="layer-body">
+        The command center. Manages the full workflow lifecycle: tab creation &amp; reuse, readySelector
+        polling with login auto-detection, preNavigation for org/account switching, orgCheck validation,
+        multi-config expansion (zip by index), download dispatch via
+        <code>chrome.downloads</code> / <code>chrome.debugger</code>, persistent download history with
+        CSV export, profiles system for saved configurations, and a floating window mode for persistent UI.
+      </div>
+      <div class="layer-tags">
+        <span class="tag">workflow engine</span>
+        <span class="tag">tab management</span>
+        <span class="tag">login detection</span>
+        <span class="tag">preNavigation</span>
+        <span class="tag">orgCheck</span>
+        <span class="tag">download dispatch</span>
+        <span class="tag">history + CSV</span>
+        <span class="tag">profiles</span>
+        <span class="tag">floating window</span>
+        <span class="tag">recorder UI</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ DOWNLOAD METHODS ═══ -->
+<section id="downloads">
+  <div class="section-label">03 &mdash; Download Methods</div>
+  <h2>Seven Ways to Get a PDF</h2>
+  <p class="section-desc">
+    Every SaaS platform serves invoices differently. The engine supports 7 download methods,
+    chosen per-provider in the JSON definition.
+  </p>
+
+  <div class="code-block" style="overflow-x: auto;">
+    <table class="methods-table">
+      <thead>
+        <tr>
+          <th>Method</th>
+          <th>Mechanism</th>
+          <th>Use Case</th>
+          <th>Providers</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="fade-in">
+          <td class="method-name">direct-link</td>
+          <td class="method-desc">Creates <code>&lt;a download&gt;</code> and clicks it. Popup.js downloads via <code>chrome.downloads</code>.</td>
+          <td class="method-desc">Direct PDF URLs on the page</td>
+          <td class="method-providers">Webflow, Elastic, ZeroSSL</td>
+        </tr>
+        <tr class="fade-in">
+          <td class="method-name">fetch-blob</td>
+          <td class="method-desc"><code>fetch()</code> with <code>credentials: 'include'</code>, convert to blob, download.</td>
+          <td class="method-desc">Same-origin PDFs that need cookies/auth</td>
+          <td class="method-providers">Vultr, Vonage, GitHub</td>
+        </tr>
+        <tr class="fade-in">
+          <td class="method-name">open-tabs</td>
+          <td class="method-desc">Opens each invoice URL in a new browser tab.</td>
+          <td class="method-desc">External invoice pages (manual save)</td>
+          <td class="method-providers">Shortcut</td>
+        </tr>
+        <tr class="fade-in">
+          <td class="method-name">print-page</td>
+          <td class="method-desc">Opens receipt URL + triggers <code>window.print()</code>.</td>
+          <td class="method-desc">Receipt pages with print-friendly layouts</td>
+          <td class="method-providers">&mdash;</td>
+        </tr>
+        <tr class="fade-in">
+          <td class="method-name">chrome-download</td>
+          <td class="method-desc">Opens URL in background tab, listens for <code>chrome.downloads.onCreated</code>. Supports <code>postLoadClick</code> for secondary buttons.</td>
+          <td class="method-desc">Pages with redirects, JS triggers, or download buttons</td>
+          <td class="method-providers">OpenAI, Hetzner</td>
+        </tr>
+        <tr class="fade-in">
+          <td class="method-name">debugger-print</td>
+          <td class="method-desc"><code>chrome.debugger</code> attach &rarr; <code>Page.printToPDF</code> &rarr; base64 blob &rarr; download. Fully automated.</td>
+          <td class="method-desc">Receipt pages with no PDF export</td>
+          <td class="method-providers">Hover</td>
+        </tr>
+        <tr class="fade-in">
+          <td class="method-name">click-download</td>
+          <td class="method-desc">Multi-step click sequences per row. Intercepts <code>window.open()</code> to capture signed URLs. Popup.js downloads via <code>chrome.downloads</code>.</td>
+          <td class="method-desc">Buttons that trigger server-side signed URLs or AJAX downloads</td>
+          <td class="method-providers">Amazon, Google Cloud, Twilio, CodeRabbit</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ═══ EXECUTION FLOW ═══ -->
+<section id="flow">
+  <div class="section-label">04 &mdash; Execution Flow</div>
+  <h2>What Happens When You Click <em>"Download All"</em></h2>
+  <p class="section-desc">
+    The full lifecycle from button click to downloaded PDFs, showing how popup.js orchestrates
+    the engine across multiple providers.
+  </p>
+
+  <div class="timeline">
+    <div class="timeline-item phase fade-in">
+      <div class="timeline-step">Phase 1</div>
+      <div class="timeline-title">Batch Configuration</div>
+      <div class="timeline-desc">User sets "since" date and max invoices. Active providers are expanded: multi-value config fields (e.g., 3 Google Cloud accounts) are zipped by index into separate workflow entries.</div>
+    </div>
+
+    <div class="timeline-item phase fade-in">
+      <div class="timeline-step">Phase 2 &mdash; Per Provider Loop</div>
+      <div class="timeline-title">Provider Processing</div>
+      <div class="timeline-desc">Each provider is processed sequentially. Unconfigured providers are auto-skipped.</div>
+    </div>
+
+    <div class="timeline-item fade-in">
+      <div class="timeline-step">2a</div>
+      <div class="timeline-title">PreNavigation</div>
+      <div class="timeline-desc">If configured, opens a preparatory URL (e.g., repositories page) and executes steps to switch org/account before navigating to the billing page.</div>
+    </div>
+
+    <div class="timeline-item fade-in">
+      <div class="timeline-step">2b</div>
+      <div class="timeline-title">Open Billing Tab</div>
+      <div class="timeline-desc">Finds existing tab on the provider's domain or creates a new one. Navigates to <code>billingUrl</code> (with config templates resolved). Waits for tab load + 2s SPA render delay.</div>
+    </div>
+
+    <div class="timeline-item fade-in">
+      <div class="timeline-step">2c</div>
+      <div class="timeline-title">Iframe Detection</div>
+      <div class="timeline-desc">If provider uses <code>iframe.urlPattern</code>, polls <code>chrome.webNavigation.getAllFrames()</code> for up to 30 seconds to find the matching frame.</div>
+    </div>
+
+    <div class="timeline-item fade-in">
+      <div class="timeline-step">2d</div>
+      <div class="timeline-title">ReadySelector Polling</div>
+      <div class="timeline-desc">Polls for the <code>readySelector</code> CSS selector at 1-second intervals (30s timeout). Acts as login auto-detection &mdash; if the selector appears after the user logs in, download starts automatically.</div>
+    </div>
+
+    <div class="timeline-item fade-in">
+      <div class="timeline-step">2e</div>
+      <div class="timeline-title">OrgCheck</div>
+      <div class="timeline-desc">If configured, reads the page element (e.g., breadcrumb) and compares with the expected org from config. Blocks download with a clear message if mismatched.</div>
+    </div>
+
+    <div class="timeline-item phase fade-in">
+      <div class="timeline-step">2f</div>
+      <div class="timeline-title">Engine Injection &amp; Execution</div>
+      <div class="timeline-desc">Injects <code>engine.js</code> into the tab's MAIN world. Engine runs the full extraction pipeline:</div>
+      <div class="timeline-sub">
+        <div class="sub-item"><span>i.</span> Execute preSteps (click tabs, wait for elements)</div>
+        <div class="sub-item"><span>ii.</span> Query rows via CSS selector</div>
+        <div class="sub-item"><span>iii.</span> Extract fields from each row (selector, attr, regex, template)</div>
+        <div class="sub-item"><span>iv.</span> Filter by sinceDate</div>
+        <div class="sub-item"><span>v.</span> Deduplicate by configurable field</div>
+        <div class="sub-item"><span>vi.</span> Execute download method per invoice</div>
+      </div>
+    </div>
+
+    <div class="timeline-item fade-in">
+      <div class="timeline-step">2g</div>
+      <div class="timeline-title">Download Dispatch</div>
+      <div class="timeline-desc">Popup.js receives the invoice list and dispatches downloads via the appropriate mechanism (<code>chrome.downloads</code>, <code>chrome.debugger</code>, background tabs, etc.)</div>
+    </div>
+
+    <div class="timeline-item fade-in">
+      <div class="timeline-step">2h</div>
+      <div class="timeline-title">History &amp; Next</div>
+      <div class="timeline-desc">Downloaded invoices are saved to persistent history (with download IDs for "open in Finder"). Progress updates. Auto-advance to next provider.</div>
+    </div>
+
+    <div class="timeline-item phase fade-in">
+      <div class="timeline-step">Phase 3</div>
+      <div class="timeline-title">Completion</div>
+      <div class="timeline-desc">Summary screen shows completed providers, skipped providers (with reasons), and total downloads. History is queryable and exportable as CSV.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ RECORDER ═══ -->
+<section id="recorder">
+  <div class="section-label">05 &mdash; Recorder</div>
+  <h2>How Providers Are <em>Discovered</em></h2>
+  <p class="section-desc">
+    The recorder captures everything the user does on a billing page. All pattern detection
+    happens post-hoc &mdash; the recording JSON is then fed to Claude Code for automatic provider generation.
+  </p>
+
+  <div class="recorder-grid">
+    <div class="recorder-card fade-in">
+      <h4><span class="card-dot" style="background: var(--blue);"></span> Click Capture</h4>
+      <ul>
+        <li>Event listener on document (capture phase)</li>
+        <li>Records: tag, text, CSS selector, href, frame context</li>
+        <li>Dialog awareness (is click inside a modal?)</li>
+        <li>Download detection (checks <code>download</code> attr, file extensions)</li>
+      </ul>
+    </div>
+
+    <div class="recorder-card fade-in">
+      <h4><span class="card-dot" style="background: var(--green);"></span> DOM Snapshots</h4>
+      <ul>
+        <li>Initial snapshot of all tables on the page</li>
+        <li>Click-context snapshots (nearest container around clicks)</li>
+        <li>Sanitized: emails redacted, sensitive data stripped</li>
+        <li>Tracking URLs and analytics parameters removed</li>
+      </ul>
+    </div>
+
+    <div class="recorder-card fade-in">
+      <h4><span class="card-dot" style="background: var(--purple);"></span> Network &amp; Downloads</h4>
+      <ul>
+        <li><code>PerformanceObserver</code> watching resource entries</li>
+        <li>Auto-detects PDF/document fetches</li>
+        <li>Intercepts <code>window.open()</code> and <code>URL.createObjectURL()</code></li>
+        <li>Tags download method: open-tabs or fetch-blob</li>
+      </ul>
+    </div>
+
+    <div class="recorder-card fade-in">
+      <h4><span class="card-dot" style="background: var(--yellow);"></span> Dialogs &amp; Modals</h4>
+      <ul>
+        <li><code>MutationObserver</code> watching for <code>[role="dialog"]</code></li>
+        <li>Detects OOPIF dialogs (empty content + child iframes)</li>
+        <li>Re-scans after 500ms for late-rendering content</li>
+        <li>Captures button inventory per dialog</li>
+      </ul>
+    </div>
+
+    <div class="recorder-card card-wide fade-in">
+      <h4><span class="card-dot" style="background: var(--accent);"></span> Post-hoc Analysis</h4>
+      <p>After recording stops, <code>analyzeRecording()</code> identifies patterns from the captured data:</p>
+      <ul>
+        <li><strong>Invoice table candidates</strong> &mdash; tables/lists with 2+ rows, sorted by row count. Includes interactive element inventory per row.</li>
+        <li><strong>Date format detection</strong> &mdash; regex patterns ordered by specificity (DD/MM/YYYY, MMM DD YYYY, etc.)</li>
+        <li><strong>Download method detection</strong> &mdash; most common method from recorded downloads</li>
+        <li><strong>ReadySelector candidates</strong> &mdash; tables with data-test-id, billing containers, fallback to headings</li>
+        <li><strong>Pagination candidates</strong> &mdash; native selects with year/period options, custom dropdowns, next/prev links</li>
+      </ul>
+      <p style="margin-top: 12px; color: var(--text-dim); font-style: italic; font-size: 12px;">
+        Output: JSON file &rarr; fed to Claude Code's <code>/add-provider</code> skill &rarr; automatic provider JSON generation
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ PROVIDER SCHEMA ═══ -->
+<section id="schema">
+  <div class="section-label">06 &mdash; Provider Schema</div>
+  <h2>Anatomy of a Provider</h2>
+  <p class="section-desc">
+    Complete annotated schema showing every possible field. Each provider JSON is a full
+    declarative specification of how to navigate, extract, and download invoices.
+  </p>
+
+  <div class="code-block fade-in">
+    <div class="code-header">
+      <span class="code-dot"></span>
+      <span class="code-dot"></span>
+      <span class="code-dot"></span>
+      <span class="code-filename">providers/example-provider.json</span>
+    </div>
+    <pre class="code-body">{
+  <span class="c-key">"id"</span>: <span class="c-str">"example-provider"</span>,           <span class="c-comment">// kebab-case unique identifier</span>
+  <span class="c-key">"name"</span>: <span class="c-str">"Example Provider"</span>,          <span class="c-comment">// display name in UI</span>
+  <span class="c-key">"icon"</span>: <span class="c-str">"&#x1f4cb;"</span>,                          <span class="c-comment">// emoji fallback (PNG icon preferred)</span>
+  <span class="c-key">"billingUrl"</span>: <span class="c-str">"https://app.example.com/billing/{{config.accountId}}"</span>,
+                                          <span class="c-comment">// supports {{config.*}} templates</span>
+
+  <span class="c-key">"readySelector"</span>: <span class="c-str">"table.invoices tbody tr"</span>,
+                                          <span class="c-comment">// CSS selector confirming page is loaded</span>
+
+  <span class="c-comment">// ─── Per-user configuration ───</span>
+  <span class="c-key">"config"</span>: {
+    <span class="c-key">"accountId"</span>: {
+      <span class="c-key">"title"</span>: <span class="c-str">"Account ID"</span>,
+      <span class="c-key">"type"</span>: <span class="c-str">"string"</span>,
+      <span class="c-key">"default"</span>: <span class="c-str">""</span>,
+      <span class="c-key">"multi"</span>: <span class="c-bool">true</span>              <span class="c-comment">// multiple values &rarr; N workflow entries</span>
+    }
+  },
+
+  <span class="c-comment">// ─── Pre-navigation: switch org/account before billing page ───</span>
+  <span class="c-key">"preNavigation"</span>: {
+    <span class="c-key">"url"</span>: <span class="c-str">"https://app.example.com/settings"</span>,
+    <span class="c-key">"readySelector"</span>: <span class="c-str">"button[aria-haspopup='dialog']"</span>,
+    <span class="c-key">"steps"</span>: [
+      { <span class="c-key">"action"</span>: <span class="c-str">"click"</span>, <span class="c-key">"selector"</span>: <span class="c-str">"button"</span>, <span class="c-key">"wait"</span>: <span class="c-num">1000</span> },
+      { <span class="c-key">"action"</span>: <span class="c-str">"click"</span>, <span class="c-key">"selector"</span>: <span class="c-str">"span"</span>, <span class="c-key">"text"</span>: <span class="c-str">"{{config.org}}"</span>, <span class="c-key">"wait"</span>: <span class="c-num">3000</span> }
+    ]
+  },
+
+  <span class="c-comment">// ─── Org/account verification ───</span>
+  <span class="c-key">"orgCheck"</span>: {
+    <span class="c-key">"selector"</span>: <span class="c-str">"a[href='/']"</span>,        <span class="c-comment">// element with current org name</span>
+    <span class="c-key">"configField"</span>: <span class="c-str">"org"</span>             <span class="c-comment">// config field to compare against</span>
+  },
+
+  <span class="c-comment">// ─── Cross-origin iframe support ───</span>
+  <span class="c-key">"iframe"</span>: {
+    <span class="c-key">"urlPattern"</span>: <span class="c-str">"payments.example.com"</span>  <span class="c-comment">// substring match on iframe src</span>
+  },
+
+  <span class="c-comment">// ─── Extraction rules ───</span>
+  <span class="c-key">"extract"</span>: {
+    <span class="c-key">"preSteps"</span>: [                      <span class="c-comment">// interactions before extraction</span>
+      { <span class="c-key">"action"</span>: <span class="c-str">"click"</span>, <span class="c-key">"selector"</span>: <span class="c-str">"button[role='tab']"</span>, <span class="c-key">"text"</span>: <span class="c-str">"Invoices"</span>, <span class="c-key">"wait"</span>: <span class="c-num">2000</span> },
+      { <span class="c-key">"action"</span>: <span class="c-str">"waitFor"</span>, <span class="c-key">"selector"</span>: <span class="c-str">"table tbody tr"</span>, <span class="c-key">"timeout"</span>: <span class="c-num">10000</span> }
+    ],
+    <span class="c-key">"rows"</span>: <span class="c-str">"table.invoices tbody tr"</span>,   <span class="c-comment">// CSS for each invoice row</span>
+    <span class="c-key">"fields"</span>: {
+      <span class="c-key">"id"</span>:          { <span class="c-key">"selector"</span>: <span class="c-str">"td:nth-child(1)"</span> },
+      <span class="c-key">"date"</span>:        { <span class="c-key">"selector"</span>: <span class="c-str">"td:nth-child(2)"</span> },
+      <span class="c-key">"amount"</span>:      { <span class="c-key">"selector"</span>: <span class="c-str">"td:nth-child(3)"</span> },
+      <span class="c-key">"downloadUrl"</span>: { <span class="c-key">"selector"</span>: <span class="c-str">"a.download"</span>, <span class="c-key">"attr"</span>: <span class="c-str">"href"</span>, <span class="c-key">"resolve"</span>: <span class="c-bool">true</span> }
+    },
+    <span class="c-key">"dateFormat"</span>: <span class="c-str">"auto"</span>,             <span class="c-comment">// auto | M/D/YYYY | DD/MM/YYYY | MMM DD, YYYY | ...</span>
+    <span class="c-key">"dedup"</span>: <span class="c-str">"id"</span>,                    <span class="c-comment">// field to deduplicate by</span>
+    <span class="c-key">"pagination"</span>: {                    <span class="c-comment">// optional</span>
+      <span class="c-key">"type"</span>: <span class="c-str">"select"</span>,               <span class="c-comment">// select | click-next (engine) | url-page (popup)</span>
+      <span class="c-key">"openSelector"</span>: <span class="c-str">"..."</span>,
+      <span class="c-key">"optionSelector"</span>: <span class="c-str">"..."</span>,
+      <span class="c-key">"wait"</span>: <span class="c-num">2000</span>
+    }
+  },
+
+  <span class="c-comment">// ─── Download configuration ───</span>
+  <span class="c-key">"download"</span>: {
+    <span class="c-key">"method"</span>: <span class="c-str">"click-download"</span>,       <span class="c-comment">// one of 7 methods</span>
+    <span class="c-key">"steps"</span>: [                          <span class="c-comment">// for click-download: per-row click sequence</span>
+      { <span class="c-key">"selector"</span>: <span class="c-str">"button[title='Download']"</span>, <span class="c-key">"scope"</span>: <span class="c-str">"row"</span>, <span class="c-key">"wait"</span>: <span class="c-num">2000</span> }
+    ],
+    <span class="c-key">"filenameTemplate"</span>: <span class="c-str">"{{name}}_Invoice_{{id}}_{{date}}.pdf"</span>
+  }
+}</pre>
+  </div>
+</section>
+
+<!-- ═══ KEY DECISIONS ═══ -->
+<section id="decisions">
+  <div class="section-label">07 &mdash; Key Decisions</div>
+  <h2>Why It Works This Way</h2>
+  <p class="section-desc">
+    Architectural decisions that shape the system. Each solves a specific problem
+    encountered while building support for real-world billing pages.
+  </p>
+
+  <div class="decisions-grid">
+    <div class="decision-card fade-in">
+      <div class="decision-num">01</div>
+      <h4>No Service Worker Logic</h4>
+      <p><code>background.js</code> is a stub that only logs on install. All orchestration runs in
+      <code>popup.js</code> via a floating window (<code>chrome.windows.create({ type: 'popup' })</code>).
+      This keeps state management simple and avoids service worker lifecycle issues.</p>
+    </div>
+
+    <div class="decision-card fade-in">
+      <div class="decision-num">02</div>
+      <h4>MAIN World Injection</h4>
+      <p>The engine runs in the page's JavaScript context, not Chrome's isolated world. This is essential:
+      React/Radix/MUI components ignore events from isolated contexts, and <code>window.open()</code>
+      interception only works from the same JS realm.</p>
+    </div>
+
+    <div class="decision-card fade-in">
+      <div class="decision-num">03</div>
+      <h4>Popup Handles Downloads</h4>
+      <p>For <code>direct-link</code> and <code>fetch-blob</code>, popup.js uses <code>chrome.downloads.download()</code>
+      instead of in-page mechanisms. This bypasses Chrome's "allow multiple downloads" permission prompt
+      and ensures proper cookie/auth handling across domains.</p>
+    </div>
+
+    <div class="decision-card fade-in">
+      <div class="decision-num">04</div>
+      <h4>Dual Execution for Iframes</h4>
+      <p>When providers use cross-origin iframes, preSteps and download steps run from popup.js
+      (not inside the engine). The iframe may detach and reload after clicks &mdash; popup.js can
+      re-discover the frame ID, unlike engine.js running inside the destroyed frame.</p>
+    </div>
+
+    <div class="decision-card fade-in">
+      <div class="decision-num">05</div>
+      <h4>Window.open Interception</h4>
+      <p>For <code>click-download</code>, the engine monkey-patches <code>window.open()</code> before
+      clicking download buttons. Chrome's popup blocker blocks synthetic <code>window.open</code> after
+      the first call &mdash; intercepting captures the URL so popup.js can download via the extensions API.</p>
+    </div>
+
+    <div class="decision-card fade-in">
+      <div class="decision-num">06</div>
+      <h4>Multi-Config Zip</h4>
+      <p>When providers have multiple <code>multi: true</code> fields (e.g., email + accountId),
+      values are paired by index, not as a cross-product. This handles the common case of N billing
+      accounts each tied to a specific email, without producing N&sup2; combinations.</p>
+    </div>
+
+    <div class="decision-card fade-in" style="grid-column: 1 / -1;">
+      <div class="decision-num">07</div>
+      <h4>Recorder: Capture Everything, Analyze Later</h4>
+      <p>The recorder doesn't try to identify provider patterns during recording. It captures raw data
+      (clicks, DOM, network, downloads) and runs all analysis in <code>analyzeRecording()</code> after
+      stopping. The recording JSON is then fed to Claude Code's <code>/add-provider</code> skill, which
+      generates the provider JSON automatically. This separation keeps the recorder simple and the
+      analysis reproducible.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ ALTERNATIVES ═══ -->
+<section id="alternatives">
+  <div class="section-label">08 &mdash; Alternatives</div>
+  <h2>Why Not Something Else?</h2>
+  <p class="section-desc">
+    Every approach to automated invoice downloading has tradeoffs.
+    The Chrome extension approach wins on the dimension that matters most: authentication.
+  </p>
+
+  <div class="alt-grid">
+    <div class="alt-row alt-winner fade-in">
+      <div class="alt-name" style="color: var(--accent);">Chrome Extension<br><span style="font-size:11px;color:var(--text-dim);font-weight:400;">(this project)</span></div>
+      <div class="alt-desc">User is already logged into every SaaS. No auth management. Declarative JSON providers. Works with any billing page that renders in Chrome.</div>
+      <div class="alt-verdict v-green">Best fit</div>
+    </div>
+
+    <div class="alt-row fade-in">
+      <div class="alt-name">Browser Automation<br><span style="font-size:11px;color:var(--text-dim);font-weight:400;">Playwright / Puppeteer</span></div>
+      <div class="alt-desc">Requires a separate browser instance. Auth management nightmare &mdash; storing credentials, handling MFA, session expiry. Runs headless, can't reuse existing sessions.</div>
+      <div class="alt-verdict v-red">Auth is the problem</div>
+    </div>
+
+    <div class="alt-row fade-in">
+      <div class="alt-name">API Integrations<br><span style="font-size:11px;color:var(--text-dim);font-weight:400;">Per-provider REST/GraphQL</span></div>
+      <div class="alt-desc">Each provider needs custom API auth (OAuth, API keys). Many SaaS don't expose billing APIs at all. Doesn't scale &mdash; every provider is a custom integration.</div>
+      <div class="alt-verdict v-red">Doesn't scale</div>
+    </div>
+
+    <div class="alt-row fade-in">
+      <div class="alt-name">Email Parsing<br><span style="font-size:11px;color:var(--text-dim);font-weight:400;">Gmail/Outlook automation</span></div>
+      <div class="alt-desc">Parse invoice emails and extract PDF attachments. Incomplete coverage (not all providers email invoices), delayed delivery, format fragility across email clients.</div>
+      <div class="alt-verdict v-yellow">Partial coverage</div>
+    </div>
+
+    <div class="alt-row fade-in">
+      <div class="alt-name">Manual Download<br><span style="font-size:11px;color:var(--text-dim);font-weight:400;">The status quo</span></div>
+      <div class="alt-desc">Log into each SaaS, navigate to billing, download PDFs one by one. Tedious, error-prone, doesn't scale. This is what most teams do today.</div>
+      <div class="alt-verdict v-red">Doesn't scale</div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<script>
+// ─── Active nav highlighting ───
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('nav a[href^="#"]');
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(link => link.classList.remove('active'));
+      const active = document.querySelector(`nav a[href="#${entry.target.id}"]`);
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+
+sections.forEach(s => observer.observe(s));
+
+// ─── Scroll fade-in ───
+const fadeEls = document.querySelectorAll('.fade-in');
+const fadeObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+    }
+  });
+}, { threshold: 0.1 });
+
+fadeEls.forEach(el => fadeObserver.observe(el));
+</script>
+
+</body>
+</html>

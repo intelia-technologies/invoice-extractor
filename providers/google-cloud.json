@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "id": "google-cloud",
+  "name": "Google Cloud",
+  "icon": "☁️",
+  "skipDedup": true,
+  "billingUrl": "https://console.cloud.google.com/billing/{{config.accountId}}/invoices?authuser={{config.email}}",
+  "config": {
+    "email": {
+      "title": "Google account email",
+      "hint": "The Gmail address that owns this billing account (e.g., admin@company.com). Add one per billing account — if the same email has multiple accounts, repeat it",
+      "type": "string",
+      "multi": true,
+      "default": ""
+    },
+    "accountId": {
+      "title": "Billing Account ID",
+      "hint": "The ID is in the URL: /billing/<ID>/overview (format: XXXXXX-XXXXXX-XXXXXX)",
+      "hintUrl": "https://console.cloud.google.com/billing",
+      "type": "string",
+      "multi": true,
+      "default": "",
+      "placeholder": "014874-5BCB20-296F16"
+    }
+  },
+  "iframe": {
+    "urlPattern": "payments.google.com/payments"
+  },
+  "readySelector": "table.b3id-widget-table.b3-widget-table",
+  "extract": {
+    "preSteps": [
+      {
+        "action": "click",
+        "selector": ".goog-flat-menu-button",
+        "text": ["statements", "estados de cuenta"],
+        "wait": 1500
+      },
+      {
+        "action": "click",
+        "selector": ".goog-menuitem-content",
+        "text": ["tax and statutory", "fiscales"],
+        "wait": 3000
+      },
+      {
+        "action": "waitFor",
+        "selector": "table.b3id-widget-table.b3-widget-table",
+        "timeout": 5000
+      }
+    ],
+    "rows": "table.b3id-widget-table.b3-widget-table tbody tr.b3id-widget-table-data-row.clickable",
+    "fields": {
+      "date": { "selector": "td:nth-child(2)" },
+      "type": { "selector": "td:nth-child(3)" },
+      "id": { "selector": "td:nth-child(4)" },
+      "amount": { "selector": "td:nth-child(5)" }
+    },
+    "dateFormat": "auto",
+    "dedup": "id",
+    "allowMissingUrl": true
+  },
+  "download": {
+    "method": "click-download",
+    "dismissSelectors": [".modal-dialog-title-close"],
+    "steps": [
+      {
+        "selector": ".jfk-checkbox.b3id-checkbox",
+        "scope": "row",
+        "wait": 300
+      },
+      {
+        "selector": ".jfk-button",
+        "text": ["download selected", "descargar elementos"],
+        "scope": "document",
+        "visible": true,
+        "wait": 500
+      },
+      {
+        "selector": ".jfk-button-action",
+        "text": ["download", "descargar"],
+        "scope": "main-frame",
+        "visible": true,
+        "pollTimeout": 3000,
+        "waitForDialogClose": true,
+        "wait": 500
+      },
+      {
+        "selector": ".jfk-checkbox.b3id-checkbox.jfk-checkbox-checked",
+        "scope": "row",
+        "optional": true,
+        "wait": 300
+      }
+    ],
+    "filenameTemplate": "GoogleCloud_Invoice_{{id}}_{{date}}_{{amount}}.pdf"
+  }
+}

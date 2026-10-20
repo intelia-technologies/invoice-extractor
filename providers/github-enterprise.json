@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "id": "github-enterprise",
+  "name": "GitHub Enterprise",
+  "icon": "GH",
+  "billingUrl": "https://github.com/enterprises/{{config.enterprise}}/billing/payment_history",
+  "auth": {
+    "logoutUrl": "https://github.com/logout"
+  },
+  "config": {
+    "enterprise": {
+      "title": "Enterprise URL or slug",
+      "hint": "Open your enterprise from the linked GitHub page, then click 'Use enterprise from this page'. You can also paste its full URL, e.g. https://github.com/enterprises/intelia-technologies-sl, or just intelia-technologies-sl, and click +. Do not enter the display name 'Intelia Technologies SL'.",
+      "hintUrl": "https://github.com/settings/enterprises",
+      "type": "string",
+      "multi": true,
+      "default": "",
+      "placeholder": "https://github.com/enterprises/your-enterprise",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*$",
+      "validationMessage": "Enter the GitHub Enterprise URL or its slug, not the display name (for example, intelia-technologies-sl).",
+      "capture": {
+        "origin": "https://github.com",
+        "urlPattern": "^https://github\\.com/enterprises/([A-Za-z0-9][A-Za-z0-9-]*)(?:[/?#]|$)",
+        "selector": "a[href*='/enterprises/']",
+        "buttonLabel": "Use enterprise from this page"
+      }
+    }
+  },
+  "readySelector": "payment-history",
+  "extract": {
+    "rows": "payment-history li.Box-row",
+    "fields": {
+      "date": { "selector": ".date time" },
+      "amount": { "selector": ".amount" },
+      "downloadUrl": { "selector": "invoice-download", "attr": "data-url", "resolve": true }
+    },
+    "dateFormat": "YYYY-MM-DD",
+    "dedup": "downloadUrl"
+  },
+  "download": {
+    "method": "fetch-blob",
+    "filenameTemplate": "GitHubEnterprise_Invoice_{{date}}.pdf"
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "hetzner",
+  "name": "Hetzner",
+  "icon": "🖥️",
+  "billingUrl": "https://accounts.hetzner.com/invoice",
+  "readySelector": ".invoice-list li",
+  "extract": {
+    "rows": ".invoice-list > li",
+    "fields": {
+      "date": {
+        "selector": ".invoice-date",
+        "attr": "innerText"
+      },
+      "amount": {
+        "selector": ".invoice-value"
+      },
+      "invoiceNumber": {
+        "selector": ".invoice-number"
+      },
+      "downloadUrl": {
+        "selector": "a.btn-download",
+        "attr": "href",
+        "resolve": true
+      }
+    },
+    "dateFormat": "MMM DD, YYYY",
+    "dedup": "downloadUrl"
+  },
+  "download": {
+    "method": "direct-link",
+    "filenameTemplate": "Hetzner_Invoice_{{invoiceNumber}}_{{date}}_{{amount}}.pdf"
+  }
+}

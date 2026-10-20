@@ -1,0 +1,1 @@
+Do git add all the files we've modified in this conversation for this task and git commit them. Only the files we've directly modified, and ignore other unstaged files unrelated to this task.

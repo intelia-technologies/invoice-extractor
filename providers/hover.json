@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "hover",
+  "name": "Hover",
+  "icon": "🌐",
+  "billingUrl": "https://www.hover.com/control_panel/settings/receipts",
+  "readySelector": ".table-row .col.view a[href*=\"/receipts/\"]",
+  "extract": {
+    "rows": ".table-row:has(a[href*=\"/receipts/\"])",
+    "fields": {
+      "date": { "selector": ".col.date" },
+      "description": { "selector": ".col.text" },
+      "amount": { "selector": ".col.total" },
+      "downloadUrl": {
+        "selector": ".col.view a[href*=\"/receipts/\"]",
+        "attr": "href",
+        "resolve": true
+      }
+    },
+    "dateFormat": "MMM DD, YYYY"
+  },
+  "download": {
+    "method": "debugger-print",
+    "filenameTemplate": "Hover_Receipt_{{date}}_{{amount}}.pdf"
+  }
+}

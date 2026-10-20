@@ -1,0 +1,69 @@
+{
+  "schemaVersion": 1,
+  "id": "google-workspace",
+  "name": "Google Workspace",
+  "icon": "🏢",
+  "billingUrl": "https://admin.google.com/ac/billing/accounts/{{config.accountId}}/transactions?authuser={{config.email}}",
+  "config": {
+    "email": {
+      "title": "Google administrator email",
+      "hint": "The Google account with administrator access to this billing account. Use its email rather than a browser-specific account number.",
+      "type": "string",
+      "default": ""
+    },
+    "accountId": {
+      "title": "Account ID from URL",
+      "hint": "Go to Admin > Billing > click 'View invoices'. The ID is in the URL: /billing/accounts/<ID>/transactions",
+      "hintUrl": "https://admin.google.com/ac/billing/subscriptions",
+      "type": "string",
+      "default": ""
+    }
+  },
+  "iframe": {
+    "urlPattern": "payments.google.com/payments"
+  },
+  "readySelector": "h1.b3id-timeline-view-title",
+  "extract": {
+    "preSteps": [
+      {
+        "action": "diagnose",
+        "selector": "*"
+      },
+      {
+        "action": "clickAll",
+        "selector": ".b3-card-header-collapsed-content .b3-card-title-container",
+        "wait": 1500
+      },
+      {
+        "action": "clickAll",
+        "selector": ".b3id-document-zippy-header-content",
+        "wait": 2000
+      }
+    ],
+    "rows": ".b3id-document-zippy-line-item.jfk-freestanding-menu-button",
+    "fields": {
+      "id": { "selector": null, "regex": "(\\d{7,})", "regexGroup": 1 },
+      "date": { "selector": null, "regex": ":\\s*(\\d{1,2}/\\d{1,2}/\\d{2,4})", "regexGroup": 1 }
+    },
+    "dateFormat": "D/M/YY",
+    "dedup": "id",
+    "allowMissingUrl": true
+  },
+  "download": {
+    "method": "click-download",
+    "steps": [
+      {
+        "selector": "self",
+        "wait": 1500
+      },
+      {
+        "selector": ".goog-menuitem, [role='menuitem']",
+        "text": "descargar",
+        "scope": "document",
+        "visible": true,
+        "wait": 3000
+      }
+    ],
+    "filenameTemplate": "GoogleWorkspace_Invoice_{{id}}_{{date}}.pdf"
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "id": "holded",
+  "name": "Holded",
+  "icon": "📒",
+  "billingUrl": "https://app.holded.com/home#settings:/subscription/invoices",
+  "readySelector": "#tableWithExportOptions",
+  "config": {
+    "accountId": {
+      "title": "Company (name + avatar image address)",
+      "hint": "Type the company name, then paste its identifier: in Holded, right-click the company avatar (top-right circle) → \"Copy image address\". Example: \"Intelia Technologies SL | https://app.holded.com/box/account/6862442d04ba6ed90d03862e\". Only the id is compared; the name is what you will see in messages. This pins downloads to that company: if another one is open, the extension waits instead of downloading the wrong invoices. Leave empty to skip the check.",
+      "hintUrl": "https://app.holded.com/home",
+      "type": "string",
+      "multi": true,
+      "default": "",
+      "placeholder": "Intelia Technologies SL | https://app.holded.com/box/account/6862442d04ba6ed90d03862e"
+    }
+  },
+  "orgCheck": {
+    "selector": "img.MuiAvatar-img",
+    "configField": "accountId",
+    "extract": "[0-9a-f]{24}"
+  },
+  "auth": {
+    "logoutUrl": "https://app.holded.com/logout"
+  },
+  "iframe": {
+    "urlPattern": "/home"
+  },
+  "extract": {
+    "rows": "#tableWithExportOptions tbody tr[data-view-invoice-id]",
+    "fields": {
+      "date": { "selector": "td:nth-child(1)" },
+      "id": { "selector": "td:nth-child(2)" },
+      "amount": { "selector": "td:nth-child(6)" },
+      "invoiceId": { "attr": "data-view-invoice-id" },
+      "downloadUrl": { "template": "/settings/billing/invoice/{{invoiceId}}", "resolve": true }
+    },
+    "dateFormat": "DD/MM/YYYY",
+    "dedup": "id"
+  },
+  "download": {
+    "method": "fetch-blob",
+    "filenameTemplate": "Holded_Invoice_{{id}}_{{date}}.pdf"
+  }
+}

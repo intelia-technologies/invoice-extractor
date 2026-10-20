@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Billing History - Test Provider</title>
+  <style>
+    body { font-family: -apple-system, sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; }
+    h1 { font-size: 22px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th { text-align: left; padding: 10px 12px; border-bottom: 2px solid #ddd; font-size: 12px; color: #666; text-transform: uppercase; }
+    td { padding: 10px 12px; border-bottom: 1px solid #eee; font-size: 14px; }
+    tr:hover { background: #f9f9f9; }
+    .status-paid { color: #22c55e; font-weight: 600; }
+    .amount { font-weight: 600; }
+    a { color: #2563eb; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .tabs { display: flex; gap: 0; margin-bottom: 20px; border-bottom: 2px solid #eee; }
+    .tabs button { padding: 10px 20px; border: none; background: none; cursor: pointer; font-size: 14px; color: #666; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+    .tabs button.active { color: #2563eb; border-bottom-color: #2563eb; font-weight: 600; }
+    #billing-history { display: none; }
+  </style>
+</head>
+<body>
+  <h1>ACME Corp — Settings</h1>
+
+  <div class="tabs">
+    <button class="active" onclick="showTab('general')">General</button>
+    <button onclick="showTab('billing')">Billing</button>
+    <button onclick="showTab('billing-history')">Billing history</button>
+  </div>
+
+  <div id="general">
+    <p>Organization settings go here.</p>
+  </div>
+
+  <div id="billing" style="display:none">
+    <p>Current plan: Pro — $99/month</p>
+  </div>
+
+  <div id="billing-history">
+    <table class="invoice-table">
+      <thead>
+        <tr>
+          <th>Invoice</th>
+          <th>Status</th>
+          <th>Amount</th>
+          <th>Date</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>INV-2026-003</td>
+          <td><span class="status-paid">Paid</span></td>
+          <td class="amount">$99.00</td>
+          <td>Mar 1, 2026</td>
+          <td><a href="test-invoice.html?id=003" target="_blank">View</a></td>
+        </tr>
+        <tr>
+          <td>INV-2026-002</td>
+          <td><span class="status-paid">Paid</span></td>
+          <td class="amount">$99.00</td>
+          <td>Feb 1, 2026</td>
+          <td><a href="test-invoice.html?id=002" target="_blank">View</a></td>
+        </tr>
+        <tr>
+          <td>INV-2026-001</td>
+          <td><span class="status-paid">Paid</span></td>
+          <td class="amount">$49.00</td>
+          <td>Jan 1, 2026</td>
+          <td><a href="test-invoice.html?id=001" target="_blank">View</a></td>
+        </tr>
+        <tr>
+          <td>INV-2025-012</td>
+          <td><span class="status-paid">Paid</span></td>
+          <td class="amount">$49.00</td>
+          <td>Dec 1, 2025</td>
+          <td><a href="test-invoice.html?id=012" target="_blank">View</a></td>
+        </tr>
+        <tr>
+          <td>INV-2025-011</td>
+          <td><span class="status-paid">Paid</span></td>
+          <td class="amount">$49.00</td>
+          <td>Nov 1, 2025</td>
+          <td><a href="test-invoice.html?id=011" target="_blank">View</a></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    function showTab(name) {
+      document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('#general, #billing, #billing-history').forEach(d => d.style.display = 'none');
+      event.target.classList.add('active');
+      document.getElementById(name).style.display = 'block';
+    }
+  </script>
+</body>
+</html>

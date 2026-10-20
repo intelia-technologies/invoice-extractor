@@ -1,0 +1,97 @@
+name: "🔧 Broken provider"
+description: Report a provider that stopped downloading invoices (usually because the billing page changed)
+title: "[Broken] <provider>: <short description>"
+labels: ["provider-broken"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a broken provider. Billing pages change their markup often, so this is
+        expected maintenance. Please fill in as much as you can — a sanitized DOM snippet is the
+        single most useful thing for diagnosing selector rot.
+
+        **Do not paste tokens, cookies, account numbers, or personal data.** Scrub anything
+        sensitive before submitting.
+  - type: dropdown
+    id: provider
+    attributes:
+      label: Provider
+      description: Which provider is broken?
+      options:
+        - amazon
+        - coderabbit
+        - elastic
+        - github
+        - github-enterprise
+        - google-cloud
+        - google-workspace
+        - hetzner
+        - holded
+        - hover
+        - lowi
+        - naturgy
+        - openai
+        - shortcut
+        - stripe
+        - twilio
+        - vonage
+        - vultr
+        - webflow
+        - zerossl
+    validations:
+      required: true
+  - type: dropdown
+    id: failing-step
+    attributes:
+      label: Which step fails?
+      description: Where in the flow does it break?
+      options:
+        - Navigation / ready detection (page never loads or is never detected as ready)
+        - Row extraction (no invoices found, or wrong rows)
+        - Download (rows found but files don't download or are wrong)
+        - Pagination (only the first page is processed)
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: error-output
+    attributes:
+      label: Error text or console output
+      description: Copy any error message shown by the extension and/or the DevTools console.
+      render: text
+    validations:
+      required: false
+  - type: textarea
+    id: dom-snippet
+    attributes:
+      label: Sanitized DOM snippet
+      description: |
+        The relevant part of the page's HTML — ideally one invoice row and the download control.
+        In DevTools, right-click the element → Copy → Copy outerHTML.
+        ⚠️ Remove personal data, account numbers, emails, and tokens before pasting.
+      render: html
+    validations:
+      required: false
+  - type: input
+    id: extension-version
+    attributes:
+      label: Extension version
+      description: Shown on the extension card in chrome://extensions (e.g. 2.1).
+      placeholder: "2.1"
+    validations:
+      required: true
+  - type: input
+    id: last-worked
+    attributes:
+      label: When did it last work?
+      description: Approximate date the provider last downloaded successfully, if known.
+      placeholder: "e.g. 2026-06 or 'last week'"
+    validations:
+      required: false
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Confirmation
+      options:
+        - label: I removed personal data, account numbers, and tokens from anything I pasted above.
+          required: true

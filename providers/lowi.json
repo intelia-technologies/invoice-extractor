@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "id": "lowi",
+  "name": "Lowi",
+  "icon": "📱",
+  "billingUrl": "https://www.lowi.es/milowi/#/facturas/",
+  "readySelector": ".bill-list .bill-card",
+  "extract": {
+    "rows": ".bill-list > .bill-card",
+    "fields": {
+      "date": {
+        "selector": ".bill-card__date",
+        "attr": "innerText"
+      },
+      "amount": {
+        "selector": ".bill-card__price"
+      }
+    },
+    "dateFormat": "Month YYYY",
+    "dedup": "date",
+    "allowMissingUrl": true,
+    "pagination": {
+      "type": "select",
+      "openSelector": "span.custom-select-text",
+      "optionSelector": ".dropdown-results__option",
+      "wait": 2000
+    }
+  },
+  "download": {
+    "method": "click-download",
+    "steps": [
+      {
+        "selector": ".btn--tertiary",
+        "text": "descargar pdf",
+        "wait": 3000
+      }
+    ],
+    "filenameTemplate": "Lowi_Factura_{{date}}_{{amount}}.pdf"
+  }
+}

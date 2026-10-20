@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "vultr",
+  "name": "Vultr",
+  "icon": "☁️",
+  "billingUrl": "https://my.vultr.com/billing/#billinghistory",
+  "readySelector": "a[href^=\"/billing/invoice/\"]",
+  "extract": {
+    "rows": "tr:has(a[href^=\"/billing/invoice/\"]:not([href$=\".csv\"]))",
+    "fields": {
+      "id": {
+        "selector": "a[href^=\"/billing/invoice/\"]",
+        "attr": "href",
+        "regex": "\\/billing\\/invoice\\/(\\d+)",
+        "regexGroup": 1
+      },
+      "date": { "selector": "td:nth-child(2)" },
+      "amount": { "selector": "td:nth-child(3)" }
+    },
+    "dateFormat": "YYYY-MM-DD",
+    "dedup": "id"
+  },
+  "download": {
+    "method": "fetch-blob",
+    "urlTemplate": "/billing/invoice/{{id}}.pdf",
+    "filenameTemplate": "Vultr_Invoice_{{id}}_{{date}}_{{amount}}.pdf"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "webflow",
+  "name": "Webflow",
+  "icon": "🌊",
+  "billingUrl": "https://webflow.com/dashboard/workspace/{{config.workspace}}/billing?ref=billing_tab",
+  "readySelector": "table[data-automation-id=\"invoices-table\"]",
+  "config": {
+    "workspace": {
+      "title": "Workspace slug",
+      "hint": "The slug is in the URL: webflow.com/dashboard/workspace/<slug>/...",
+      "hintUrl": "https://webflow.com/dashboard",
+      "type": "string",
+      "default": "lana-team"
+    }
+  },
+  "extract": {
+    "rows": "table[data-automation-id=\"invoices-table\"] tbody tr",
+    "fields": {
+      "date": { "selector": "td:nth-child(1)", "attr": "innerText" },
+      "description": { "selector": "td:nth-child(2)", "attr": "innerText" },
+      "amount": { "selector": "td:nth-child(3)", "attr": "innerText" },
+      "downloadUrl": { "selector": "td:nth-child(4) a", "attr": "href" }
+    },
+    "dateFormat": "Month D, YYYY"
+  },
+  "download": {
+    "method": "direct-link",
+    "filenameTemplate": "Webflow_Invoice_{{date}}_{{amount}}_{{description}}.pdf"
+  }
+}

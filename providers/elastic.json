@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "elastic",
+  "name": "Elastic Cloud",
+  "icon": "🔍",
+  "billingUrl": "https://cloud.elastic.co/billing/history",
+  "readySelector": "tr.euiTableRow",
+  "extract": {
+    "rows": "tr.euiTableRow",
+    "fields": {
+      "date": {
+        "selector": "[data-test-id^=\"billing-period\"]",
+        "attr": "innerText"
+      },
+      "amount": {
+        "selector": "[data-test-id^=\"billing-total\"], td:nth-child(2)",
+        "attr": "innerText"
+      }
+    },
+    "downloadLinks": {
+      "selector": "a[href*=\"found-customer-docs\"]"
+    },
+    "dateFormat": "range"
+  },
+  "download": {
+    "method": "direct-link",
+    "filenameTemplate": "Elastic_Invoice_{{date}}_{{amount}}_{{label}}.pdf"
+  }
+}

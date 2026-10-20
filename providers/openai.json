@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "id": "openai",
+  "name": "OpenAI",
+  "icon": "🤖",
+  "billingUrl": "https://platform.openai.com/settings/organization/billing/history",
+  "readySelector": "table.tbl.billing-history-table.tbl-compact",
+  "auth": {
+    "logoutUrl": "https://platform.openai.com/logout"
+  },
+  "config": {
+    "org": {
+      "title": "Organization ID or Name",
+      "hint": "Recommended: Use your unique Organization ID (starts with 'org-...') from Organization Settings, or your Organization Name (e.g. 'Acme Corp').",
+      "hintUrl": "https://platform.openai.com/settings/organization/general",
+      "type": "string",
+      "default": "",
+      "placeholder": "org-1lg1ZXY9C5eM9xz4Ntl7jDlj"
+    }
+  },
+  "orgCheck": {
+    "selector": "input[value^='org-'], button[aria-haspopup='menu'], [data-testid='organization-switcher'], .org-name",
+    "configField": "org",
+    "storage": {
+      "key": "oai/activeOrg",
+      "configPattern": "^org-"
+    }
+  },
+  "extract": {
+    "preSteps": [
+      {
+        "action": "click",
+        "selector": "button[role='radio']",
+        "text": "billing history",
+        "wait": 2000
+      },
+      {
+        "action": "waitFor",
+        "selector": "table.tbl.billing-history-table.tbl-compact",
+        "timeout": 5000
+      }
+    ],
+    "rows": "table.tbl.billing-history-table.tbl-compact tbody tr",
+    "fields": {
+      "id": { "selector": "td:nth-child(1)" },
+      "status": { "selector": "td:nth-child(2)" },
+      "amount": { "selector": "td:nth-child(3)" },
+      "date": { "selector": "td:nth-child(4)" },
+      "downloadUrl": {
+        "selector": "a[href*='invoice.stripe.com']",
+        "attr": "href"
+      }
+    },
+    "dateFormat": "auto",
+    "dedup": "id",
+    "pagination": {
+      "type": "click-next",
+      "nextSelector": "button[aria-label='Next invoices page']",
+      "wait": 2000
+    }
+  },
+  "download": {
+    "method": "chrome-download",
+    "postLoadClick": {
+      "selector": "table.InvoiceDetails-table button, .App-InvoiceDetails button",
+      "wait": 3000
+    },
+    "filenameTemplate": "OpenAI_Invoice_{{id}}_{{date}}_{{amount}}.pdf"
+  }
+}

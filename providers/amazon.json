@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "id": "amazon",
+  "name": "Amazon",
+  "icon": "📦",
+  "billingUrl": "https://www.amazon.es/gp/your-account/order-history",
+  "readySelector": ".order-header__header-list",
+  "extract": {
+    "rows": ".order-header__header-list",
+    "fields": {
+      "date": { "selector": ".a-column.a-span4 .aok-break-word" },
+      "amount": { "selector": ".a-column.a-span2 .aok-break-word" },
+      "id": { "selector": ".yohtmlc-order-id span[dir='ltr']" }
+    },
+    "dateFormat": "D de MMMM de YYYY",
+    "dedup": "id",
+    "allowMissingUrl": true,
+    "pagination": {
+      "type": "url-page",
+      "nextSelector": ".a-pagination .a-last a",
+      "wait": 3000
+    }
+  },
+  "download": {
+    "method": "click-download",
+    "steps": [
+      {
+        "selector": "a[href*='invoice/popover']",
+        "scope": "row",
+        "wait": 1500
+      },
+      {
+        "selector": "a[href*='/documents/download/']",
+        "scope": "document",
+        "visible": true,
+        "wait": 1000
+      }
+    ],
+    "filenameTemplate": "Amazon_Invoice_{{id}}_{{date}}_{{amount}}.pdf"
+  }
+}

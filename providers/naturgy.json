@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "naturgy",
+  "name": "Naturgy",
+  "icon": "⚡",
+  "billingUrl": "https://omega.naturgy.es/",
+  "readySelector": ".invoice-ammount",
+  "extract": {
+    "rows": ".facturas > div:has(.invoice-ammount)",
+    "fields": {
+      "date": {
+        "selector": ".invoice-info .MuiGrid-item:nth-child(2) span"
+      },
+      "amount": {
+        "selector": ".invoice-ammount div:nth-child(1)",
+        "regex": "([\\d.,]+€)",
+        "regexGroup": 1
+      },
+      "invoiceId": {
+        "selector": "button[aria-controls^='invoice-actions-']",
+        "attr": "aria-controls",
+        "regex": "invoice-actions-(.+?)-actions-menu",
+        "regexGroup": 1
+      }
+    },
+    "dateFormat": "DD/MM/YYYY",
+    "dedup": "invoiceId",
+    "allowMissingUrl": true
+  },
+  "download": {
+    "method": "click-download",
+    "steps": [
+      {
+        "selector": "button[aria-label^='Abrir acciones']",
+        "wait": 1000
+      },
+      {
+        "selector": "button.btn-action",
+        "text": "descargar factura",
+        "wait": 3000
+      }
+    ],
+    "filenameTemplate": "Naturgy_Factura_{{invoiceId}}_{{date}}_{{amount}}.pdf"
+  }
+}

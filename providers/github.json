@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "github",
+  "name": "GitHub",
+  "icon": "🐙",
+  "billingUrl": "https://github.com/organizations/{{config.org}}/billing/history",
+  "auth": {
+    "logoutUrl": "https://github.com/logout"
+  },
+  "config": {
+    "org": {
+      "title": "Organization slug",
+      "hint": "The organization name from the URL: github.com/organizations/<slug>/billing",
+      "hintUrl": "https://github.com/settings/organizations",
+      "type": "string",
+      "multi": true,
+      "default": "",
+      "placeholder": "my-organization"
+    }
+  },
+  "readySelector": "payment-history",
+  "extract": {
+    "rows": "payment-history li.Box-row",
+    "fields": {
+      "date": { "selector": ".date time" },
+      "amount": { "selector": ".amount" },
+      "downloadUrl": { "selector": "invoice-download", "attr": "data-url", "resolve": true }
+    },
+    "dateFormat": "YYYY-MM-DD",
+    "dedup": "downloadUrl"
+  },
+  "download": {
+    "method": "fetch-blob",
+    "filenameTemplate": "GitHub_Invoice_{{date}}.pdf"
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "id": "shortcut",
+  "name": "Shortcut",
+  "icon": "📋",
+  "billingUrl": "https://app.shortcut.com/{{config.workspace}}/settings/billing",
+  "readySelector": "#invoices-tab, .billing-section, [data-tab=\"invoices\"]",
+  "config": {
+    "workspace": {
+      "title": "Workspace slug",
+      "hint": "The word after app.shortcut.com/ in your URL (e.g., app.shortcut.com/my-team → my-team)",
+      "hintUrl": "https://app.shortcut.com/",
+      "type": "string",
+      "default": "lanahub"
+    }
+  },
+  "extract": {
+    "preSteps": [
+      {
+        "action": "click",
+        "selector": "nav a, .tabs a, .tab-list a, [role=\"tab\"], .billing-tabs a",
+        "text": "invoice",
+        "wait": 2000
+      }
+    ],
+    "rows": "#manage-invoices table tbody tr.invoice",
+    "fallbackRows": "table tbody tr:has(a[href*=\"stripe.com\"])",
+    "fields": {
+      "invoiceNumber": { "selector": "td:nth-child(1)" },
+      "date": { "selector": "td:nth-child(2)" },
+      "amount": { "selector": "td:nth-child(3)" },
+      "downloadUrl": {
+        "selector": "a[href*=\"pay.stripe.com\"], a[href*=\"stripe.com\"]",
+        "attr": "href"
+      }
+    },
+    "dateFormat": "M/D/YYYY",
+    "dedup": "downloadUrl"
+  },
+  "download": {
+    "method": "chrome-download",
+    "postLoadClick": {
+      "selector": "a[href*=\"/invoice/\"][href*=\"/pdf\"]",
+      "text": "download invoice",
+      "wait": 3000
+    },
+    "filenameTemplate": "Shortcut_Invoice_{{date}}_{{amount}}.pdf"
+  }
+}

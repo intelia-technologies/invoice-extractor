@@ -1,0 +1,36 @@
+{
+  "name": "invoice-extractor",
+  "version": "1.0.0",
+  "description": "Automatically download invoices from SaaS billing pages. Providers are defined declaratively in JSON files — the engine interprets them generically.",
+  "main": "background.js",
+  "bin": {
+    "invoice-extractor": "./bin/invoice-extractor.mjs"
+  },
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "node scripts/validate-providers.mjs && node --test test/profile-sync.test.mjs",
+    "validate": "node scripts/validate-providers.mjs",
+    "test:sync": "node --test test/profile-sync.test.mjs",
+    "install:1password": "node scripts/install-onepassword-host.mjs",
+    "cli": "node bin/invoice-extractor.mjs",
+    "dev": "./dev-chrome.sh",
+    "dev:reset": "./dev-chrome.sh --reset"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/intelia-technologies/invoice-extractor.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/intelia-technologies/invoice-extractor/issues"
+  },
+  "homepage": "https://github.com/intelia-technologies/invoice-extractor#readme",
+  "devDependencies": {
+    "ajv": "^8.20.0",
+    "playwright": "^1.58.2"
+  }
+}

@@ -1,0 +1,487 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/intelia-technologies/invoice-extractor/blob/main/providers/schema.json",
+  "title": "Invoice Extractor Provider",
+  "description": "Declarative definition of how the engine extracts and downloads invoices from a SaaS billing page. One file per provider in providers/.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "id",
+    "name",
+    "icon",
+    "billingUrl",
+    "readySelector",
+    "extract",
+    "download"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Optional pointer to this schema for editor autocomplete."
+    },
+    "schemaVersion": {
+      "const": 1,
+      "description": "Provider schema version. Currently always 1."
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "Unique lowercase kebab-case slug. Must match the filename."
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Display name shown in the UI."
+    },
+    "icon": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Emoji used as the provider icon."
+    },
+    "billingUrl": {
+      "type": "string",
+      "pattern": "^https?://",
+      "description": "Billing page URL. May contain {{config.*}} placeholders."
+    },
+    "readySelector": {
+      "type": "string",
+      "minLength": 1,
+      "description": "CSS selector that indicates the billing page has loaded."
+    },
+    "skipDedup": {
+      "type": "boolean",
+      "description": "When true, always re-download all invoices, ignoring download history."
+    },
+    "config": {
+      "type": "object",
+      "description": "Per-user settings stored in chrome.storage.local, keyed by field name.",
+      "additionalProperties": {
+        "$ref": "#/definitions/configField"
+      }
+    },
+    "iframe": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["urlPattern"],
+      "description": "Set when the invoice table lives inside a cross-origin iframe.",
+      "properties": {
+        "urlPattern": {
+          "type": "string",
+          "description": "Substring matched against iframe src URLs to locate the frame."
+        }
+      }
+    },
+    "orgCheck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["selector", "configField"],
+      "properties": {
+        "extract": {
+          "type": "string",
+          "description": "Optional regex applied to BOTH the configured value and the page value before comparing (e.g. pull an account id out of a pasted URL). Compared for equality when it matches both sides."
+        },
+        "selector": { "type": "string" },
+        "configField": { "type": "string" },
+        "storage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["key", "configPattern"],
+          "description": "When configPattern matches the configured value, compare it exactly with the page localStorage key (raw or JSON-encoded string). Missing or unreadable IDs block downloads; otherwise use the DOM selector.",
+          "properties": {
+            "key": { "type": "string", "minLength": 1 },
+            "configPattern": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    },
+    "preNavigation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["url", "steps"],
+      "description": "Setup performed on a different page before navigating to billingUrl.",
+      "properties": {
+        "url": {
+          "type": "string",
+          "description": "Preparatory page URL. May contain {{config.*}} placeholders."
+        },
+        "readySelector": {
+          "type": "string",
+          "description": "Wait for this element before running steps."
+        },
+        "steps": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/step" }
+        }
+      }
+    },
+    "auth": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Optional 1Password auto-login mapping and custom login form selectors.",
+      "properties": {
+        "item": {
+          "type": "string",
+          "description": "1Password item title, ID, or op://<vault>/<item> reference."
+        },
+        "vault": {
+          "type": "string",
+          "description": "Preferred 1Password vault name or alias (e.g. \"AI\", \"AI bots\", \"intelia\", \"lana\")."
+        },
+        "usernameRef": {
+          "type": "string",
+          "pattern": "^op://",
+          "description": "Direct op:// reference for the username field."
+        },
+        "passwordRef": {
+          "type": "string",
+          "pattern": "^op://",
+          "description": "Direct op:// reference for the password field."
+        },
+        "otpRef": {
+          "type": "string",
+          "pattern": "^op://",
+          "description": "Direct op:// reference for the OTP/TOTP field."
+        },
+        "usernameField": {
+          "type": "string",
+          "description": "Field label or ID inside the 1Password item for the username."
+        },
+        "passwordField": {
+          "type": "string",
+          "description": "Field label or ID inside the 1Password item for the password."
+        },
+        "otpField": {
+          "type": "string",
+          "description": "Field label or ID inside the 1Password item for the TOTP code."
+        },
+        "usernameSelector": {
+          "type": "string",
+          "description": "Custom CSS selector for the login username/email input."
+        },
+        "passwordSelector": {
+          "type": "string",
+          "description": "Custom CSS selector for the login password input."
+        },
+        "otpSelector": {
+          "type": "string",
+          "description": "Custom CSS selector for the 2FA/OTP input."
+        },
+        "nextSelector": {
+          "type": "string",
+          "description": "Custom CSS selector for the 'Continue/Next' button in 2-step logins."
+        },
+        "submitSelector": {
+          "type": "string",
+          "description": "Custom CSS selector for the login submit button."
+        },
+        "logoutUrl": {
+          "type": "string",
+          "description": "Optional URL to navigate to for logging out of the current session before switching accounts."
+        },
+        "logoutSteps": {
+          "type": "array",
+          "description": "Optional declarative steps (click/wait) to log out via the page UI before clearing session data.",
+          "items": { "$ref": "#/definitions/step" }
+        },
+        "accountHintSelector": {
+          "type": "string",
+          "description": "Optional CSS selector where the currently logged-in user email or account name is displayed."
+        }
+      }
+    },
+    "extract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rows", "fields", "dateFormat"],
+      "description": "How to read invoice rows and fields from the page.",
+      "properties": {
+        "preSteps": {
+          "type": "array",
+          "description": "Interactions performed before the invoice list is visible.",
+          "items": { "$ref": "#/definitions/step" }
+        },
+        "rows": {
+          "type": "string",
+          "minLength": 1,
+          "description": "CSS selector matching each invoice row/item."
+        },
+        "fallbackRows": {
+          "type": "string",
+          "description": "Alternate row selector used when rows matches nothing."
+        },
+        "fields": {
+          "type": "object",
+          "description": "Field extractors keyed by field name. Selectors are relative to the row.",
+          "additionalProperties": { "$ref": "#/definitions/fieldDef" }
+        },
+        "downloadLinks": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["selector"],
+          "description": "Selector for multiple download links within a row (fan-out).",
+          "properties": {
+            "selector": { "type": "string" }
+          }
+        },
+        "dateFormat": { "$ref": "#/definitions/dateFormat" },
+        "dedup": {
+          "type": "string",
+          "description": "Field name to deduplicate downloads by."
+        },
+        "allowMissingUrl": {
+          "type": "boolean",
+          "description": "Keep rows that have no download URL (URL is resolved at download time)."
+        },
+        "pagination": { "$ref": "#/definitions/pagination" }
+      }
+    },
+    "download": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "filenameTemplate"],
+      "description": "How to download each extracted invoice.",
+      "properties": {
+        "method": {
+          "type": "string",
+          "enum": [
+            "direct-link",
+            "fetch-blob",
+            "open-tabs",
+            "print-page",
+            "chrome-download",
+            "debugger-print",
+            "click-download"
+          ],
+          "description": "Download strategy the orchestrator uses."
+        },
+        "filenameTemplate": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Output filename. Supports {{field}} placeholders from extracted fields."
+        },
+        "steps": {
+          "type": "array",
+          "description": "Click sequence for the click-download method.",
+          "items": { "$ref": "#/definitions/downloadStep" }
+        },
+        "dismissSelectors": {
+          "type": "array",
+          "description": "Selectors for dialogs/overlays to dismiss during click-download.",
+          "items": { "type": "string" }
+        },
+        "postLoadClick": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["selector"],
+          "description": "Button to click after the page loads (chrome-download).",
+          "properties": {
+            "selector": { "type": "string" },
+            "text": { "$ref": "#/definitions/textMatch" },
+            "wait": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "urlTemplate": {
+          "type": "string",
+          "description": "Template used to build the download URL (e.g. fetch-blob)."
+        },
+        "urlSuffix": {
+          "type": "string",
+          "description": "String appended to the download URL (chrome-download)."
+        }
+      }
+    }
+  },
+  "definitions": {
+    "dateFormat": {
+      "type": "string",
+      "description": "How the extracted date string is parsed.",
+      "enum": [
+        "auto",
+        "M/D/YYYY",
+        "DD/MM/YYYY",
+        "D/M/YY",
+        "MMM DD, YYYY",
+        "Month D, YYYY",
+        "YYYY-MM-DD",
+        "Month YYYY",
+        "D de MMMM de YYYY",
+        "range"
+      ]
+    },
+    "textMatch": {
+      "description": "Case-insensitive text filter. A string, or an array of alternatives.",
+      "anyOf": [
+        { "type": "string" },
+        { "type": "array", "items": { "type": "string" } }
+      ]
+    },
+    "configField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "type", "default"],
+      "properties": {
+        "title": { "type": "string", "description": "Label shown in the config UI." },
+        "type": { "type": "string", "description": "Input type (currently always \"string\")." },
+        "default": { "type": "string", "description": "Default value." },
+        "hint": { "type": "string", "description": "Helper text explaining the field." },
+        "hintUrl": { "type": "string", "description": "Link to where the value can be found." },
+        "multi": {
+          "type": "boolean",
+          "description": "Allow multiple values; provider is expanded one entry per value."
+        },
+        "placeholder": { "type": "string", "description": "Placeholder shown in the input." },
+        "pattern": { "type": "string", "description": "Validation regex applied after extracting an identifier from a pasted URL." },
+        "validationMessage": { "type": "string", "description": "Actionable error shown for invalid configured values." },
+        "capture": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["origin", "urlPattern", "selector", "buttonLabel"],
+          "description": "Explicitly capture a config identifier from the current page URL or matching links. Multiple distinct identifiers require user selection. Capture group 1 of urlPattern is the identifier; the same pattern accepts pasted URLs.",
+          "properties": {
+            "origin": { "type": "string", "description": "Exact origin of the page allowed to supply identifiers." },
+            "urlPattern": { "type": "string" },
+            "selector": { "type": "string" },
+            "buttonLabel": { "type": "string" }
+          }
+        }
+      }
+    },
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action", "selector"],
+      "description": "A preSteps / preNavigation interaction.",
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": ["click", "waitFor", "clickAll", "diagnose"]
+        },
+        "selector": { "type": "string" },
+        "text": { "$ref": "#/definitions/textMatch" },
+        "wait": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Milliseconds to wait after the action."
+        },
+        "timeout": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Milliseconds to wait for the selector (waitFor)."
+        }
+      }
+    },
+    "downloadStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["selector"],
+      "description": "A single click in a click-download sequence.",
+      "properties": {
+        "selector": {
+          "type": "string",
+          "description": "CSS selector, or the literal \"self\" to click the row element."
+        },
+        "scope": {
+          "type": "string",
+          "enum": ["row", "document", "main-frame"],
+          "description": "Where to search for the selector."
+        },
+        "text": { "$ref": "#/definitions/textMatch" },
+        "visible": {
+          "type": "boolean",
+          "description": "Only match visible elements."
+        },
+        "optional": {
+          "type": "boolean",
+          "description": "Do not fail the download if this step matches nothing."
+        },
+        "wait": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Milliseconds to wait after the click."
+        },
+        "pollTimeout": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Milliseconds to poll for the element before giving up."
+        },
+        "waitForDialogClose": {
+          "type": "boolean",
+          "description": "Wait for a dialog to close after clicking."
+        }
+      }
+    },
+    "fieldDef": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Extractor for one field. All properties optional; omit selector to read the row itself.",
+      "properties": {
+        "selector": {
+          "type": ["string", "null"],
+          "description": "CSS selector relative to the row. Null/omitted reads the row element."
+        },
+        "attr": {
+          "type": "string",
+          "description": "Attribute or property to read (e.g. textContent, innerText, href, data-*)."
+        },
+        "regex": {
+          "type": "string",
+          "description": "Regular expression applied to the extracted value."
+        },
+        "regexGroup": {
+          "type": "integer",
+          "description": "Capture group index to keep from regex."
+        },
+        "resolve": {
+          "type": "boolean",
+          "description": "Resolve a relative URL to absolute using the page URL."
+        },
+        "template": {
+          "type": "string",
+          "description": "Build the value from a template with {{field}} placeholders."
+        }
+      }
+    },
+    "pagination": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["select", "url-page", "click-next"],
+          "description": "select: engine clicks dropdown options (AJAX). url-page: full navigation. click-next: engine clicks an in-page next button (AJAX)."
+        },
+        "openSelector": {
+          "type": "string",
+          "description": "select: selector to open the dropdown."
+        },
+        "optionSelector": {
+          "type": "string",
+          "description": "select: selector for each option to click through."
+        },
+        "nextSelector": {
+          "type": "string",
+          "description": "url-page / click-next: selector for the next-page link or button."
+        },
+        "nextText": {
+          "anyOf": [
+            { "type": "string" },
+            { "type": "array", "items": { "type": "string" } }
+          ],
+          "description": "click-next: text filter for the next-page button (case-insensitive substring; array = any match, for multi-language UIs)."
+        },
+        "pick": {
+          "type": "string",
+          "enum": ["first", "last"],
+          "description": "click-next: which matching next-page button to click (default first)."
+        },
+        "wait": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Milliseconds to wait after paginating."
+        }
+      }
+    }
+  }
+}
