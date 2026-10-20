@@ -1,6 +1,6 @@
 {
   "name": "invoice-extractor",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Automatically download invoices from SaaS billing pages. Providers are defined declaratively in JSON files — the engine interprets them generically.",
   "main": "background.js",
   "bin": {
