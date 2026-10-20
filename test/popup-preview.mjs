@@ -3,8 +3,11 @@
 //
 //   node test/popup-preview.mjs [en|es] [light|dark] [view] [--out file.png] [--empty] [--width 420]
 //
-// view: home (default), provider, batch-config, workflow, completion, history, profiles, record.
+// view: home (default), provider, batch-config, workflow (sign-in needed), workflow-run (mid-run:
+// a stamped finished row and invoice slips in the feed), completion (clean run),
+// completion-skips (some providers need the user), history, profiles, record.
 // --empty: start with no download history (shows the empty states).
+// --vault: pretend a password-manager bridge is installed (shows the vault sign-in buttons).
 // Default output directory: $PREVIEW_OUT_DIR, else the session scratchpad below.
 import { readFileSync, mkdirSync } from 'node:fs';
 import { dirname, join, resolve, extname } from 'node:path';
@@ -22,6 +25,7 @@ const flag = name => { const i = args.indexOf(name); return i === -1 ? null : ar
 const out = flag('--out');
 const width = Number(flag('--width') || 420);
 const empty = args.includes('--empty') && args.splice(args.indexOf('--empty'), 1);
+const vault = args.includes('--vault') && !!args.splice(args.indexOf('--vault'), 1);
 const [lang = 'en', theme = 'light', rawView = 'home'] = args;
 const view = rawView.replace(/^view-/, '');
 const outPath = resolve(out || join(DEFAULT_OUT_DIR, `popup-${lang}-${theme}-${view}.png`));
@@ -35,7 +39,7 @@ const history = empty ? [] : [
 ];
 
 // Runs in the page before any script: a minimal chrome.* surface that keeps popup.js alive.
-function installChromeStub({ messages, lang, origin, storage }) {
+function installChromeStub({ messages, lang, origin, storage, vault }) {
   const event = () => ({ addListener() {}, removeListener() {}, hasListener: () => false });
   const store = { ...storage };
   const pick = keys => {
@@ -61,7 +65,9 @@ function installChromeStub({ messages, lang, origin, storage }) {
       getURL: path => `${origin}/${path}`,
       sendMessage: async message => message?.type === 'profile-sync'
         ? { ok: true, data: { connected: false, status: 'disconnected', message: '' } }
-        : { ok: false, error: 'Preview: no service worker.' },
+        : message?.type === 'onepassword' && message.action === 'status' && vault
+          ? { ok: true, data: { available: true, passwordManager: '1password' } }
+          : { ok: false, error: 'Preview: no service worker.' },
       onMessage: event(),
       reload() {},
     },
@@ -107,19 +113,48 @@ async function showView(view) {
     case 'provider': nav.push('provider', { providerId: sample[0].id }); await renderProviderDetail(sample[0].id); break;
     case 'batch-config': workflowProviders = sample; nav.push('batch-config'); renderBatchConfig(sample); break;
     case 'workflow': {
+      // Sign-in needed for the second provider
       workflowProviders = sample;
       state = { ...state, isRunning: true, currentIndex: 1, completed: [workflowKey(sample[0])], skipped: [] };
       nav.push('workflow');
       showCurrentSiteUI(sample[1]);
-      showStatus(t('workflowStatusDetecting', [sample[1].name, 4]));
+      showStatus(t('workflowStatusLoginPrompt', [sample[1].name]));
+      await probeCredentialBridge();
       showButtons(true, false, false, true, false, false, true);
+      updateProgress();
+      updateSitesList();
+      break;
+    }
+    case 'workflow-run': {
+      // Mid-run: first provider just filed (stamp), invoices dropping into the feed
+      workflowProviders = sample;
+      clearDownloadFeed();
+      state = { ...state, isRunning: true, currentIndex: 1, completed: [], skipped: [] };
+      nav.push('workflow');
+      updateSitesList();
+      state.completed = [workflowKey(sample[0])];
+      showCurrentSiteUI(sample[1]);
+      showStatus(t('workflowStatusDownloadingOf', [sample[1].name, 2, 3]));
+      showButtons(false, true, false, false, true);
+      addToDownloadFeed(sample[0], { filename: `${sample[0].name}_Invoice_2026-10-01.pdf`, amount: '$8.47' });
+      addToDownloadFeed(sample[1], { filename: `${sample[1].name}_Invoice_2026-10-03.pdf`, amount: '€23,00' });
       updateProgress();
       updateSitesList();
       break;
     }
     case 'completion':
       workflowProviders = sample;
+      runInvoiceCount = 7;
       state = { ...state, completed: sample.slice(1).map(workflowKey), skipped: [{ key: sample[0].id, reason: t('workflowSkipAllDownloaded') }] };
+      showCompletion();
+      break;
+    case 'completion-skips':
+      workflowProviders = sample;
+      runInvoiceCount = 5;
+      state = { ...state, completed: sample.slice(2).map(workflowKey), skipped: [
+        { key: workflowKey(sample[0]), reason: t('commonErrorPrefix', [t('workflowErrorLoginRequired')]) },
+        { key: workflowKey(sample[1]), reason: t('workflowSkipAllDownloaded') },
+      ] };
       showCompletion();
       break;
     case 'history': nav.push('history'); await renderHistory(); break;
@@ -144,7 +179,7 @@ try {
       await route.fulfill({ status: 404, body: '' });
     }
   });
-  await page.addInitScript(installChromeStub, { messages, lang, origin: ORIGIN, storage: { downloadHistory: history, floatingMode: true } });
+  await page.addInitScript(installChromeStub, { messages, lang, origin: ORIGIN, storage: { downloadHistory: history, floatingMode: true }, vault });
   await page.goto(`${ORIGIN}/popup.html`);
   await page.waitForFunction(() => document.getElementById('home-stats')?.textContent.trim());
   await page.evaluate(`(${showView})(${JSON.stringify(view)})`);

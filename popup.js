@@ -240,21 +240,51 @@ async function callOnePassword(action, input = {}) {
   return response || { ok: false, error: t('opWorkerNoResponse') };
 }
 
+// Whether a password-manager bridge (the 1Password / Bitwarden native host) is installed and
+// configured. Presentation only: it decides whether vault sign-in buttons are offered at all,
+// using the host's read-only `status` action. Unknown until the probe answers (buttons hidden).
+let credentialBridge = { checked: false, available: false, manager: '1password' };
+let _credentialBridgeProbe = null;
+
+function probeCredentialBridge() {
+  if (!_credentialBridgeProbe) {
+    _credentialBridgeProbe = callOnePassword('status')
+      .then(res => {
+        credentialBridge = {
+          checked: true,
+          available: !!(res?.ok && res.data?.available),
+          manager: res?.data?.passwordManager === 'bitwarden' ? 'bitwarden' : '1password',
+        };
+      })
+      .catch(() => { credentialBridge = { checked: true, available: false, manager: '1password' }; })
+      .then(() => { applyCredentialBridgeUi(); return credentialBridge; });
+  }
+  return _credentialBridgeProbe;
+}
+
+function applyCredentialBridgeUi() {
+  const signInBtn = document.getElementById('btn-1password-login');
+  if (signInBtn) signInBtn.textContent = t(credentialBridge.manager === 'bitwarden' ? 'commonSignInBw' : 'commonSignInOp');
+  const homeOpBtn = document.getElementById('btn-sync-op-profiles');
+  if (homeOpBtn) homeOpBtn.hidden = !(credentialBridge.available && credentialBridge.manager === '1password');
+  if (_lastButtons) showButtons(..._lastButtons);
+}
+
 async function syncProfilesFrom1Password() {
   const quickBtn = document.getElementById('btn-sync-op-profiles');
   const fullBtn = document.getElementById('btn-discover-op-profiles');
   const statusEl = document.getElementById('op-profiles-status');
   const setStatus = (msg, isError = false) => {
     if (statusEl) {
-      statusEl.style.display = msg ? 'block' : 'none';
-      statusEl.style.color = isError ? 'var(--danger, #ef4444)' : 'var(--accent-text, #10b981)';
+      statusEl.hidden = !msg;
+      statusEl.classList.toggle('is-error', !!isError);
       statusEl.textContent = msg;
     }
   };
 
   if (quickBtn) {
     quickBtn.disabled = true;
-    quickBtn.textContent = t('commonBusy');
+    (quickBtn.querySelector('.op-sync-label') || quickBtn).textContent = t('commonBusy');
   }
   if (fullBtn) {
     fullBtn.disabled = true;
@@ -353,7 +383,7 @@ async function syncProfilesFrom1Password() {
   } finally {
     if (quickBtn) {
       quickBtn.disabled = false;
-      quickBtn.textContent = t('homeOpSyncLabel');
+      (quickBtn.querySelector('.op-sync-label') || quickBtn).textContent = t('homeOpSyncLabel');
     }
     if (fullBtn) {
       fullBtn.disabled = false;
@@ -404,8 +434,8 @@ function updateProfileDirtyIndicator() {
   const dirtyBadge = document.getElementById('profile-dirty-badge');
   const saveQuickBtn = document.getElementById('btn-save-profile-quick');
   const profileBar = document.getElementById('profile-bar');
-  if (dirtyBadge) dirtyBadge.style.display = dirty ? '' : 'none';
-  if (saveQuickBtn) saveQuickBtn.style.display = (dirty && loadedProfileId) ? '' : 'none';
+  if (dirtyBadge) dirtyBadge.hidden = !dirty;
+  if (saveQuickBtn) saveQuickBtn.hidden = !(dirty && loadedProfileId);
   if (profileBar) {
     profileBar.classList.toggle('has-profile', !!loadedProfileId);
     profileBar.classList.toggle('is-dirty', dirty);
@@ -1690,16 +1720,172 @@ const nav = {
 };
 
 // =====================================================
+// UI HELPERS (presentation only)
+// =====================================================
+// Lucide-style paths (ISC), 24 grid, 2px stroke, currentColor. No emoji in UI.
+const ICON_PATHS = {
+  check: '<path d="M20 6 9 17l-5-5"/>',
+  arrowRight: '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+  clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+  skip: '<path d="m5 4 10 8-10 8V4z"/><path d="M19 5v14"/>',
+  x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  chevronRight: '<path d="m9 18 6-6-6-6"/>',
+  chevronUp: '<path d="m18 15-6-6-6 6"/>',
+  folder: '<path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>',
+  fileCheck: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="m9 15 2 2 4-4"/>',
+  pencil: '<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>',
+  plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
+  external: '<path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
+};
+
+function icon(name, size = 16) {
+  return `<svg class="ie-icon" viewBox="0 0 24 24" width="${size}" height="${size}" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON_PATHS[name]}</svg>`;
+}
+
+function setHidden(id, hidden) {
+  const el = document.getElementById(id);
+  if (el) el.hidden = !!hidden;
+}
+
+function initialsFor(name) {
+  return String(name || '?').split(/\s+/).filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase() || '?';
+}
+
+function providerLogoUrl(providerId) {
+  return chrome.runtime.getURL(`icons/providers/${providerId}.png`);
+}
+
+// Logos are decorative (the provider name is always next to them), so alt="".
+function logoImgHtml(providerId, name, className) {
+  return `<img class="${className}" src="${escapeHtml(providerLogoUrl(providerId))}" alt="" data-logo-name="${escapeHtml(name || providerId || '')}">`;
+}
+
+function logoFallbackFor(img, name) {
+  const span = document.createElement('span');
+  span.className = `${img.className} logo-fallback`;
+  span.setAttribute('aria-hidden', 'true');
+  span.textContent = initialsFor(name);
+  return span;
+}
+
+// MV3 extension pages block inline onerror="" handlers, so missing logos are swapped for
+// initials here, after the markup is in the DOM.
+function wireLogoFallbacks(root) {
+  root.querySelectorAll('img[data-logo-name]').forEach(img => {
+    const swap = () => img.replaceWith(logoFallbackFor(img, img.dataset.logoName));
+    if (img.complete && img.naturalWidth === 0) swap();
+    else img.addEventListener('error', swap, { once: true });
+  });
+}
+
+// For the fixed logo slots (provider detail, current workflow provider) that are reused.
+function setStaticLogo(img, providerId, name) {
+  if (!img) return;
+  const next = img.nextElementSibling;
+  if (next?.classList.contains('logo-fallback')) next.remove();
+  img.hidden = false;
+  img.onerror = () => { img.hidden = true; img.after(logoFallbackFor(img, name)); };
+  img.src = providerLogoUrl(providerId);
+}
+
+// Local YYYY-MM-DD (toISOString would shift the day in timezones east of UTC).
+function localIsoDate(date) {
+  const pad = n => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+// Stored invoice dates are kept as scraped; only unambiguous ISO dates are re-rendered
+// in the interface language. CSV and storage keep the raw value.
+function displayInvoiceDate(raw) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(raw || '').trim());
+  if (!m) return raw || '\u2014';
+  const date = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  if (Number.isNaN(date.getTime())) return raw;
+  try {
+    return new Intl.DateTimeFormat(uiLanguage(), { day: 'numeric', month: 'short', year: 'numeric' }).format(date);
+  } catch {
+    return raw;
+  }
+}
+
+// =====================================================
 // HOME VIEW
 // =====================================================
-function selectedProvidersLabel(count) {
-  return count === 0 ? t('homeEmptySelection') : tp('homeSelectedCount', count);
+function selectedProvidersLabel(readyCount, setupCount) {
+  if (readyCount + setupCount === 0) return t('homeEmptySelection');
+  const parts = [tp('homeReadyCount', readyCount)];
+  if (setupCount > 0) parts.push(tp('homeNeedsSetupCount', setupCount));
+  return parts.join(' \u00b7 ');
+}
+
+// Same rule the run applies before opening a provider: a field the billing URL or the
+// pre-navigation needs is empty (no value, no default), or a saved value is invalid.
+// Such a provider is skipped by Download All, so Home counts it as "needs setup".
+function providerNeedsSetup(provider) {
+  if (!provider.config) return false;
+  const config = { ...(providerConfigs[provider.id] || {}), ...(provider._configOverrides || {}) };
+  return missingRequiredConfig(provider, config) || !!providerConfigError(provider);
+}
+
+function updateDownloadAllSubtitle() {
+  const active = providers.filter(p => activeProviderIds.has(p.id));
+  const setup = active.filter(providerNeedsSetup).length;
+  document.getElementById('download-all-subtitle').textContent = selectedProvidersLabel(active.length - setup, setup);
 }
 
 // Icon-only buttons carry their name in both the tooltip and the accessible label.
 function setButtonLabel(button, label) {
   button.title = label;
   button.setAttribute('aria-label', label);
+}
+
+function providerCardSubtitle(provider, isActive, providerHistory) {
+  const off = isActive ? '' : `<span class="provider-state-off">${escapeHtml(t('homeProviderOff'))}</span>`;
+  if (providerNeedsSetup(provider)) return `${off}<span class="status status-warn">${escapeHtml(t('homeProviderNeedsConfig'))}</span>`;
+  if (providerHistory.length > 0) return `${off}<span class="status status-ok">${escapeHtml(tp('homeProviderDownloaded', providerHistory.length))}</span>`;
+  return `${off}${escapeHtml(t('homeProviderNoDownloads'))}`;
+}
+
+// One card = a button that opens the provider plus a separate include toggle
+// (no interactive element nested inside another).
+function renderProviderCard(provider, history) {
+  const isActive = activeProviderIds.has(provider.id);
+  const providerHistory = history.filter(h => h.providerId === provider.id);
+  const card = document.createElement('div');
+  card.className = `card provider-card${isActive ? '' : ' inactive'}`;
+  card.innerHTML = `
+    <button type="button" class="provider-card-main">
+      ${logoImgHtml(provider.id, provider.name, 'provider-logo')}
+      <span class="provider-info">
+        <span class="provider-name">${escapeHtml(provider.name)}</span>
+        <span class="provider-subtitle"></span>
+      </span>
+      <span class="provider-chevron">${icon('chevronRight')}</span>
+    </button>
+    <div class="provider-card-toggle">
+      <label class="toggle-switch" title="${escapeHtml(t('homeProviderInclude', [provider.name]))}">
+        <input type="checkbox" ${isActive ? 'checked' : ''} data-provider-id="${escapeHtml(provider.id)}" aria-label="${escapeHtml(t('homeProviderInclude', [provider.name]))}">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+  `;
+  const subtitle = card.querySelector('.provider-subtitle');
+  subtitle.innerHTML = providerCardSubtitle(provider, isActive, providerHistory);
+  const toggle = card.querySelector('input[type="checkbox"]');
+  toggle.addEventListener('change', async () => {
+    if (toggle.checked) activeProviderIds.add(provider.id);
+    else activeProviderIds.delete(provider.id);
+    await saveActiveProviders();
+    card.classList.toggle('inactive', !toggle.checked);
+    subtitle.innerHTML = providerCardSubtitle(provider, toggle.checked, providerHistory);
+    updateDownloadAllSubtitle();
+    updateProfileDirtyIndicator();
+  });
+  card.querySelector('.provider-card-main').addEventListener('click', () => {
+    nav.push('provider', { providerId: provider.id });
+    renderProviderDetail(provider.id);
+  });
+  return card;
 }
 
 async function renderHome() {
@@ -1722,8 +1908,8 @@ async function renderHome() {
   const dirtyBadge = document.getElementById('profile-dirty-badge');
   const saveQuickBtn = document.getElementById('btn-save-profile-quick');
   const profileBar = document.getElementById('profile-bar');
-  if (dirtyBadge) dirtyBadge.style.display = dirty ? '' : 'none';
-  if (saveQuickBtn) saveQuickBtn.style.display = (dirty && loadedProfileId) ? '' : 'none';
+  if (dirtyBadge) dirtyBadge.hidden = !dirty;
+  if (saveQuickBtn) saveQuickBtn.hidden = !(dirty && loadedProfileId);
   if (profileBar) {
     profileBar.classList.toggle('has-profile', !!loadedProfileId);
     profileBar.classList.toggle('is-dirty', dirty);
@@ -1734,71 +1920,29 @@ async function renderHome() {
   document.getElementById('home-stats').textContent =
     `${tp('commonInvoicesCount', history.length)} \u00b7 ${tp('commonProvidersCount', providers.length)}`;
 
-  // Download All subtitle
-  const activeCount = activeProviderIds.size;
-  document.getElementById('download-all-subtitle').textContent = selectedProvidersLabel(activeCount);
+  // Download All subtitle: what will actually run vs what will be skipped for missing setup
+  updateDownloadAllSubtitle();
 
-  // Provider cards
+  // Provider cards, grouped: Ready, Needs setup, Off. A card stays in its group until the
+  // next render, so toggling never moves the row from under the pointer.
   const container = document.getElementById('provider-cards');
   container.innerHTML = '';
+  const groups = { ready: [], setup: [], off: [] };
   for (const provider of providers) {
-    const isActive = activeProviderIds.has(provider.id);
-    const providerHistory = history.filter(h => h.providerId === provider.id);
-    const needsConfig = provider.config && Object.entries(provider.config).some(([key, def]) => {
-      const val = providerConfigs[provider.id]?.[key];
-      if (def.multi) {
-        return !val || (Array.isArray(val) ? val.filter(Boolean).length === 0 : !val.toString().trim());
-      }
-      return !val || !val.toString().trim();
-    });
-
-    const card = document.createElement('div');
-    card.className = `card provider-card${!isActive ? ' inactive' : ''}`;
-    card.style.opacity = isActive ? '1' : '0.5';
-
-    const logoUrl = chrome.runtime.getURL(`icons/providers/${provider.id}.png`);
-
-    card.innerHTML = `
-      <img class="provider-logo" src="${logoUrl}" alt="${provider.icon}" onerror="this.style.display='none';this.nextElementSibling.style.display='block';">
-      <span class="provider-logo provider-logo-fallback" style="display:none;" aria-hidden="true">${escapeHtml(provider.name.split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase())}</span>
-      <div class="provider-info">
-        <div class="provider-name">${provider.name}</div>
-        <div class="provider-subtitle">${
-          needsConfig ? `<span class="status status-warn">${escapeHtml(t('homeProviderNeedsConfig'))}</span>` :
-          providerHistory.length > 0 ? `<span class="status status-ok">${escapeHtml(tp('homeProviderDownloaded', providerHistory.length))}</span>` :
-          escapeHtml(t('homeProviderNoDownloads'))
-        }</div>
-      </div>
-      <div class="provider-card-toggle">
-        <label class="toggle-switch" title="${escapeHtml(t(isActive ? 'homeProviderDisable' : 'homeProviderEnable', [provider.name]))}">
-          <input type="checkbox" ${isActive ? 'checked' : ''} data-provider-id="${provider.id}">
-          <span class="toggle-slider"></span>
-        </label>
-      </div>
-      <span class="provider-chevron">\u203a</span>
-    `;
-    // Toggle — stop propagation on the whole toggle container so card click doesn't fire
-    const toggleWrap = card.querySelector('.provider-card-toggle');
-    toggleWrap.addEventListener('click', (e) => e.stopPropagation());
-    const toggle = card.querySelector('input[type="checkbox"]');
-    toggle.addEventListener('change', async (e) => {
-      e.stopPropagation();
-      if (toggle.checked) activeProviderIds.add(provider.id);
-      else activeProviderIds.delete(provider.id);
-      await saveActiveProviders();
-      card.style.opacity = toggle.checked ? '1' : '0.5';
-      // Update Download All subtitle
-      const activeCount = activeProviderIds.size;
-      document.getElementById('download-all-subtitle').textContent = selectedProvidersLabel(activeCount);
-      // Update profile dirty state
-      updateProfileDirtyIndicator();
-    });
-    card.addEventListener('click', () => {
-      nav.push('provider', { providerId: provider.id });
-      renderProviderDetail(provider.id);
-    });
-    container.appendChild(card);
+    if (!activeProviderIds.has(provider.id)) groups.off.push(provider);
+    else if (providerNeedsSetup(provider)) groups.setup.push(provider);
+    else groups.ready.push(provider);
   }
+  const groupTitles = { ready: 'homeGroupReady', setup: 'homeGroupNeedsSetup', off: 'homeGroupOff' };
+  for (const [groupKey, list] of Object.entries(groups)) {
+    if (!list.length) continue;
+    const heading = document.createElement('h3');
+    heading.className = 'provider-group-title';
+    heading.innerHTML = `<span>${escapeHtml(t(groupTitles[groupKey]))}</span><span class="provider-group-count">${list.length}</span>`;
+    container.appendChild(heading);
+    for (const provider of list) container.appendChild(renderProviderCard(provider, history));
+  }
+  wireLogoFallbacks(container);
 
   // Select all / Deselect all button
   const btnSelectAll = document.getElementById('btn-select-all');
@@ -1831,9 +1975,7 @@ async function renderProviderDetail(providerId) {
   if (!provider) return;
 
   // Logo
-  const logo = document.getElementById('provider-detail-logo');
-  logo.src = chrome.runtime.getURL(`icons/providers/${provider.id}.png`);
-  logo.onerror = () => { logo.style.display = 'none'; };
+  setStaticLogo(document.getElementById('provider-detail-logo'), provider.id, provider.name);
 
   // Name & domain
   document.getElementById('provider-detail-name').textContent = provider.name;
@@ -1854,12 +1996,16 @@ async function renderProviderDetail(providerId) {
   // Config section (provider fields + optional 1Password item override)
   const configSection = document.getElementById('provider-config-section');
   const configFields = document.getElementById('provider-config-fields');
-  configSection.style.display = 'block';
+  configSection.hidden = false;
   configFields.innerHTML = '';
 
+  const hintHtmlFor = fieldDef => fieldDef.hint
+    ? `<div class="config-hint">${escapeHtml(fieldDef.hint)}${fieldDef.hintUrl ? ` <button type="button" class="config-hint-link" data-url="${escapeHtml(fieldDef.hintUrl)}">${escapeHtml(t('providerHintOpenPage'))}</button>` : ''}</div>`
+    : '';
   if (provider.config && Object.keys(provider.config).length > 0) {
     for (const [fieldName, fieldDef] of Object.entries(provider.config)) {
       const rawValue = providerConfigs[provider.id]?.[fieldName];
+      const inputId = `cfg-${provider.id}-${fieldName}`.replace(/[^\w-]/g, '_');
 
       if (fieldDef.multi) {
         // Multi-value config field — show list with add/remove
@@ -1868,10 +2014,7 @@ async function renderProviderDetail(providerId) {
 
         const div = document.createElement('div');
         div.className = 'config-field';
-        const hintHtml = fieldDef.hint
-          ? `<div class="config-hint">${escapeHtml(fieldDef.hint)}${fieldDef.hintUrl ? ` <a href="#" class="config-hint-link" data-url="${escapeHtml(fieldDef.hintUrl)}">${escapeHtml(t('providerHintOpenPage'))}</a>` : ''}</div>`
-          : '';
-        div.innerHTML = `<label class="config-label">${escapeHtml(fieldDef.title || fieldName)}</label>${hintHtml}`;
+        div.innerHTML = `<label class="config-label" for="${inputId}">${escapeHtml(fieldDef.title || fieldName)}</label>${hintHtmlFor(fieldDef)}`;
 
         const errorEl = document.createElement('div');
         errorEl.className = 'config-error';
@@ -1887,7 +2030,7 @@ async function renderProviderDetail(providerId) {
             row.className = 'config-multi-item';
             row.innerHTML = `
               <span class="config-multi-value"></span>
-              <button class="config-multi-remove" data-idx="${idx}" title="${escapeHtml(t('commonRemove'))}">&times;</button>
+              <button type="button" class="config-multi-remove" data-idx="${idx}" title="${escapeHtml(t('commonRemove'))}" aria-label="${escapeHtml(t('commonRemoveValue', [String(val)]))}">${icon('x', 14)}</button>
             `;
             row.querySelector('.config-multi-value').textContent = String(val);
             try { normalizeConfigEntry(val, fieldDef); }
@@ -1914,9 +2057,9 @@ async function renderProviderDetail(providerId) {
         const addRow = document.createElement('div');
         addRow.className = 'config-multi-add';
         addRow.innerHTML = `
-          <input class="config-input config-multi-input" type="${escapeHtml(fieldDef.type || 'text')}"
+          <input class="config-input config-multi-input" id="${inputId}" type="${escapeHtml(fieldDef.type || 'text')}"
                  placeholder="${escapeHtml(fieldDef.placeholder || fieldDef.default || t('providerConfigAddPlaceholder'))}">
-          <button class="config-multi-add-btn" title="${escapeHtml(t('commonAdd'))}">+</button>
+          <button type="button" class="config-multi-add-btn" title="${escapeHtml(t('commonAdd'))}" aria-label="${escapeHtml(t('commonAdd'))}">${icon('plus')}</button>
         `;
         const addInput = addRow.querySelector('input');
         const addBtn = addRow.querySelector('button');
@@ -1943,13 +2086,10 @@ async function renderProviderDetail(providerId) {
         const value = rawValue || '';
         const div = document.createElement('div');
         div.className = 'config-field';
-        const singleHintHtml = fieldDef.hint
-          ? `<div class="config-hint">${escapeHtml(fieldDef.hint)}${fieldDef.hintUrl ? ` <a href="#" class="config-hint-link" data-url="${escapeHtml(fieldDef.hintUrl)}">${escapeHtml(t('providerHintOpenPage'))}</a>` : ''}</div>`
-          : '';
         div.innerHTML = `
-          <label class="config-label">${escapeHtml(fieldDef.title || fieldName)}</label>
-          ${singleHintHtml}
-          <input class="config-input" type="${escapeHtml(fieldDef.type || 'text')}"
+          <label class="config-label" for="${inputId}">${escapeHtml(fieldDef.title || fieldName)}</label>
+          ${hintHtmlFor(fieldDef)}
+          <input class="config-input" id="${inputId}" type="${escapeHtml(fieldDef.type || 'text')}"
                  data-provider="${escapeHtml(provider.id)}" data-field="${escapeHtml(fieldName)}"
                  placeholder="${escapeHtml(fieldDef.placeholder || fieldDef.default || '')}">
         `;
@@ -1978,8 +2118,7 @@ async function renderProviderDetail(providerId) {
     }
     // Attach click handlers for hint links (open URL in new tab)
     configFields.querySelectorAll('.config-hint-link').forEach(link => {
-      link.addEventListener('click', (e) => {
-        e.preventDefault();
+      link.addEventListener('click', () => {
         chrome.tabs.create({ url: link.dataset.url });
       });
     });
@@ -1988,10 +2127,11 @@ async function renderProviderDetail(providerId) {
   // Optional 1Password item override field for auto-login
   const opDiv = document.createElement('div');
   opDiv.className = 'config-field';
+  const opInputId = `cfg-${provider.id}-onepassword`.replace(/[^\w-]/g, '_');
   opDiv.innerHTML = `
-    <label class="config-label">${escapeHtml(t('providerOpItemLabel'))}</label>
+    <label class="config-label" for="${opInputId}">${escapeHtml(t('providerOpItemLabel'))}</label>
     <div class="config-hint">${escapeHtml(t('providerOpItemHint'))}</div>
-    <input class="config-input" type="text"
+    <input class="config-input" id="${opInputId}" type="text"
            data-provider="${escapeHtml(provider.id)}" data-field="_onepasswordItem"
            placeholder="${escapeHtml(provider.auth?.item || provider.name)}">
   `;
@@ -2012,16 +2152,18 @@ async function renderProviderDetail(providerId) {
     .sort((a, b) => (b.downloadedAt || '').localeCompare(a.downloadedAt || ''));
   const histContainer = document.getElementById('provider-history');
   if (provHistory.length === 0) {
-    histContainer.innerHTML = `<div class="empty-state" style="padding: 20px;"><p style="font-size: 12px;">${escapeHtml(t('providerHistoryEmpty'))}</p></div>`;
+    histContainer.innerHTML = `<div class="empty-state empty-state-compact"><p>${escapeHtml(t('providerHistoryEmpty'))}</p></div>`;
   } else {
     let html = '<div class="provider-history-list">';
     for (const entry of provHistory.slice(0, 20)) {
       const hasFile = entry.downloadId;
-      html += `<div class="provider-history-item${hasFile ? ' has-file' : ''}" ${hasFile ? `data-download-id="${escapeHtml(entry.downloadId)}"` : ''}>
-        <span class="provider-history-date">${escapeHtml(entry.date || '\u2014')}</span>
+      const tag = hasFile ? 'button' : 'div';
+      const label = hasFile ? ` type="button" aria-label="${escapeHtml(t('historyOpenRowLabel', [provider.name, entry.date || '\u2014']))}"` : '';
+      html += `<${tag} class="provider-history-item${hasFile ? ' has-file' : ''}"${label} ${hasFile ? `data-download-id="${escapeHtml(entry.downloadId)}"` : ''}>
+        <span class="provider-history-date">${escapeHtml(displayInvoiceDate(entry.date))}</span>
         <span class="provider-history-amount">${escapeHtml(entry.amount || '\u2014')}</span>
-        ${hasFile ? '<span class="provider-history-open">📂</span>' : ''}
-      </div>`;
+        ${hasFile ? `<span class="provider-history-open">${icon('folder', 14)}</span>` : ''}
+      </${tag}>`;
     }
     html += '</div>';
     histContainer.innerHTML = html;
@@ -2046,15 +2188,16 @@ function renderBatchConfig(providerList) {
 
   list.innerHTML = '';
   for (const p of providerList) {
-    const logoUrl = chrome.runtime.getURL(`icons/providers/${p.id}.png`);
     const div = document.createElement('div');
     div.className = 'site-item';
     div.innerHTML = `
-      <img class="icon" src="${escapeHtml(logoUrl)}" alt="${escapeHtml(p.icon)}" style="width:24px;height:24px;border-radius:4px;" onerror="this.outerHTML='<span class=icon style=font-size:16px>${escapeHtml(p.icon)}</span>'">
+      ${logoImgHtml(p.id, p.name, 'icon')}
       <span class="name">${escapeHtml(p.name)}</span>
+      ${providerNeedsSetup(p) ? `<span class="status status-warn site-setup-note">${escapeHtml(t('batchWillSkip'))}</span>` : ''}
     `;
     list.appendChild(div);
   }
+  wireLogoFallbacks(list);
 
   // Restore saved settings
   document.getElementById('config-since-date').value = state.sinceDate || '';
@@ -2068,40 +2211,69 @@ function renderBatchConfig(providerList) {
   // Default date: first of current month if no date set
   const dateInput = document.getElementById('config-since-date');
   if (dateInput && !dateInput.value) {
-    const now = new Date();
-    const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    dateInput.value = firstOfMonth.toISOString().split('T')[0];
+    dateInput.value = sinceDatePreset('this-month');
   }
+  syncPresetButtons();
+}
+
+// Quick ranges only write the same "since" date field the user can also type.
+function sinceDatePreset(preset) {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth();
+  if (preset === 'last-month') return localIsoDate(new Date(y, m - 1, 1));
+  if (preset === 'this-quarter') return localIsoDate(new Date(y, m - (m % 3), 1));
+  return localIsoDate(new Date(y, m, 1));
+}
+
+function syncPresetButtons() {
+  const value = document.getElementById('config-since-date')?.value;
+  document.querySelectorAll('.preset-row [data-preset]').forEach(button => {
+    button.setAttribute('aria-pressed', String(value === sinceDatePreset(button.dataset.preset)));
+  });
 }
 
 // =====================================================
 // WORKFLOW UI
 // =====================================================
 function showCurrentSiteUI(provider) {
-  const logo = document.getElementById('workflow-current-logo');
-  logo.src = chrome.runtime.getURL(`icons/providers/${provider.id}.png`);
-  logo.onerror = () => { logo.style.display = 'none'; };
+  setStaticLogo(document.getElementById('workflow-current-logo'), provider.id, provider.name);
   const displayName = provider._multiLabel ? `${provider.name} (${provider._multiLabel})` : provider.name;
   document.getElementById('workflow-current-name').textContent = displayName;
+  const step1 = document.getElementById('login-step-1');
+  if (step1) step1.textContent = t('workflowLoginStep1', [displayName]);
 }
 
 function showStatus(message) {
   document.getElementById('workflow-current-status').textContent = message;
 }
 
+// Last arguments, so the controls can be re-applied when the vault probe answers.
+let _lastButtons = null;
+
 function showButtons(login, downloading, next, skip, stop = false, retry = false, gotoBilling = false) {
-  document.getElementById('btn-logged-in').style.display = login ? 'block' : 'none';
-  const opBtn = document.getElementById('btn-1password-login');
-  if (opBtn) opBtn.style.display = login ? 'block' : 'none';
-  const switchBtn = document.getElementById('btn-switch-account');
-  if (switchBtn) switchBtn.style.display = login ? 'block' : 'none';
-  document.getElementById('btn-show-tab').style.display = login ? 'block' : 'none';
-  document.getElementById('btn-downloading').style.display = downloading ? 'block' : 'none';
-  document.getElementById('btn-next').style.display = next ? 'block' : 'none';
-  document.getElementById('btn-skip').style.display = skip ? 'block' : 'none';
-  document.getElementById('btn-stop').style.display = stop ? 'block' : 'none';
-  document.getElementById('btn-retry').style.display = retry ? 'block' : 'none';
-  document.getElementById('btn-goto-billing').style.display = gotoBilling ? 'block' : 'none';
+  _lastButtons = [login, downloading, next, skip, stop, retry, gotoBilling];
+  // Vault sign-in is offered only when a password-manager bridge is installed and configured.
+  const vault = login && credentialBridge.available;
+  setHidden('btn-logged-in', !login);
+  setHidden('btn-1password-login', !vault);
+  setHidden('btn-switch-account', !vault);
+  setHidden('btn-show-tab', !login);
+  setHidden('btn-downloading', !downloading);
+  setHidden('btn-next', !next);
+  setHidden('btn-skip', !skip);
+  setHidden('btn-stop', !stop);
+  setHidden('btn-retry', !retry);
+  setHidden('btn-goto-billing', !gotoBilling);
+  // One main action: Retry leads after an error, "I'm signed in — continue" leads a sign-in prompt.
+  const loggedIn = document.getElementById('btn-logged-in');
+  const retryBtn = document.getElementById('btn-retry');
+  loggedIn.classList.toggle('btn-primary', !retry);
+  loggedIn.classList.toggle('btn-secondary', !!retry);
+  retryBtn.classList.toggle('btn-primary', !!retry);
+  retryBtn.classList.toggle('btn-secondary', !retry);
+  // The numbered sign-in steps belong to a sign-in prompt, not to an error with Retry.
+  setHidden('login-steps', !(login && !retry));
 }
 
 function updateProgress() {
@@ -2109,6 +2281,7 @@ function updateProgress() {
   const done = state.completed.length + state.skipped.length;
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
   document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-bar')?.setAttribute('aria-valuenow', String(pct));
   const skipped = state.skipped.length;
   const completed = state.completed.length;
   document.getElementById('progress-text').textContent = [
@@ -2118,28 +2291,52 @@ function updateProgress() {
   ].join(' \u00b7 ');
 }
 
+// Rows already shown as filed, so the stamp lands only once, when a provider finishes.
+let _filedKeys = null;
+
+const SITE_STATUS = {
+  done: { icon: 'check', label: 'workflowSiteFiled' },
+  current: { icon: 'arrowRight', label: 'workflowSiteNow' },
+  skipped: { icon: 'skip', label: 'workflowSiteSkipped' },
+  waiting: { icon: 'clock', label: 'workflowSiteWaiting' },
+};
+
 function updateSitesList() {
   const container = document.getElementById('workflow-sites-container');
   container.innerHTML = '';
+  const firstRender = _filedKeys === null;
+  if (firstRender) _filedKeys = new Set();
   for (const p of workflowProviders) {
     const key = workflowKey(p);
     const isCurrent = state.currentIndex >= 0 && workflowProviders[state.currentIndex] === p;
     const status = state.completed.includes(key) ? 'done' :
                    isSkipped(key) ? 'skipped' :
-                   isCurrent ? 'current' : '';
-    const logoUrl = chrome.runtime.getURL(`icons/providers/${p.id}.png`);
+                   isCurrent ? 'current' : 'waiting';
     const skipReason = status === 'skipped' ? getSkipReason(key) : null;
-    const statusEmoji = status === 'done' ? '\u2705' : status === 'skipped' ? '\u23ed\ufe0f' : status === 'current' ? '\ud83d\udc49' : '\u23f3';
-    const div = document.createElement('div');
-    div.className = `site-item ${status}`;
+    const justFiled = status === 'done' && !_filedKeys.has(key) && !firstRender;
+    if (status === 'done') _filedKeys.add(key);
+    const meta = SITE_STATUS[status];
+    const li = document.createElement('li');
+    li.className = `site-item ${status}${justFiled ? ' just-filed' : ''}`;
+    if (isCurrent) li.setAttribute('aria-current', 'step');
     const displayName = p._multiLabel ? `${p.name} (${p._multiLabel})` : p.name;
-    div.innerHTML = `
-      <img class="icon" src="${escapeHtml(logoUrl)}" alt="" style="width:24px;height:24px;border-radius:4px;" onerror="this.outerHTML='<span class=icon style=font-size:16px>${escapeHtml(p.icon)}</span>'">
+    li.innerHTML = `
+      ${logoImgHtml(p.id, p.name, 'icon')}
       <span class="name">${escapeHtml(displayName)}${skipReason ? `<span class="skip-reason">${escapeHtml(skipReason)}</span>` : ''}</span>
-      <span>${statusEmoji}</span>
+      <span class="site-status">${icon(meta.icon, 12)}<span>${escapeHtml(t(meta.label))}</span></span>
     `;
-    container.appendChild(div);
+    container.appendChild(li);
   }
+  wireLogoFallbacks(container);
+}
+
+// A skip that needs no action: everything on the page was already filed or is older than
+// the chosen date. Every other skip (missing setup, sign-in, errors) needs the person.
+function isUpToDateSkip(reason) {
+  if (!reason) return false;
+  if (reason === t('workflowSkipAllDownloaded')) return true;
+  const [before, after] = t('workflowSkipAllBeforeDate', ['\u0000', '\u0001']).split(/\u0000.*\u0001/s);
+  return before !== undefined && after !== undefined && reason.startsWith(before) && reason.endsWith(after);
 }
 
 function showCompletion() {
@@ -2147,30 +2344,44 @@ function showCompletion() {
   saveState();
   const done = state.completed.length;
   const skippedList = state.skipped;
-  let summaryHtml = tp('completionSummary', done);
-  if (skippedList.length > 0) {
-    summaryHtml += ` \u00b7 ${tp('completionSkipped', skippedList.length)}`;
-  }
-  document.getElementById('completion-summary').textContent = summaryHtml;
+  const attention = skippedList.filter(s => !isUpToDateSkip(s.reason));
+  const filed = runInvoiceCount;
+  const clean = attention.length === 0;
 
-  // Show skipped details
+  // Headline follows the outcome: Bonobot and the stamp only for a clean run.
+  const completion = document.getElementById('completion');
+  completion.classList.toggle('needs-attention', !clean);
+  setHidden('completion-art', !clean);
+  setHidden('completion-quip', !clean);
+  setHidden('completion-help', clean);
+  document.getElementById('completion-title').textContent = clean
+    ? (filed > 0 ? tp('completionClean', filed) : t('completionCleanNone'))
+    : `${tp('completionFiled', filed)}, ${tp('completionNeedYou', attention.length)}`;
+
+  let summary = tp('completionSummary', done);
+  if (skippedList.length > 0) {
+    summary += ` \u00b7 ${tp('completionSkipped', skippedList.length)}`;
+  }
+  document.getElementById('completion-summary').textContent = summary;
+
+  // What was skipped and why; the ones that need the person first.
   const detailEl = document.getElementById('completion-skipped');
   if (detailEl) {
-    if (skippedList.length > 0) {
-      detailEl.innerHTML = skippedList.map(s => {
-        const p = providers.find(pr => pr.id === s.key) || workflowProviders.find(pr => workflowKey(pr) === s.key);
-        const name = p ? p.name : s.key;
-        const logoUrl = p ? chrome.runtime.getURL(`icons/providers/${p.id}.png`) : '';
-        return `<div class="skip-detail-item">
-          ${logoUrl ? `<img class="skip-detail-logo" src="${escapeHtml(logoUrl)}" alt="" onerror="this.style.display='none'">` : ''}
-          <span class="skip-detail-name">${escapeHtml(name)}</span>
+    const ordered = [...attention, ...skippedList.filter(s => !attention.includes(s))];
+    detailEl.innerHTML = ordered.map(s => {
+      const p = providers.find(pr => pr.id === s.key) || workflowProviders.find(pr => workflowKey(pr) === s.key);
+      const name = p ? p.name : s.key;
+      const needsYou = attention.includes(s);
+      return `<li class="skip-detail-item${needsYou ? ' needs-you' : ''}">
+        ${p ? logoImgHtml(p.id, p.name, 'skip-detail-logo') : ''}
+        <span class="skip-detail-text">
+          <span class="skip-detail-name">${escapeHtml(name)}${needsYou ? `<span class="status status-warn">${escapeHtml(t('completionNeedsYouLabel'))}</span>` : `<span class="status status-ok">${escapeHtml(t('completionUpToDateLabel'))}</span>`}</span>
           <span class="skip-detail-reason">${escapeHtml(s.reason)}</span>
-        </div>`;
-      }).join('');
-      detailEl.style.display = 'block';
-    } else {
-      detailEl.style.display = 'none';
-    }
+        </span>
+      </li>`;
+    }).join('');
+    detailEl.hidden = ordered.length === 0;
+    wireLogoFallbacks(detailEl);
   }
   nav.push('completion');
 }
@@ -2190,6 +2401,21 @@ function isConfigFieldRequiredForNavigation(provider, key) {
   if (String(provider.billingUrl || '').includes(token)) return true;
   if (String(provider.preNavigation?.url || '').includes(token)) return true;
   return false;
+}
+
+// True when a config field the navigation needs has no value and no default.
+function missingRequiredConfig(provider, config) {
+  return Object.entries(provider.config || {}).some(([key, def]) => {
+    if (!isConfigFieldRequiredForNavigation(provider, key)) return false;
+    const val = config[key];
+    // For multi fields, check if there's at least one value
+    if (def.multi) {
+      return !val || (Array.isArray(val) ? val.filter(Boolean).length === 0 : !val.toString().trim());
+    }
+    // Field is configured if user set a value OR there's a default
+    const effective = val?.toString().trim() || def.default?.toString().trim();
+    return !effective;
+  });
 }
 
 function shouldRunPreNavigation(provider) {
@@ -2274,17 +2500,7 @@ async function processCurrentSite() {
   // "Leave empty to skip the check") do not block launching when left empty.
   if (provider.config) {
     const config = { ...(providerConfigs[provider.id] || {}), ...(provider._configOverrides || {}) };
-    const unconfigured = Object.entries(provider.config).some(([key, def]) => {
-      if (!isConfigFieldRequiredForNavigation(provider, key)) return false;
-      const val = config[key];
-      // For multi fields, check if there's at least one value
-      if (def.multi) {
-        return !val || (Array.isArray(val) ? val.filter(Boolean).length === 0 : !val.toString().trim());
-      }
-      // Field is configured if user set a value OR there's a default
-      const effective = val?.toString().trim() || def.default?.toString().trim();
-      return !effective;
-    });
+    const unconfigured = missingRequiredConfig(provider, config);
     const configError = providerConfigError(provider);
     if (unconfigured || configError) {
       showStatus(t('workflowStatusSkippedConfig', [provider.name, configError || t('workflowNeedsConfig')]));
@@ -2835,19 +3051,27 @@ function startLoginPolling(tabId, provider, iframeId) {
   }, 2000);
 }
 
+// Invoices that dropped into the feed during this popup session (completion headline).
+let runInvoiceCount = 0;
+
 function addToDownloadFeed(provider, invoice) {
   const feed = document.getElementById('download-feed');
   if (!feed) return;
-  const logoUrl = chrome.runtime.getURL(`icons/providers/${provider.id}.png`);
-  const item = document.createElement('div');
+  runInvoiceCount++;
+  setHidden('download-feed-title', false);
+  const label = invoice.filename || invoice.date || provider.name;
+  const item = document.createElement('button');
+  item.type = 'button';
   item.className = 'download-feed-item';
+  item.setAttribute('aria-label', t('commonShowFileInFolder', [label]));
   item.innerHTML = `
-    <img class="feed-logo" src="${escapeHtml(logoUrl)}" alt="${escapeHtml(provider.icon)}" onerror="this.outerHTML='<span class=feed-icon>${escapeHtml(provider.icon)}</span>'">
-    <span class="feed-name">${escapeHtml(invoice.filename || invoice.date || provider.name)}</span>
+    <span class="feed-check">${icon('fileCheck', 14)}</span>
+    ${logoImgHtml(provider.id, provider.name, 'feed-logo')}
+    <span class="feed-name">${escapeHtml(label)}</span>
     ${invoice.amount ? `<span class="feed-amount">${escapeHtml(invoice.amount)}</span>` : ''}
   `;
+  wireLogoFallbacks(item);
   // Click to open file — resolve downloadId async
-  item.style.cursor = 'pointer';
   item.addEventListener('click', async () => {
     // Search for this file in recent downloads
     if (invoice.filename) {
@@ -2874,6 +3098,9 @@ function addToDownloadFeed(provider, invoice) {
 function clearDownloadFeed() {
   const feed = document.getElementById('download-feed');
   if (feed) feed.innerHTML = '';
+  setHidden('download-feed-title', true);
+  runInvoiceCount = 0;
+  _filedKeys = null;
 }
 
 // Download ID capture — collect chrome download IDs during engine/popup downloads
@@ -3603,7 +3830,7 @@ async function renderHistory(filterProviderId = null) {
   select.innerHTML = '';
   select.append(new Option(t('historyAllProviders'), ''));
   for (const [id, name] of providerMap) {
-    select.innerHTML += `<option value="${escapeHtml(id)}">${escapeHtml(name)}</option>`;
+    select.append(new Option(name, id));
   }
   select.value = filterProviderId || currentVal || '';
 
@@ -3667,35 +3894,44 @@ async function renderHistory(filterProviderId = null) {
     return 0;
   });
 
+  // Destructive actions only when there is something to act on
+  document.getElementById('btn-delete-filtered').disabled = filtered.length === 0;
+  document.getElementById('btn-clear-history').disabled = history.length === 0;
+  document.getElementById('btn-export-csv').disabled = history.length === 0;
+
   // Render table
   const container = document.getElementById('history-table-container');
   if (filtered.length === 0) {
     const emptyText = history.length === 0 ? t('historyEmpty') : t('historyNoMatches');
-    container.innerHTML = `<div class="empty-state"><div class="emoji" aria-hidden="true">\ud83d\udced</div><p>${escapeHtml(emptyText)}</p></div>`;
+    container.innerHTML = `<div class="empty-state"><div class="empty-art" aria-hidden="true"></div><p>${escapeHtml(emptyText)}</p></div>`;
     return;
   }
 
+  const sortAttr = column => historySort.column === column
+    ? ` aria-sort="${historySort.asc ? 'ascending' : 'descending'}"` : '';
+  const sortHeader = (column, key) => `<th scope="col"${sortAttr(column)}><button type="button" class="sort-button" data-sort="${column}">${escapeHtml(t(key))}<svg class="ie-icon sort-indicator" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICON_PATHS.chevronUp}</svg></button></th>`;
   let html = `<table class="history-table"><thead><tr>
-    <th></th>
-    <th data-sort="providerName">${escapeHtml(t('historyColProvider'))}</th>
-    <th data-sort="date">${escapeHtml(t('historyColDate'))}</th>
-    <th data-sort="amount">${escapeHtml(t('historyColAmount'))}</th>
-    <th></th>
+    <th scope="col"><span class="visually-hidden">${escapeHtml(t('historyColLogo'))}</span></th>
+    ${sortHeader('providerName', 'historyColProvider')}
+    ${sortHeader('date', 'historyColDate')}
+    ${sortHeader('amount', 'historyColAmount')}
+    <th scope="col"><span class="visually-hidden">${escapeHtml(t('commonDelete'))}</span></th>
   </tr></thead><tbody>`;
   for (let idx = 0; idx < filtered.length; idx++) {
     const e = filtered[idx];
-    const logoUrl = e.providerId ? chrome.runtime.getURL(`icons/providers/${e.providerId}.png`) : '';
-    const icon = e.providerIcon || '';
+    const name = e.providerName || e.providerId || '';
+    const dateText = e.date || '\u2014';
     html += `<tr class="clickable-row" data-idx="${idx}">
-      <td class="logo-cell"><img class="history-logo" src="${escapeHtml(logoUrl)}" alt="${escapeHtml(icon)}" onerror="this.outerHTML='<span class=history-logo-fallback>${escapeHtml(icon)}</span>'"></td>
-      <td>${escapeHtml(e.providerName || e.providerId)}</td>
-      <td>${escapeHtml(e.date || '\u2014')}</td>
+      <td class="logo-cell">${e.providerId ? logoImgHtml(e.providerId, name, 'history-logo') : ''}</td>
+      <td><button type="button" class="history-open" aria-label="${escapeHtml(t('historyOpenRowLabel', [name, dateText]))}">${escapeHtml(name)}</button></td>
+      <td class="date-cell">${escapeHtml(displayInvoiceDate(e.date))}</td>
       <td class="amount-cell">${escapeHtml(e.amount || '\u2014')}</td>
-      <td class="delete-cell"><button class="btn-delete-row" data-idx="${idx}" title="${escapeHtml(t('commonDelete'))}">\u00d7</button></td>
+      <td class="delete-cell"><button type="button" class="btn-delete-row" data-idx="${idx}" title="${escapeHtml(t('commonDelete'))}" aria-label="${escapeHtml(t('historyDeleteRowLabel', [name, dateText]))}">${icon('x', 14)}</button></td>
     </tr>`;
   }
   html += '</tbody></table>';
   container.innerHTML = html;
+  wireLogoFallbacks(container);
 
   // Delete individual row
   container.querySelectorAll('.btn-delete-row').forEach(btn => {
@@ -3733,9 +3969,9 @@ async function renderHistory(filterProviderId = null) {
       }
 
       // Try to find the download on-demand
-      row.style.opacity = '0.5';
+      row.setAttribute('aria-busy', 'true');
       const dlItem = await findDownloadItem(entry.filename, entry.downloadUrl);
-      row.style.opacity = '';
+      row.removeAttribute('aria-busy');
 
       if (dlItem) {
         // Save resolved ID to history for future clicks
@@ -3756,11 +3992,12 @@ async function renderHistory(filterProviderId = null) {
   });
 
   // Sort handlers
-  container.querySelectorAll('th[data-sort]').forEach(th => {
-    th.addEventListener('click', () => {
-      if (historySort.column === th.dataset.sort) historySort.asc = !historySort.asc;
-      else { historySort.column = th.dataset.sort; historySort.asc = true; }
-      renderHistory();
+  container.querySelectorAll('.sort-button[data-sort]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (historySort.column === btn.dataset.sort) historySort.asc = !historySort.asc;
+      else { historySort.column = btn.dataset.sort; historySort.asc = true; }
+      await renderHistory();
+      container.querySelector(`.sort-button[data-sort="${btn.dataset.sort}"]`)?.focus();
     });
   });
 }
@@ -3832,9 +4069,9 @@ async function clearRecordState() {
 
 function showRecordStep(step) {
   // step: 'confirm', 'recording', 'result'
-  document.getElementById('record-step-confirm').style.display = step === 'confirm' ? 'block' : 'none';
-  document.getElementById('record-step-recording').style.display = step === 'recording' ? 'block' : 'none';
-  document.getElementById('record-step-result').style.display = step === 'result' ? 'block' : 'none';
+  setHidden('record-step-confirm', step !== 'confirm');
+  setHidden('record-step-recording', step !== 'recording');
+  setHidden('record-step-result', step !== 'result');
 
   // Update back button text
   const backBtn = document.getElementById('record-back');
@@ -4422,16 +4659,16 @@ async function renderProfiles() {
       ? tp('commonProvidersCount', provCount)
       : t('profilesPending');
     div.innerHTML = `
-      <div style="flex: 1; min-width: 0;">
+      <div class="profile-item-main">
         <span class="profile-item-name"></span>
         <div class="profile-item-meta">${escapeHtml(metaText)}</div>
       </div>
       ${isLoaded ? `<span class="profile-item-badge">${escapeHtml(t('profilesLoaded'))}</span>` : ''}
       <div class="profile-item-actions">
-        ${hasSaved ? `<button class="btn-load-profile" title="${escapeHtml(t('profilesLoadTitle'))}">${escapeHtml(t('profilesLoad'))}</button>` : ''}
-        <button class="btn-save-profile" title="${escapeHtml(t('homeProfileSaveTitle'))}">${escapeHtml(t('commonSave'))}</button>
-        <button class="btn-rename-profile" title="${escapeHtml(t('profilesRename'))}">&#9998;</button>
-        <button class="btn-delete-profile" title="${escapeHtml(t('commonDelete'))}">&times;</button>
+        ${hasSaved ? `<button type="button" class="btn-load-profile" title="${escapeHtml(t('profilesLoadTitle'))}">${escapeHtml(t('profilesLoad'))}</button>` : ''}
+        <button type="button" class="btn-save-profile" title="${escapeHtml(t('homeProfileSaveTitle'))}">${escapeHtml(t('commonSave'))}</button>
+        <button type="button" class="btn-rename-profile" title="${escapeHtml(t('profilesRename'))}" aria-label="${escapeHtml(t('profilesRenameLabel', [p.name]))}">${icon('pencil', 14)}</button>
+        <button type="button" class="btn-delete-profile" title="${escapeHtml(t('commonDelete'))}" aria-label="${escapeHtml(t('profilesDeleteLabel', [p.name]))}">${icon('x', 14)}</button>
       </div>
     `;
     div.querySelector('.profile-item-name').textContent = p.name;
@@ -4491,7 +4728,16 @@ function setupEventListeners() {
   document.getElementById('btn-open-sync').addEventListener('click', () => {
     nav.push('profiles');
     renderProfiles();
+    const disclosure = document.getElementById('sync-disclosure');
+    if (disclosure) disclosure.open = true;
   });
+  // A sync conflict needs a decision: never leave it folded away.
+  const syncConflict = document.getElementById('sync-conflict');
+  if (syncConflict) {
+    new MutationObserver(() => {
+      if (!syncConflict.hidden) document.getElementById('sync-disclosure').open = true;
+    }).observe(syncConflict, { attributes: true, attributeFilter: ['hidden'] });
+  }
   // Profile selector — loading a profile applies its saved settings
   document.getElementById('profile-select').addEventListener('change', async (e) => {
     const id = e.target.value;
@@ -4607,6 +4853,13 @@ function setupEventListeners() {
 
   // Batch config
   document.getElementById('batch-config-back').addEventListener('click', () => nav.pop());
+  document.querySelectorAll('.preset-row [data-preset]').forEach(button => {
+    button.addEventListener('click', () => {
+      document.getElementById('config-since-date').value = sinceDatePreset(button.dataset.preset);
+      syncPresetButtons();
+    });
+  });
+  document.getElementById('config-since-date').addEventListener('input', syncPresetButtons);
   document.getElementById('btn-start-batch').addEventListener('click', async () => {
     state.maxInvoices = parseInt(document.getElementById('config-max-invoices').value) || DEFAULT_MAX_INVOICES;
     state.sinceDate = document.getElementById('config-since-date').value || null;
@@ -4659,6 +4912,9 @@ function setupEventListeners() {
 
   // Completion
   document.getElementById('btn-completion-home').addEventListener('click', () => nav.home());
+  document.getElementById('btn-open-downloads').addEventListener('click', async () => {
+    try { await chrome.downloads.showDefaultFolder(); } catch (e) {}
+  });
 
   // History
   document.getElementById('history-back').addEventListener('click', () => {
@@ -4744,12 +5000,12 @@ function setupEventListeners() {
 
   // Resume
   document.getElementById('btn-resume-workflow').addEventListener('click', async () => {
-    document.getElementById('resume-banner').style.display = 'none';
+    setHidden('resume-banner', true);
     await resumeWorkflow();
   });
   document.getElementById('btn-dismiss-resume').addEventListener('click', async () => {
     await clearState();
-    document.getElementById('resume-banner').style.display = 'none';
+    setHidden('resume-banner', true);
   });
 
   // Float toggle
@@ -4843,7 +5099,7 @@ async function init() {
     if (state.currentIndex < totalSites) {
       // Show resume banner
       document.getElementById('resume-progress').textContent = `${doneSites}/${totalSites}`;
-      document.getElementById('resume-banner').style.display = 'block';
+      setHidden('resume-banner', false);
     } else {
       // Workflow was already completed — just clear state
       await clearState();
@@ -4890,6 +5146,7 @@ async function init() {
 
   // Event listeners
   setupEventListeners();
+  probeCredentialBridge();
   setupProfileSyncUi(async () => {
     await loadProfiles();
     await renderHome();
