@@ -36,6 +36,22 @@
     });
   }
 
+  // Bonobot's stamp-and-wave clip: plays once (5 s) the first time it scrolls into view. With reduced
+  // motion, or without IntersectionObserver, it never plays and the poster frame stays.
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!reduce && 'IntersectionObserver' in window) {
+    document.querySelectorAll('video[data-play-once]').forEach(function (video) {
+      var seen = new IntersectionObserver(function (entries) {
+        if (!entries[0].isIntersecting) return;
+        seen.disconnect();
+        video.muted = true;
+        var played = video.play();
+        if (played && played.catch) played.catch(function () { /* autoplay refused: the poster stays */ });
+      }, { threshold: 0.6 });
+      seen.observe(video);
+    });
+  }
+
   var tabs = Array.prototype.slice.call(document.querySelectorAll('[role="tab"]'));
   if (!tabs.length) return;
   function select(target, focus) {

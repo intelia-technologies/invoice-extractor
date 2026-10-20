@@ -5,7 +5,8 @@
 //
 // view: home (default), provider, batch-config, workflow (sign-in needed), workflow-run (mid-run:
 // a stamped finished row and invoice slips in the feed), completion (clean run),
-// completion-skips (some providers need the user), history, profiles, record.
+// completion-none (clean run, nothing new), completion-skips (some providers need the user), history, profiles,
+// record, record-live (recording in progress).
 // --empty: start with no download history (shows the empty states).
 // --vault: pretend a password-manager bridge is installed (shows the vault sign-in buttons).
 // Default output directory: $PREVIEW_OUT_DIR, else the session scratchpad below.
@@ -148,6 +149,12 @@ async function showView(view) {
       state = { ...state, completed: sample.slice(1).map(workflowKey), skipped: [{ key: sample[0].id, reason: t('workflowSkipAllDownloaded') }] };
       showCompletion();
       break;
+    case 'completion-none':
+      workflowProviders = sample;
+      runInvoiceCount = 0;
+      state = { ...state, completed: sample.map(workflowKey), skipped: [] };
+      showCompletion();
+      break;
     case 'completion-skips':
       workflowProviders = sample;
       runInvoiceCount = 5;
@@ -160,6 +167,7 @@ async function showView(view) {
     case 'history': nav.push('history'); await renderHistory(); break;
     case 'profiles': nav.push('profiles'); await renderProfiles(); break;
     case 'record': nav.push('record'); showRecordStep('confirm'); break;
+    case 'record-live': nav.push('record'); showRecordStep('recording'); break;
     case 'home': break;
     default: nav.show(view);
   }
@@ -183,7 +191,7 @@ try {
   await page.goto(`${ORIGIN}/popup.html`);
   await page.waitForFunction(() => document.getElementById('home-stats')?.textContent.trim());
   await page.evaluate(`(${showView})(${JSON.stringify(view)})`);
-  await page.waitForTimeout(300);
+  await page.waitForTimeout(900); // lets the 520 ms completion stamp land
   mkdirSync(dirname(outPath), { recursive: true });
   await page.screenshot({ path: outPath, fullPage: true });
   if (errors.length) console.warn('Page errors:\n' + errors.join('\n'));

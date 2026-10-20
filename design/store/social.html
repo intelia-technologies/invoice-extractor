@@ -2,50 +2,48 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<!-- Source for the GitHub social image (1280x640) and the Chrome Web Store promo tile (440x280).
-     Render: node scripts/render-store-assets.mjs -->
+<!-- Source for the GitHub social image and website link previews (1280x640, EN and ES) and the
+     Chrome Web Store promo tile (440x280). The art is the Bonobot kit's background, which leaves
+     the left side free for our copy. Render: node scripts/render-store-assets.mjs -->
 <link rel="stylesheet" href="../fonts.css">
 <link rel="stylesheet" href="../tokens.css">
 <style>
   * { box-sizing: border-box; margin: 0; }
-  body { background: var(--ie-calco-600); }
-  .card { position: relative; overflow: hidden; display: grid; align-items: center; background: var(--ie-calco-600); color: var(--ie-white); font-family: var(--ie-font-sans); }
-  .card .sheet { position: absolute; background: var(--ie-white); border-radius: 6px; box-shadow: 8px 8px 0 var(--ie-calco-900); }
-  .card .sheet i { display: block; height: 8px; margin: 14px 18px 0; background: var(--ie-steel-200); border-radius: 4px; }
-  .card .sheet i:nth-child(2) { width: 60%; } .card .sheet i:nth-child(3) { width: 80%; }
-  .card .sheet b { position: absolute; left: 18px; bottom: 16px; font: 600 15px/1 var(--ie-font-mono); color: var(--ie-steel-900); }
-  .card img { position: absolute; }
-  .card h1 { font: 800 76px/0.98 var(--ie-font-display); letter-spacing: -0.035em; }
-  .card p { font-size: 26px; line-height: 1.35; color: var(--ie-calco-100); }
-  .card .tag { display: inline-block; padding: 6px 12px; border: 2px solid var(--ie-calco-100); border-radius: 999px; font: 600 16px/1 var(--ie-font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ie-calco-100); }
-  #social { width: 1280px; height: 640px; padding: 0 80px; }
-  #social .copy { display: grid; gap: 22px; max-width: 640px; }
-  #social img { right: 70px; top: 120px; width: 380px; height: 380px; }
-  #social .s1 { right: 330px; top: 60px; width: 220px; height: 150px; transform: rotate(-8deg); }
-  #social .s2 { right: 40px; bottom: 40px; width: 220px; height: 150px; transform: rotate(6deg); }
-  #promo { width: 440px; height: 280px; padding: 0 28px; }
-  #promo h1 { font-size: 36px; }
-  #promo p { font-size: 15px; max-width: 220px; margin-top: 10px; }
-  #promo img { right: 8px; bottom: 18px; width: 190px; height: 190px; }
-  .stamp { position: absolute; padding: 6px 12px; border: 3px solid var(--ie-green-400); border-radius: 6px; background: var(--ie-calco-600); color: var(--ie-green-400); font: 800 26px/1 var(--ie-font-display); letter-spacing: .08em; text-transform: uppercase; transform: rotate(-10deg); }
-  #social .stamp { right: 80px; top: 470px; }
+  body { background: var(--ie-steel-50, #f3f4f1); }
+  .card { position: relative; overflow: hidden; display: grid; align-content: center; color: var(--ie-steel-900); font-family: var(--ie-font-sans); background: no-repeat center / cover; }
+  .card h1 { font: 800 72px/0.98 var(--ie-font-display); letter-spacing: -0.035em; text-wrap: balance; }
+  .card h1 span { color: var(--ie-calco-600); }
+  .card p { font-size: 25px; line-height: 1.35; color: var(--ie-steel-600, #4b5361); }
+  .wordmark { display: flex; align-items: center; gap: 12px; font: 800 26px/1 var(--ie-font-display); letter-spacing: -0.02em; }
+  .wordmark img { width: 40px; height: 40px; }
+  .tag { justify-self: start; padding: 7px 12px; border: 2px solid var(--ie-calco-600); border-radius: 999px; font: 600 15px/1 var(--ie-font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--ie-calco-600); }
+  .social { width: 1280px; height: 640px; padding: 0 0 0 72px; background-image: url('../brand/bonobot/svg/github-social-1280x640.svg'); }
+  .social .copy { display: grid; gap: 26px; max-width: 680px; }
+  #promo { width: 440px; height: 280px; padding: 0 0 0 26px; background-image: url('../brand/bonobot/svg/chrome-promo-440x280.svg'); }
+  #promo .copy { display: grid; gap: 10px; max-width: 176px; }
+  #promo h1 { font-size: 34px; }
+  #promo p { font-size: 15px; }
 </style>
 </head>
 <body>
-  <div class="card" id="social">
-    <div class="sheet s1"><i></i><i></i><i></i><b>INV-0918 · 49,00 €</b></div>
-    <div class="sheet s2"><i></i><i></i><i></i><b>#58213 · 21,00 $</b></div>
-    <img src="../brand/bonobot.svg" alt="">
-    <span class="stamp">Filed</span>
+  <div class="card social" id="social">
     <div class="copy">
+      <div class="wordmark"><img src="../brand/bonobot/svg/app-icon-48.svg" alt="">Invoice Extractor</div>
+      <h1>Every invoice, <span>filed in one run.</span></h1>
+      <p>Signs in with 1Password or Bitwarden and saves every SaaS invoice as a PDF. For people and AI agents.</p>
       <span class="tag">Open source · Local-first</span>
-      <h1>Every SaaS invoice, filed for you.</h1>
-      <p>Invoice Extractor signs in with 1Password or Bitwarden and downloads every invoice as a PDF. For humans and AI agents.</p>
+    </div>
+  </div>
+  <div class="card social" id="social-es" lang="es">
+    <div class="copy">
+      <div class="wordmark"><img src="../brand/bonobot/svg/app-icon-48.svg" alt="">Invoice Extractor</div>
+      <h1>Todas tus facturas, <span>archivadas de una vez.</span></h1>
+      <p>Entra con 1Password o Bitwarden y guarda cada factura de tus SaaS en PDF. Para personas y agentes de IA.</p>
+      <span class="tag">Código abierto · En local</span>
     </div>
   </div>
   <div class="card" id="promo">
-    <img src="../brand/bonobot.svg" alt="">
-    <div><h1>Invoice<br>Extractor</h1><p>Monkey work is Bonobot's job.</p></div>
+    <div class="copy"><h1>Invoice Extractor</h1><p>Monkey work is Bonobot's job.</p></div>
   </div>
 </body>
 </html>

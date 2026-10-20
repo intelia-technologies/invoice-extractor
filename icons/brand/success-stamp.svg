@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 72 72" role="img" aria-label="Sello independiente de descarga completada"><title>Sello independiente de descarga completada</title><style>
+.fur{fill:var(--ie-bonobot-fur,#2b211d)}
+.fur-light{fill:var(--ie-bonobot-fur-light,#4a3a33)}
+.fur-mid{fill:var(--ie-bonobot-fur-mid,#694b3e)}
+.ear{fill:var(--ie-bonobot-ear,#8e604d)}
+.face{fill:var(--ie-bonobot-face,#e9b8a2)}
+.lip{fill:var(--ie-bonobot-lip,#d98880)}
+.metal{fill:var(--ie-bonobot-metal,#a3abb6)}
+.metal-light{fill:var(--ie-bonobot-metal-light,#cbd0d6)}
+.metal-dark{fill:var(--ie-bonobot-metal-dark,#6b7380)}
+.brand{fill:var(--ie-calco-500,#4f53e6)}
+.plate{fill:var(--ie-calco-600,#3d3fd8)}
+.paper{fill:var(--ie-bonobot-paper,#fffdf9)}
+.paper-edge{fill:var(--ie-bonobot-paper-edge,#e0e3e0)}
+.ink{fill:var(--ie-bonobot-ink,#241d19)}
+.bg{fill:var(--ie-surface,#f3f4f1)}
+.soft{fill:var(--ie-bonobot-soft,#e8e8de)}
+.success{fill:var(--ie-success,#287b57)}
+.outline{stroke:var(--ie-bonobot-edge,#887267);stroke-width:1.6;stroke-linejoin:round}
+.line{fill:none;stroke:var(--ie-bonobot-ink,#241d19);stroke-width:4.5;stroke-linecap:round;stroke-linejoin:round}
+</style><g id="body"/><g id="head"/><g id="expression"/><g id="accessory"><circle class="success" cx="36.0" cy="36.0" r="30.96"/><circle cx="36.0" cy="36.0" r="24.48" fill="none" stroke="var(--ie-bonobot-paper,#fffdf9)" stroke-width="1.8" opacity=".65"/><path d="M20.88 36.0L31.68 46.800000000000004L51.839999999999996 25.2" fill="none" stroke="var(--ie-bonobot-paper,#fffdf9)" stroke-width="5.76" stroke-linecap="round" stroke-linejoin="round"/></g></svg>

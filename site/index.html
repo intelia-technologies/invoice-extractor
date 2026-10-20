@@ -21,10 +21,14 @@
   <meta property="og:locale" content="en_US" />
   <meta property="og:locale:alternate" content="es_ES" />
   <meta property="og:url" content="https://invoice-extractor.noscomelaia.com/" />
-  <meta property="og:image" content="https://invoice-extractor.noscomelaia.com/assets/icon512.png" />
+  <meta property="og:image" content="https://invoice-extractor.noscomelaia.com/assets/og-en.png" />
+  <meta property="og:image:width" content="1280" />
+  <meta property="og:image:height" content="640" />
+  <meta property="og:image:alt" content="Bonobot, the robot bonobo, filing invoices next to the words: Every invoice, filed in one run." />
+  <meta name="twitter:card" content="summary_large_image" />
   <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f3f4f1" />
   <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0f1115" />
-  <link rel="icon" type="image/svg+xml" href="assets/app-icon.svg" />
+  <link rel="icon" type="image/svg+xml" href="assets/app-icon-32.svg" />
   <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon.png" />
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
   <link rel="stylesheet" href="fonts.css" />
@@ -88,7 +92,7 @@
 
       <figure class="sheet-wrap" aria-label="Example run: seven invoices saved for the profile Acme">
         <div class="mascot">
-          <img class="medallion" src="assets/bonobot.svg" alt="Bonobot, the robot bonobo" width="88" height="88" />
+          <img class="mascot-art" src="assets/bonobot.svg" alt="Bonobot, the robot bonobo" width="112" height="112" />
           <p class="mascot-says">Monkey work is Bonobot's job.</p>
         </div>
         <div class="sheet">
@@ -169,9 +173,15 @@
 
     <section id="providers" class="section">
       <div class="wrap">
-        <header class="section-head">
-          <h2>Twenty billing pages Bonobot already knows by heart.</h2>
-          <p class="section-lede">Each provider is a recipe: a small public JSON file that says where the billing page lives, how to read the invoice table and how to download. When a site changes, one fix to its recipe fixes it for everyone. Missing one? Record it once in the extension, or let a coding assistant write the recipe, and send it back.</p>
+        <header class="section-head has-art">
+          <div class="section-head-text">
+            <h2>Twenty billing pages Bonobot already knows by heart.</h2>
+            <p class="section-lede">Each provider is a recipe: a small public JSON file that says where the billing page lives, how to read the invoice table and how to download. When a site changes, one fix to its recipe fixes it for everyone. Missing one? Record it once in the extension, or let a coding assistant write the recipe, and send it back.</p>
+          </div>
+          <picture class="section-art">
+            <source media="(max-width: 600px)" srcset="assets/scene-hero-mobile.svg" width="360" height="520" />
+            <img src="assets/scene-hero.svg" alt="" width="1440" height="720" loading="lazy" />
+          </picture>
         </header>
         <ul class="providers">
           <li><span class="logo lg"><img src="assets/providers/amazon.png" alt="" data-name="Amazon" /></span>Amazon</li>
@@ -334,11 +344,14 @@
           <p>Free and open source. One zip for macOS, Windows and Linux; the three steps above do the rest.</p>
         </div>
         <div class="closing-cta">
+          <video class="closing-video" width="240" height="240" muted playsinline preload="none" poster="assets/bonobot-stamp-poster.jpg" aria-hidden="true" tabindex="-1" data-play-once>
+            <source src="assets/bonobot-stamp.mp4" type="video/mp4" />
+          </video>
           <a class="btn btn-primary" href="https://github.com/intelia-technologies/invoice-extractor/releases/latest/download/invoice-extractor.zip">
             <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
             <span class="btn-text"><span class="btn-label">Download</span><span class="btn-sub" data-download-sub>One zip for macOS, Windows and Linux</span></span>
           </a>
-          <p class="foot-rest"><img src="assets/bonobot-waiting.svg" alt="" width="48" height="48" />Bonobot is resting until next month's close.</p>
+          <p class="foot-rest">Bonobot is resting until next month's close.</p>
         </div>
       </div>
     </section>

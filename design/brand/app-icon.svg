@@ -1,20 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Invoice Extractor">
-  <!-- App icon (48-128 px and favicon 180/512). Placeholder until the illustrator delivers the final face. -->
-  <rect x="4" y="4" width="120" height="120" rx="28" fill="#3d3fd8"/>
-  <rect x="70" y="10" width="4" height="14" rx="2" fill="#a9adff"/>
-  <circle cx="72" cy="12" r="6" fill="#e3e4ff"/>
-  <circle cx="22" cy="74" r="12" fill="#2b211d"/>
-  <circle cx="106" cy="74" r="12" fill="#2b211d"/>
-  <circle cx="22" cy="74" r="6" fill="#a3abb6"/>
-  <circle cx="106" cy="74" r="6" fill="#a3abb6"/>
-  <circle cx="64" cy="72" r="40" fill="#2b211d"/>
-  <path d="M64 38 C55 28 40 30 33 42 C44 36 54 39 62 46 Z" fill="#2b211d"/>
-  <path d="M64 38 C73 28 88 30 95 42 C84 36 74 39 66 46 Z" fill="#2b211d"/>
-  <path d="M64 36 L64 48" stroke="#4a3a33" stroke-width="3" stroke-linecap="round"/>
-  <path d="M64 60 C58 54 36 52 36 70 C36 80 42 84 46 86 C44 100 54 106 64 106 C74 106 84 100 82 86 C86 84 92 80 92 70 C92 52 70 54 64 60 Z" fill="#e9b8a2"/>
-  <circle cx="51" cy="71" r="9" fill="#ffffff"/>
-  <circle cx="77" cy="71" r="9" fill="#ffffff"/>
-  <circle cx="53" cy="72" r="4.5" fill="#3d3fd8"/>
-  <circle cx="79" cy="72" r="4.5" fill="#3d3fd8"/>
-  <path d="M52 92 Q64 102 76 92" fill="none" stroke="#2b211d" stroke-width="3.5" stroke-linecap="round"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Icono principal Bonobot"><title>Icono principal Bonobot</title><style>
+.fur{fill:var(--ie-bonobot-fur,#2b211d)}
+.fur-light{fill:var(--ie-bonobot-fur-light,#4a3a33)}
+.fur-mid{fill:var(--ie-bonobot-fur-mid,#694b3e)}
+.ear{fill:var(--ie-bonobot-ear,#8e604d)}
+.face{fill:var(--ie-bonobot-face,#e9b8a2)}
+.lip{fill:var(--ie-bonobot-lip,#d98880)}
+.metal{fill:var(--ie-bonobot-metal,#a3abb6)}
+.metal-light{fill:var(--ie-bonobot-metal-light,#cbd0d6)}
+.metal-dark{fill:var(--ie-bonobot-metal-dark,#6b7380)}
+.brand{fill:var(--ie-calco-500,#4f53e6)}
+.plate{fill:var(--ie-calco-600,#3d3fd8)}
+.paper{fill:var(--ie-bonobot-paper,#fffdf9)}
+.paper-edge{fill:var(--ie-bonobot-paper-edge,#e0e3e0)}
+.ink{fill:var(--ie-bonobot-ink,#241d19)}
+.bg{fill:var(--ie-surface,#f3f4f1)}
+.soft{fill:var(--ie-bonobot-soft,#e8e8de)}
+.success{fill:var(--ie-success,#287b57)}
+.outline{stroke:var(--ie-bonobot-edge,#887267);stroke-width:1.6;stroke-linejoin:round}
+.line{fill:none;stroke:var(--ie-bonobot-ink,#241d19);stroke-width:4.5;stroke-linecap:round;stroke-linejoin:round}
+</style><g id="body"><rect class="plate" width="512" height="512" rx="122.88"/></g><g transform="translate(-38.4 28.16) scale(1.15)"><g id="icon-head" class="outline"><ellipse class="fur-light" cx="101" cy="220" rx="51" ry="59"/><ellipse class="ear" cx="102" cy="220" rx="29" ry="35"/><ellipse class="fur-light" cx="411" cy="220" rx="51" ry="59"/><ellipse class="ear" cx="410" cy="220" rx="29" ry="35"/><path class="fur-light" d="M96 226C94 134 158 82 256 82C354 82 418 134 416 226C418 310 382 345 256 349C130 345 94 310 96 226Z"/><path class="fur-light" d="M247 98C217 75 209 64 222 54C239 40 265 48 269 72C271 82 270 91 269 99C281 74 293 63 307 72C322 85 303 106 274 111Z"/><path class="fur-mid" d="M137 202C155 164 196 151 256 153C316 151 357 164 375 202C390 230 386 279 367 304C348 331 308 337 256 336C204 337 164 331 145 304C126 279 122 230 137 202Z"/><path class="face" d="M147 207C162 176 201 164 256 165C311 164 350 176 365 207C377 231 374 273 358 295C341 317 305 325 256 324C207 325 171 317 154 295C138 273 135 231 147 207Z"/></g><g id="icon-expression" data-expression="satisfied" transform="translate(0 0)"><circle class="ink" cx="194" cy="248" r="10"/><circle class="ink" cx="319" cy="248" r="10"/><path class="line" d="M244 274q12 17 25 0"/></g></g><g id="accessory"/></svg>

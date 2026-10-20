@@ -2,6 +2,11 @@
 site/ export-ignore
 test/ export-ignore
 docs/ export-ignore
+design/brand/ export-ignore
+design/store/ export-ignore
+design/specimen.html export-ignore
+design/README.md export-ignore
+scripts/render-store-assets.mjs export-ignore
 .github/ export-ignore
 .claude/ export-ignore
 CLAUDE.md export-ignore

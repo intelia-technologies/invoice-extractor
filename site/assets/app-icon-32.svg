@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" role="img" aria-label="Icono Bonobot 32 píxeles"><title>Icono Bonobot 32 píxeles</title><style>
+.fur{fill:var(--ie-bonobot-fur,#2b211d)}
+.fur-light{fill:var(--ie-bonobot-fur-light,#4a3a33)}
+.fur-mid{fill:var(--ie-bonobot-fur-mid,#694b3e)}
+.ear{fill:var(--ie-bonobot-ear,#8e604d)}
+.face{fill:var(--ie-bonobot-face,#e9b8a2)}
+.lip{fill:var(--ie-bonobot-lip,#d98880)}
+.metal{fill:var(--ie-bonobot-metal,#a3abb6)}
+.metal-light{fill:var(--ie-bonobot-metal-light,#cbd0d6)}
+.metal-dark{fill:var(--ie-bonobot-metal-dark,#6b7380)}
+.brand{fill:var(--ie-calco-500,#4f53e6)}
+.plate{fill:var(--ie-calco-600,#3d3fd8)}
+.paper{fill:var(--ie-bonobot-paper,#fffdf9)}
+.paper-edge{fill:var(--ie-bonobot-paper-edge,#e0e3e0)}
+.ink{fill:var(--ie-bonobot-ink,#241d19)}
+.bg{fill:var(--ie-surface,#f3f4f1)}
+.soft{fill:var(--ie-bonobot-soft,#e8e8de)}
+.success{fill:var(--ie-success,#287b57)}
+.outline{stroke:var(--ie-bonobot-edge,#887267);stroke-width:1.6;stroke-linejoin:round}
+.line{fill:none;stroke:var(--ie-bonobot-ink,#241d19);stroke-width:4.5;stroke-linecap:round;stroke-linejoin:round}
+</style><g id="body"><rect class="plate" width="32" height="32" rx="8"/></g><g id="head"><ellipse class="fur-light" cx="5.5" cy="18" rx="4.3" ry="4.8"/><ellipse class="fur-light" cx="26.5" cy="18" rx="4.3" ry="4.8"/><ellipse class="ear" cx="5.5" cy="18" rx="2.4" ry="2.8"/><ellipse class="ear" cx="26.5" cy="18" rx="2.4" ry="2.8"/><path class="fur-light" d="M5 17C5 10 9.2 7 16 7s11 3 11 10c0 7.8-3.5 10.5-11 10.5S5 24.8 5 17Z"/><path class="fur-light" d="M15 8C11 5.7 12.1 3.6 14.1 4.4c1.1.5 1.8 1.6 1.8 3.1C17.4 4 20.6 4.9 19.1 6.7L17 8.5Z"/><path class="fur-mid" d="M7 18c0-5.1 3.3-7 9-7s9 1.9 9 7c0 5.7-2.6 7.5-9 7.5S7 23.7 7 18Z"/><path class="face" d="M8 18c0-4.2 2.8-6 8-6s8 1.8 8 6c0 4.9-2.4 6.5-8 6.5S8 22.9 8 18Z"/></g><g id="expression"><circle class="ink" cx="12" cy="18" r="1.2"/><circle class="ink" cx="20" cy="18" r="1.2"/><path d="M14.5 21q1.5 1.8 3 0" fill="none" stroke="var(--ie-bonobot-ink,#241d19)" stroke-width=".9" stroke-linecap="round"/></g><g id="accessory"/></svg>

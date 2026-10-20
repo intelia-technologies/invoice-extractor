@@ -1,0 +1,11 @@
+/* Apply to the separate check stamp. Duration matches the Calco brief. */
+.bonobot-success { position: relative; width: 180px; height: 180px; }
+.bonobot-success__character { width: 180px; height: 180px; display: block; }
+.bonobot-success__stamp { position: absolute; width: 56px; height: 56px; right: 0; bottom: 0; transform-origin: 50% 70%; animation: bonobot-stamp 520ms cubic-bezier(.22,.8,.32,1) both; }
+@keyframes bonobot-stamp {
+  0% { opacity: 0; transform: translateY(-72px) rotate(-12deg) scale(1.15); }
+  62% { opacity: 1; transform: translateY(2px) rotate(5deg) scale(.88,1.08); }
+  82% { transform: translateY(-8px) rotate(-3deg) scale(1.04,.96); }
+  100% { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) { .bonobot-success__stamp { animation: none; } }
