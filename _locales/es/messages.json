@@ -2085,5 +2085,25 @@
   "syncDisclosure": {
     "message": "Sincronizar entre dispositivos (opcional)",
     "description": "Collapsible section with the optional profile sync service."
+  },
+  "workflowStatusCodeNeeded": {
+    "message": "$provider$: esperando el código de verificación. Escribe en la pestaña que abrimos el código que te ha enviado $provider$; la descarga sigue sola.",
+    "description": "Status after 1Password signed in but the provider asks for a code sent by email or SMS; the user types it in the provider tab.",
+    "placeholders": {
+      "provider": {
+        "content": "$1",
+        "example": "Holded"
+      }
+    }
+  },
+  "workflowErrorCodeNeeded": {
+    "message": "$provider$ ha pedido un código de verificación.",
+    "description": "Reason shown when a provider stopped at a verification-code step.",
+    "placeholders": {
+      "provider": {
+        "content": "$1",
+        "example": "Holded"
+      }
+    }
   }
 }
