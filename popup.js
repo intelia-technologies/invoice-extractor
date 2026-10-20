@@ -2648,7 +2648,7 @@ async function processCurrentSite() {
     if (autoLogged.ready) {
       result = { success: true };
     } else if (autoLogged.needsCode) {
-      handOverVerificationStep(targetTab.id, provider, iframeId);
+      await handOverVerificationStep(targetTab.id, provider, iframeId);
       await saveState();
       return;
     } else if (!autoLogged.attempted) {
@@ -2971,20 +2971,23 @@ async function awaitingVerificationStep(tabId, provider, loginStartUrl, creds) {
   let tab;
   try { tab = await chrome.tabs.get(tabId); } catch { return false; }
   const url = tab?.url || '';
-  if (!url || url !== loginStartUrl) return false;
-  if (sameBillingLocation(url, resolveBillingUrl(provider))) return false;
+  if (!url || sameBillingLocation(url, resolveBillingUrl(provider))) return false;
   let form;
   try {
     await injectEngine(tabId);
     form = await callEngine(tabId, 'detectLoginForm', [provider.auth || {}]);
   } catch { return false; }
+  // A code field is a verification step wherever it lives (/login, /login/verify, ...).
   if (form?.hasOtp) return !creds?.otp;
-  return !form?.hasUsername && !form?.hasPassword;
+  // Without one, only a form that vanished while staying on the sign-in address counts.
+  return url === loginStartUrl && !form?.hasUsername && !form?.hasPassword;
 }
 
 // The provider is waiting for a code the user has to type. Keep the tab where it is and,
 // once the sign-in page is left behind, take the user to the billing page ourselves.
-function handOverVerificationStep(tabId, provider, iframeId = null) {
+async function handOverVerificationStep(tabId, provider, iframeId = null) {
+  let signInUrl = null;
+  try { signInUrl = (await chrome.tabs.get(tabId))?.url || null; } catch {}
   lastProviderError = t('workflowErrorCodeNeeded', [provider.name]);
   showStatus(t('workflowStatusCodeNeeded', [provider.name]));
   showButtons(true, false, false, true, false, false, true);
@@ -2992,7 +2995,7 @@ function handOverVerificationStep(tabId, provider, iframeId = null) {
   setHidden('btn-1password-login', true);
   setHidden('btn-switch-account', true);
   setHidden('login-steps', true);
-  startLoginPolling(tabId, provider, iframeId, { reopenBillingAfterSignIn: true });
+  startLoginPolling(tabId, provider, iframeId, { reopenBillingAfterSignIn: true, signInUrl });
 }
 
 async function signInWith1Password() {
@@ -3013,7 +3016,7 @@ async function signInWith1Password() {
   showButtons(false, false, false, true);
   const res = await attemptProvider1PasswordLogin(targetTab.id, provider, { manual: true });
   if (res.needsCode) {
-    handOverVerificationStep(targetTab.id, provider);
+    await handOverVerificationStep(targetTab.id, provider);
   } else if (res.ready) {
     showStatus(t('workflowStatusSignedIn', [provider.name]));
     showButtons(false, true, false, false, true);
@@ -3044,7 +3047,7 @@ async function switchAccountWith1Password() {
   await performProviderLogout(targetTab.id, provider);
   const res = await attemptProvider1PasswordLogin(targetTab.id, provider, { manual: true });
   if (res.needsCode) {
-    handOverVerificationStep(targetTab.id, provider);
+    await handOverVerificationStep(targetTab.id, provider);
   } else if (res.ready) {
     showStatus(t('workflowStatusSwitched', [provider.name]));
     showButtons(false, true, false, false, true);
@@ -3066,9 +3069,8 @@ function stopLoginPolling() {
   }
 }
 
-function startLoginPolling(tabId, provider, iframeId, { reopenBillingAfterSignIn = false } = {}) {
+function startLoginPolling(tabId, provider, iframeId, { reopenBillingAfterSignIn = false, signInUrl = null } = {}) {
   stopLoginPolling(); // Clear any previous polling
-  let signInUrl = null;
   let reopenedBilling = false;
 
   loginPollInterval = setInterval(async () => {
@@ -3093,7 +3095,6 @@ function startLoginPolling(tabId, provider, iframeId, { reopenBillingAfterSignIn
         // After a verification step the provider lands on its own dashboard, not on billing.
         const tab = await chrome.tabs.get(tabId);
         const url = tab?.url || '';
-        signInUrl ??= url;
         const billingUrl = resolveBillingUrl(provider);
         if (tab?.status === 'complete' && url && url !== signInUrl && !sameBillingLocation(url, billingUrl)) {
           await injectEngine(tabId);
@@ -3392,7 +3393,7 @@ async function executeDownload(tabId, provider, { skipDedup = false, _afterAccou
           return await executeDownload(tabId, provider, { skipDedup, _afterAccountSwitch: true });
         }
         if (switchRes.needsCode) {
-          handOverVerificationStep(tabId, provider);
+          await handOverVerificationStep(tabId, provider);
           return;
         }
         const iframeId = provider.iframe?.urlPattern ? await findIframeId(tabId, provider.iframe.urlPattern) : null;
