@@ -1,0 +1,1797 @@
+{
+  "extName": {
+    "message": "Invoice Extractor",
+    "description": "Extension name (brand, keep untranslated)."
+  },
+  "extDescription": {
+    "message": "Automatically download invoices from SaaS billing pages using declarative JSON providers",
+    "description": "Extension description shown in the Chrome Web Store and chrome://extensions."
+  },
+  "extActionTitle": {
+    "message": "Invoice Extractor",
+    "description": "Tooltip of the toolbar button."
+  },
+  "commonBack": {
+    "message": "← Back",
+    "description": "Back navigation button; keep the arrow."
+  },
+  "commonCancelBack": {
+    "message": "← Cancel",
+    "description": "Back button while recording; keep the arrow."
+  },
+  "commonDoneBack": {
+    "message": "← Done",
+    "description": "Back button after recording; keep the arrow."
+  },
+  "commonHomeBack": {
+    "message": "← Home",
+    "description": "Back-to-home button in the download view; keep the arrow."
+  },
+  "commonSave": {
+    "message": "Save",
+    "description": "Save button."
+  },
+  "commonDelete": {
+    "message": "Delete",
+    "description": "Delete button tooltip."
+  },
+  "commonRemove": {
+    "message": "Remove",
+    "description": "Remove a value from a list."
+  },
+  "commonAdd": {
+    "message": "Add",
+    "description": "Add a value to a list."
+  },
+  "commonDone": {
+    "message": "Done",
+    "description": "Finish button."
+  },
+  "commonBusy": {
+    "message": "…",
+    "description": "Compact busy indicator inside a small button."
+  },
+  "commonErrorPrefix": {
+    "message": "Error: $error$",
+    "description": "Generic error line. $error$ is the technical message.",
+    "placeholders": {
+      "error": {
+        "content": "$1"
+      }
+    }
+  },
+  "commonSignInOp": {
+    "message": "Sign in with 1Password",
+    "description": "Button that signs in using credentials stored in 1Password."
+  },
+  "commonInvoicesCountOne": {
+    "message": "$count$ invoice",
+    "description": "Invoice count, singular.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "commonInvoicesCountOther": {
+    "message": "$count$ invoices",
+    "description": "Invoice count, plural.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "commonProvidersCountOne": {
+    "message": "$count$ provider",
+    "description": "Provider count, singular.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "commonProvidersCountOther": {
+    "message": "$count$ providers",
+    "description": "Provider count, plural.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "homeFloatToggle": {
+    "message": "Toggle floating window",
+    "description": "Tooltip of the pin button that switches between popup and floating window."
+  },
+  "homeFloatToPopup": {
+    "message": "Switch to popup mode",
+    "description": "Tooltip when the UI runs as a floating window."
+  },
+  "homeFloatOpen": {
+    "message": "Open as floating window",
+    "description": "Tooltip when the UI runs as a toolbar popup."
+  },
+  "homeProfileLabel": {
+    "message": "Profile",
+    "description": "Label before the profile selector."
+  },
+  "homeNoProfile": {
+    "message": "— No profile —",
+    "description": "Empty option in the profile selector."
+  },
+  "homeProfileModified": {
+    "message": "Modified",
+    "description": "Badge: current settings differ from the loaded profile."
+  },
+  "homeProfileSaveTitle": {
+    "message": "Save current settings to this profile",
+    "description": "Tooltip of the quick save button."
+  },
+  "homeOpSyncLabel": {
+    "message": "1P",
+    "description": "Short label of the button that syncs profiles from 1Password (1P = 1Password)."
+  },
+  "homeOpSyncTitle": {
+    "message": "Sync profiles and active providers from 1Password tags",
+    "description": "Tooltip of the 1P button."
+  },
+  "homeProfileEdit": {
+    "message": "Edit",
+    "description": "Button that opens profile management."
+  },
+  "homeProfileEditTitle": {
+    "message": "Manage profiles",
+    "description": "Tooltip of the Edit button."
+  },
+  "homeProfileNew": {
+    "message": "New",
+    "description": "Button that creates a profile."
+  },
+  "homeProfileNewTitle": {
+    "message": "Create new profile",
+    "description": "Tooltip of the New button."
+  },
+  "homeResumeText": {
+    "message": "Previous download interrupted ($progress$ done)",
+    "description": "Resume banner. $progress$ is a fraction like 3/7 (providers).",
+    "placeholders": {
+      "progress": {
+        "content": "$1"
+      }
+    }
+  },
+  "homeResume": {
+    "message": "Resume",
+    "description": "Resume the interrupted download."
+  },
+  "homeDismiss": {
+    "message": "Dismiss",
+    "description": "Discard the interrupted download."
+  },
+  "homeRecord": {
+    "message": "Record",
+    "description": "Quick action: record a new provider."
+  },
+  "homeHistory": {
+    "message": "History",
+    "description": "Quick action: open download history."
+  },
+  "homeDownloadAll": {
+    "message": "Download All",
+    "description": "Main card: download invoices from every selected provider."
+  },
+  "homeSelectedCountOne": {
+    "message": "$count$ provider selected",
+    "description": "Download All subtitle, singular.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "homeSelectedCountOther": {
+    "message": "$count$ providers selected",
+    "description": "Download All subtitle, plural.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "homeEmptySelection": {
+    "message": "No providers selected yet. Pick some and I'll handle the rest.",
+    "description": "Empty state when no provider is selected. Spoken by the Bonobot mascot in first person."
+  },
+  "homeProvidersTitle": {
+    "message": "Providers",
+    "description": "Section title above the provider list."
+  },
+  "homeSelectAll": {
+    "message": "Select all",
+    "description": "Select every provider."
+  },
+  "homeDeselectAll": {
+    "message": "Deselect all",
+    "description": "Deselect every provider."
+  },
+  "homeFooter": {
+    "message": "Invoices download to your Downloads folder",
+    "description": "Footer note."
+  },
+  "homeProviderNeedsConfig": {
+    "message": "Needs configuration",
+    "description": "Provider card subtitle when required settings are missing."
+  },
+  "homeProviderDownloadedOne": {
+    "message": "$count$ invoice downloaded",
+    "description": "Provider card subtitle, singular.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "homeProviderDownloadedOther": {
+    "message": "$count$ invoices downloaded",
+    "description": "Provider card subtitle, plural.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "homeProviderNoDownloads": {
+    "message": "No downloads yet",
+    "description": "Provider card subtitle with no history."
+  },
+  "homeProviderEnable": {
+    "message": "Enable $provider$",
+    "description": "Tooltip of the provider toggle when off.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "homeProviderDisable": {
+    "message": "Disable $provider$",
+    "description": "Tooltip of the provider toggle when on.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "homeProfileNoSnapshot": {
+    "message": "Profile \"$name$\" has no saved settings yet. Use Edit → Save to store the current settings.",
+    "description": "Alert when selecting an empty profile.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "homeCurrentProfile": {
+    "message": "current profile",
+    "description": "Fallback name for the loaded profile."
+  },
+  "homeConfirmDiscard": {
+    "message": "You have unsaved changes in \"$current$\".\n\nSwitch to \"$next$\" and discard changes?",
+    "description": "Confirm dialog when switching profile with unsaved changes.",
+    "placeholders": {
+      "current": {
+        "content": "$1"
+      },
+      "next": {
+        "content": "$2"
+      }
+    }
+  },
+  "providerToggleLabel": {
+    "message": "Include in Download All",
+    "description": "Accessible label of the provider on/off switch."
+  },
+  "providerConfigTitle": {
+    "message": "Configuration",
+    "description": "Section title for provider settings."
+  },
+  "providerHistoryTitle": {
+    "message": "Download History",
+    "description": "Section title for this provider's history."
+  },
+  "providerDownload": {
+    "message": "Download Invoices",
+    "description": "Download invoices from this provider only."
+  },
+  "providerHintOpenPage": {
+    "message": "Open page ↗",
+    "description": "Link next to a setting hint; keep the arrow."
+  },
+  "providerConfigInvalid": {
+    "message": "Enter a valid $field$.",
+    "description": "Validation error. $field$ is the setting name.",
+    "placeholders": {
+      "field": {
+        "content": "$1"
+      }
+    }
+  },
+  "providerConfigInvalidGeneric": {
+    "message": "Invalid configuration.",
+    "description": "Generic validation error."
+  },
+  "providerConfigRemoveInvalid": {
+    "message": "$message$ Remove invalid saved entries with ×.",
+    "description": "Validation error for list settings. Keep the × symbol.",
+    "placeholders": {
+      "message": {
+        "content": "$1"
+      }
+    }
+  },
+  "providerConfigAddPlaceholder": {
+    "message": "Add value…",
+    "description": "Placeholder for a new list value."
+  },
+  "providerOpItemLabel": {
+    "message": "1Password item (optional)",
+    "description": "Label of the 1Password item override field."
+  },
+  "providerOpItemHint": {
+    "message": "Matched automatically by domain or provider name across the \"AI\" and \"AI bots\" vaults. To override, enter an item title or op://vault/item.",
+    "description": "Hint for the 1Password item field. Keep vault names and op://vault/item untranslated."
+  },
+  "providerHistoryEmpty": {
+    "message": "No invoices downloaded yet",
+    "description": "Empty per-provider history."
+  },
+  "providerCaptureSaved": {
+    "message": "Saved $value$.",
+    "description": "Account captured from the open page.",
+    "placeholders": {
+      "value": {
+        "content": "$1"
+      }
+    }
+  },
+  "providerCaptureReading": {
+    "message": "Reading the current browser page…",
+    "description": "Status while reading the open page."
+  },
+  "providerCaptureNone": {
+    "message": "No matching account found. Open the linked page, then try again.",
+    "description": "No account found on the page."
+  },
+  "providerCaptureMultiple": {
+    "message": "Multiple accounts found. Choose the one to add.",
+    "description": "Several accounts found on the page."
+  },
+  "providerCaptureChooseAria": {
+    "message": "Choose $field$",
+    "description": "Accessible label of the account selector.",
+    "placeholders": {
+      "field": {
+        "content": "$1"
+      }
+    }
+  },
+  "providerCaptureChoosePlaceholder": {
+    "message": "Choose an account…",
+    "description": "Empty option of the account selector."
+  },
+  "providerCaptureUse": {
+    "message": "Use selection",
+    "description": "Confirm the selected account."
+  },
+  "providerCaptureFailed": {
+    "message": "Could not read this page. $error$",
+    "description": "Error reading the open page.",
+    "placeholders": {
+      "error": {
+        "content": "$1"
+      }
+    }
+  },
+  "batchTitle": {
+    "message": "Download Settings",
+    "description": "Title of the settings view before downloading."
+  },
+  "batchSinceLabel": {
+    "message": "Download invoices since:",
+    "description": "Date filter label."
+  },
+  "batchMaxLabel": {
+    "message": "Max invoices per provider:",
+    "description": "Limit field label."
+  },
+  "batchMaxPlaceholder": {
+    "message": "All",
+    "description": "Placeholder meaning no limit."
+  },
+  "batchStart": {
+    "message": "Start Download",
+    "description": "Start the download run."
+  },
+  "workflowTitle": {
+    "message": "Downloading",
+    "description": "Title of the download-in-progress view."
+  },
+  "workflowProgressEmpty": {
+    "message": "Not started",
+    "description": "Progress line before the run starts."
+  },
+  "workflowProgressDownloaded": {
+    "message": "Downloaded: $count$",
+    "description": "Progress: providers completed.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "workflowProgressSkipped": {
+    "message": "Skipped: $count$",
+    "description": "Progress: providers skipped.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "workflowProgressRemaining": {
+    "message": "Remaining: $count$",
+    "description": "Progress: providers left.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "workflowReady": {
+    "message": "Ready — Download invoices",
+    "description": "Button the user clicks after signing in manually."
+  },
+  "workflowSwitchAccount": {
+    "message": "Switch account with 1Password",
+    "description": "Sign out and sign in with the profile's 1Password credentials."
+  },
+  "workflowShowTab": {
+    "message": "Show tab",
+    "description": "Focus the provider tab."
+  },
+  "workflowGotoBilling": {
+    "message": "Go to billing page",
+    "description": "Navigate to the provider billing page."
+  },
+  "workflowDownloadingButton": {
+    "message": "Downloading…",
+    "description": "Disabled button while downloading."
+  },
+  "workflowStopNext": {
+    "message": "Stop and next",
+    "description": "Stop this provider and continue with the next one."
+  },
+  "workflowRetry": {
+    "message": "Retry download",
+    "description": "Retry this provider, ignoring download history."
+  },
+  "workflowNext": {
+    "message": "Next provider",
+    "description": "Continue with the next provider."
+  },
+  "workflowSkip": {
+    "message": "Skip this provider",
+    "description": "Skip the current provider."
+  },
+  "workflowFeedTitle": {
+    "message": "Downloaded",
+    "description": "Section title of the live list of downloaded invoices."
+  },
+  "workflowProgressTitle": {
+    "message": "Progress",
+    "description": "Section title of the provider checklist."
+  },
+  "workflowRestart": {
+    "message": "Restart from beginning",
+    "description": "Discard progress and go home."
+  },
+  "workflowConfirmStop": {
+    "message": "Stop the current download?",
+    "description": "Confirm leaving a running download."
+  },
+  "workflowSkipped": {
+    "message": "Skipped",
+    "description": "Generic skip reason."
+  },
+  "workflowSkippedByUser": {
+    "message": "Skipped by user",
+    "description": "Skip reason when the user clicked Skip."
+  },
+  "workflowNeedsConfig": {
+    "message": "needs configuration",
+    "description": "Reason fragment shown after \"skipped —\"."
+  },
+  "workflowSkipNotConfigured": {
+    "message": "Not configured",
+    "description": "Skip reason for unconfigured providers."
+  },
+  "workflowSkipNoInvoices": {
+    "message": "No invoices found on the page",
+    "description": "Skip reason."
+  },
+  "workflowSkipAllBeforeDate": {
+    "message": "Invoices found: $count$, all before $date$",
+    "description": "Skip reason when the date filter excludes everything.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "date": {
+        "content": "$2"
+      }
+    }
+  },
+  "workflowDateFilter": {
+    "message": "the date filter",
+    "description": "Fallback for $date$ when no date is set."
+  },
+  "workflowSkipAllDownloaded": {
+    "message": "All invoices already downloaded",
+    "description": "Skip reason when every invoice is in history."
+  },
+  "workflowSkipNoMatch": {
+    "message": "No invoices matched the filters",
+    "description": "Skip reason."
+  },
+  "workflowAccountIdUnavailable": {
+    "message": "account ID unavailable",
+    "description": "Shown as the found account when the page does not expose it."
+  },
+  "workflowErrorPreNavNotReady": {
+    "message": "Billing page not ready after preparing the account",
+    "description": "Error recorded as skip reason."
+  },
+  "workflowErrorOpenTab": {
+    "message": "Could not open the tab",
+    "description": "Error recorded as skip reason."
+  },
+  "workflowErrorLoginRequired": {
+    "message": "Sign-in required",
+    "description": "Error recorded as skip reason."
+  },
+  "workflowErrorSwitchNeedsLogin": {
+    "message": "The account switch needs you to finish signing in",
+    "description": "Error recorded as skip reason."
+  },
+  "workflowErrorWrongAccount": {
+    "message": "Wrong account: expected \"$expected$\", found \"$found$\"",
+    "description": "Error recorded as skip reason.",
+    "placeholders": {
+      "expected": {
+        "content": "$1"
+      },
+      "found": {
+        "content": "$2"
+      }
+    }
+  },
+  "workflowErrorTabClosed": {
+    "message": "Tab closed or inaccessible",
+    "description": "Error while waiting for the page."
+  },
+  "workflowErrorTimeout": {
+    "message": "Timed out after $seconds$ seconds",
+    "description": "Error while waiting for the page.",
+    "placeholders": {
+      "seconds": {
+        "content": "$1"
+      }
+    }
+  },
+  "workflowStatusProviderMessage": {
+    "message": "$provider$: $message$",
+    "description": "Status line: provider name and a message.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      },
+      "message": {
+        "content": "$2"
+      }
+    }
+  },
+  "workflowStatusSkippedConfig": {
+    "message": "$provider$: skipped — $reason$",
+    "description": "Status when a provider is skipped for missing settings.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      },
+      "reason": {
+        "content": "$2"
+      }
+    }
+  },
+  "workflowStatusOpeningNth": {
+    "message": "Provider $index$ of $total$ — opening $provider$…",
+    "description": "Status.",
+    "placeholders": {
+      "index": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      },
+      "provider": {
+        "content": "$3"
+      }
+    }
+  },
+  "workflowStatusPreparingAccount": {
+    "message": "$provider$: preparing the account…",
+    "description": "Status.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "workflowStatusWaitingData": {
+    "message": "$provider$: waiting for billing data…",
+    "description": "Status.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "workflowStatusDetecting": {
+    "message": "$provider$: detecting the billing page… ($seconds$ s)",
+    "description": "Status with elapsed seconds.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      },
+      "seconds": {
+        "content": "$2"
+      }
+    }
+  },
+  "workflowStatusLoadedStarting": {
+    "message": "$provider$: billing page loaded, starting download…",
+    "description": "Status.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "workflowStatusPreNavNotReady": {
+    "message": "$provider$: billing page not ready. Check the selected account.",
+    "description": "Status.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "workflowStatusOpening": {
+    "message": "Opening $provider$…",
+    "description": "Status.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "workflowStatusCouldNotOpen": {
+    "message": "Could not open $provider$",
+    "description": "Status.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "workflowStatusLoadingPage": {
+    "message": "$provider$: loading the page…",
+    "description": "Status.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "workflowStatusWaitingIframe": {
+    "message": "$provider$: waiting for the embedded frame…",
+    "description": "Status while waiting for an iframe.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "workflowStatusLoginPrompt": {
+    "message": "$provider$: sign in (or use \"Sign in with 1Password\"), then click \"Ready\".",
+    "description": "Status asking the user to sign in. Button names must match commonSignInOp and workflowReady.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "workflowStatusLoggingOut": {
+    "message": "$provider$: signing out of the previous account…",
+    "description": "Status.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "workflowStatusFetchingCreds": {
+    "message": "$provider$: fetching credentials from 1Password…",
+    "description": "Status.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "workflowOpCredsNotFound": {
+    "message": "1Password credentials not found",
+    "description": "Error."
+  },
+  "workflowStatusSigningIn": {
+    "message": "$provider$: signing in with 1Password ($item$)…",
+    "description": "Status. $item$ is the 1Password item title.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      },
+      "item": {
+        "content": "$2"
+      }
+    }
+  },
+  "workflowNoLoginFields": {
+    "message": "No login fields found on the page",
+    "description": "Error."
+  },
+  "workflowStatusVerifying": {
+    "message": "$provider$: verifying the billing page… ($seconds$ s)",
+    "description": "Status with elapsed seconds.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      },
+      "seconds": {
+        "content": "$2"
+      }
+    }
+  },
+  "workflowStatusLoadingBilling": {
+    "message": "$provider$: loading the billing page… ($seconds$ s)",
+    "description": "Status with elapsed seconds.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      },
+      "seconds": {
+        "content": "$2"
+      }
+    }
+  },
+  "workflowStatusOpSignInFailed": {
+    "message": "$provider$: 1Password sign-in failed. $error$",
+    "description": "Status.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      },
+      "error": {
+        "content": "$2"
+      }
+    }
+  },
+  "workflowStatusSignedIn": {
+    "message": "$provider$: signed in with 1Password, starting download…",
+    "description": "Status.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "workflowStatusSwitched": {
+    "message": "$provider$: account switched with 1Password, starting download…",
+    "description": "Status.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "workflowStatusDetected": {
+    "message": "$provider$: billing page detected, starting download…",
+    "description": "Status.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "workflowStatusWrongAccountSwitching": {
+    "message": "$provider$: wrong account detected. Signing out and signing in as $account$…",
+    "description": "Status.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      },
+      "account": {
+        "content": "$2"
+      }
+    }
+  },
+  "workflowStatusWrongAccount": {
+    "message": "$provider$: wrong account. Expected \"$expected$\", found \"$found$\". Switch account in $provider$, then click \"Ready\".",
+    "description": "Status. Nothing is downloaded until the account matches.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      },
+      "expected": {
+        "content": "$2"
+      },
+      "found": {
+        "content": "$3"
+      }
+    }
+  },
+  "workflowStatusScanning": {
+    "message": "Looking for invoices in $provider$…",
+    "description": "Status.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "workflowStatusDownloadingN": {
+    "message": "$provider$: downloading invoice $index$…",
+    "description": "Status.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      },
+      "index": {
+        "content": "$2"
+      }
+    }
+  },
+  "workflowInvoiceError": {
+    "message": "Invoice: $error$",
+    "description": "Per-invoice download error.",
+    "placeholders": {
+      "error": {
+        "content": "$1"
+      }
+    }
+  },
+  "workflowInvoiceErrorN": {
+    "message": "Invoice $index$: $error$",
+    "description": "Per-invoice download error with position.",
+    "placeholders": {
+      "index": {
+        "content": "$1"
+      },
+      "error": {
+        "content": "$2"
+      }
+    }
+  },
+  "workflowStatusPageScanning": {
+    "message": "$provider$: page $page$, scanning…",
+    "description": "Status during pagination.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      },
+      "page": {
+        "content": "$2"
+      }
+    }
+  },
+  "workflowStatusPageLoading": {
+    "message": "$provider$: page $page$, loading…",
+    "description": "Status during pagination.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      },
+      "page": {
+        "content": "$2"
+      }
+    }
+  },
+  "workflowStatusFoundOne": {
+    "message": "$provider$: found $count$ invoice, downloading…",
+    "description": "Status, singular.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      },
+      "count": {
+        "content": "$2"
+      }
+    }
+  },
+  "workflowStatusFoundOther": {
+    "message": "$provider$: found $count$ invoices, downloading…",
+    "description": "Status, plural.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      },
+      "count": {
+        "content": "$2"
+      }
+    }
+  },
+  "workflowStatusDownloadingOf": {
+    "message": "$provider$: downloading $index$ of $total$…",
+    "description": "Status.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      },
+      "index": {
+        "content": "$2"
+      },
+      "total": {
+        "content": "$3"
+      }
+    }
+  },
+  "workflowStatusPartial": {
+    "message": "$provider$: $done$ of $total$ downloaded ($failed$ failed)",
+    "description": "Status when some downloads failed.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      },
+      "done": {
+        "content": "$2"
+      },
+      "total": {
+        "content": "$3"
+      },
+      "failed": {
+        "content": "$4"
+      }
+    }
+  },
+  "workflowStatusDoneOne": {
+    "message": "$provider$: $count$ invoice downloaded",
+    "description": "Status, singular.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      },
+      "count": {
+        "content": "$2"
+      }
+    }
+  },
+  "workflowStatusDoneOther": {
+    "message": "$provider$: $count$ invoices downloaded",
+    "description": "Status, plural.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      },
+      "count": {
+        "content": "$2"
+      }
+    }
+  },
+  "workflowStatusNavigating": {
+    "message": "Opening the $provider$ billing page…",
+    "description": "Status.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "workflowStatusNotDetected": {
+    "message": "$provider$: billing page not detected. Sign in, then click \"Ready\".",
+    "description": "Status.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "workflowStatusNoTab": {
+    "message": "No tab found for $provider$. Opening the billing page…",
+    "description": "Status.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "workflowStatusLogInReady": {
+    "message": "Sign in to $provider$, then click \"Ready\".",
+    "description": "Status.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "workflowStatusLogInRetry": {
+    "message": "Sign in to $provider$, then click \"Retry download\".",
+    "description": "Status. Button name must match workflowRetry.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "workflowStatusWaitingLoad": {
+    "message": "Waiting for $provider$ to load…",
+    "description": "Status.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "workflowStatusWaitingLoadProgress": {
+    "message": "Waiting for $provider$ to load… ($seconds$/$max$ s)",
+    "description": "Status with elapsed and maximum seconds.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      },
+      "seconds": {
+        "content": "$2"
+      },
+      "max": {
+        "content": "$3"
+      }
+    }
+  },
+  "workflowStatusDownloadingFrom": {
+    "message": "Downloading invoices from $provider$…",
+    "description": "Status.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "workflowStatusRetrying": {
+    "message": "Retrying the download from $provider$…",
+    "description": "Status.",
+    "placeholders": {
+      "provider": {
+        "content": "$1"
+      }
+    }
+  },
+  "workflowStatusSelectorError": {
+    "message": "Error: $error$. Check the provider selectors or the page structure.",
+    "description": "Status when the billing page never became ready.",
+    "placeholders": {
+      "error": {
+        "content": "$1"
+      }
+    }
+  },
+  "downloadErrorNoUrl": {
+    "message": "no download URL",
+    "description": "Per-invoice error fragment."
+  },
+  "downloadErrorFetchFailed": {
+    "message": "download request failed",
+    "description": "Per-invoice error fragment."
+  },
+  "downloadErrorClickFailed": {
+    "message": "could not click the download button: $error$",
+    "description": "Per-invoice error fragment.",
+    "placeholders": {
+      "error": {
+        "content": "$1"
+      }
+    }
+  },
+  "downloadErrorButtonNotFound": {
+    "message": "invoice download button not found",
+    "description": "Per-invoice error fragment."
+  },
+  "downloadErrorNoDownload": {
+    "message": "no download detected",
+    "description": "Per-invoice error fragment."
+  },
+  "downloadErrorHtmlPage": {
+    "message": "received an HTML page instead of the invoice (the session may have expired)",
+    "description": "Per-invoice error fragment."
+  },
+  "downloadErrorPdfEmpty": {
+    "message": "PDF generation returned no data",
+    "description": "Per-invoice error fragment."
+  },
+  "downloadErrorUnknownMethod": {
+    "message": "unknown download method: $method$",
+    "description": "Per-invoice error fragment.",
+    "placeholders": {
+      "method": {
+        "content": "$1"
+      }
+    }
+  },
+  "completionTitle": {
+    "message": "Done. Every invoice filed.",
+    "description": "Completion screen title."
+  },
+  "completionQuip": {
+    "message": "Monkey work is Bonobot's job.",
+    "description": "Completion screen quip by the Bonobot mascot. Light humour."
+  },
+  "completionSummaryOne": {
+    "message": "$count$ provider completed",
+    "description": "Completion summary, singular.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "completionSummaryOther": {
+    "message": "$count$ providers completed",
+    "description": "Completion summary, plural.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "completionSkippedOne": {
+    "message": "$count$ skipped",
+    "description": "Completion summary addition, singular.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "completionSkippedOther": {
+    "message": "$count$ skipped",
+    "description": "Completion summary addition, plural.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "completionHome": {
+    "message": "Back to Home",
+    "description": "Button back to the home view."
+  },
+  "historyTitle": {
+    "message": "Download History",
+    "description": "History view title."
+  },
+  "historyStatTotal": {
+    "message": "Total",
+    "description": "Stat label: number of invoices."
+  },
+  "historyStatProviders": {
+    "message": "Providers",
+    "description": "Stat label: number of providers."
+  },
+  "historyStatAmount": {
+    "message": "Amount",
+    "description": "Stat label: sum of amounts."
+  },
+  "historyAllProviders": {
+    "message": "All providers",
+    "description": "Provider filter, no filter."
+  },
+  "historyFilterProvider": {
+    "message": "Filter by provider",
+    "description": "Accessible label of the provider filter."
+  },
+  "historyFilterFrom": {
+    "message": "Downloaded from",
+    "description": "Accessible label of the start date filter."
+  },
+  "historyFilterTo": {
+    "message": "Downloaded until",
+    "description": "Accessible label of the end date filter."
+  },
+  "historyExportCsv": {
+    "message": "Export CSV",
+    "description": "Export the filtered history."
+  },
+  "historyDeleteFiltered": {
+    "message": "Delete filtered",
+    "description": "Delete invoices matching the filters."
+  },
+  "historyClearAll": {
+    "message": "Clear all",
+    "description": "Delete the whole history."
+  },
+  "historyEmpty": {
+    "message": "Nothing filed yet. Your first batch will show up here.",
+    "description": "Empty history. Spoken by the Bonobot mascot."
+  },
+  "historyNoMatches": {
+    "message": "No invoices match these filters",
+    "description": "History has entries but none match the filters."
+  },
+  "historyColProvider": {
+    "message": "Provider",
+    "description": "Table column."
+  },
+  "historyColDate": {
+    "message": "Date",
+    "description": "Table column (invoice date as shown by the provider)."
+  },
+  "historyColAmount": {
+    "message": "Amount",
+    "description": "Table column."
+  },
+  "historyConfirmDeleteProvider": {
+    "message": "Delete $count$ invoice(s) from $provider$?",
+    "description": "Confirm dialog. Removes entries from history.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "provider": {
+        "content": "$2"
+      }
+    }
+  },
+  "historyConfirmDeleteFiltered": {
+    "message": "Delete $count$ filtered invoice(s)?",
+    "description": "Confirm dialog.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "historyConfirmDeleteFiles": {
+    "message": "Also delete $count$ file(s) from disk?",
+    "description": "Confirm dialog.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "historyConfirmClear": {
+    "message": "Clear all download history?",
+    "description": "Confirm dialog."
+  },
+  "historyConfirmDeleteDownloadedFiles": {
+    "message": "Also delete $count$ downloaded file(s) from disk?",
+    "description": "Confirm dialog.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "profilesTitle": {
+    "message": "Profiles",
+    "description": "Profiles view title."
+  },
+  "profilesEmpty": {
+    "message": "No profiles yet. Create one to save your current setup.",
+    "description": "Empty profile list."
+  },
+  "profilesPending": {
+    "message": "Pending setup: configure providers, then click Save",
+    "description": "Profile without saved settings."
+  },
+  "profilesLoaded": {
+    "message": "Loaded",
+    "description": "Badge on the loaded profile."
+  },
+  "profilesLoad": {
+    "message": "Load",
+    "description": "Apply a profile."
+  },
+  "profilesLoadTitle": {
+    "message": "Load this profile",
+    "description": "Tooltip."
+  },
+  "profilesRename": {
+    "message": "Rename",
+    "description": "Tooltip."
+  },
+  "profilesConfirmOverwrite": {
+    "message": "Overwrite \"$name$\" with the current settings?",
+    "description": "Confirm dialog.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "profilesPromptRename": {
+    "message": "Rename profile:",
+    "description": "Prompt dialog."
+  },
+  "profilesConfirmDelete": {
+    "message": "Delete profile \"$name$\"?",
+    "description": "Confirm dialog.",
+    "placeholders": {
+      "name": {
+        "content": "$1"
+      }
+    }
+  },
+  "profilesPromptNew": {
+    "message": "New profile name:",
+    "description": "Prompt dialog."
+  },
+  "profilesNewPlaceholder": {
+    "message": "New profile name…",
+    "description": "Input placeholder."
+  },
+  "profilesCreate": {
+    "message": "Create",
+    "description": "Create a profile."
+  },
+  "profilesOpSyncButton": {
+    "message": "Sync profiles from 1Password tags",
+    "description": "Button that builds profiles from tagged 1Password items."
+  },
+  "profilesOpScanning": {
+    "message": "Scanning 1Password vaults…",
+    "description": "Busy label of the same button."
+  },
+  "profilesOpScanningDetail": {
+    "message": "Scanning the 1Password vaults \"AI\" and \"AI bots\" for tagged provider credentials…",
+    "description": "Status while scanning. Keep vault names."
+  },
+  "profilesOpNoMatches": {
+    "message": "No matching provider credentials found in 1Password (items scanned: $count$). Add provider logins with their website URL to the \"AI\" or \"AI bots\" vault.",
+    "description": "Result when nothing matched. Keep vault names.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "profilesOpSynced": {
+    "message": "Synced from 1Password: $summary$",
+    "description": "Result. $summary$ lists profiles and provider counts.",
+    "placeholders": {
+      "summary": {
+        "content": "$1"
+      }
+    }
+  },
+  "profilesOpSyncFailed": {
+    "message": "1Password sync failed: $error$",
+    "description": "Error.",
+    "placeholders": {
+      "error": {
+        "content": "$1"
+      }
+    }
+  },
+  "profilesExport": {
+    "message": "Export profiles",
+    "description": "Download saved profiles as JSON."
+  },
+  "profilesImport": {
+    "message": "Import profiles",
+    "description": "Replace saved profiles from a JSON file."
+  },
+  "profilesBackup": {
+    "message": "Export replacement backup",
+    "description": "Download the copy that was replaced in the last conflict resolution."
+  },
+  "opReloadingExtension": {
+    "message": "Reloading the extension to enable 1Password access. Reopen the window in 2 seconds and click 1P again.",
+    "description": "Error shown after a permission change."
+  },
+  "opWorkerNoResponse": {
+    "message": "The background service worker did not respond. Reload the extension in chrome://extensions.",
+    "description": "Error."
+  },
+  "opQueryFailed": {
+    "message": "Could not query 1Password.",
+    "description": "Error."
+  },
+  "opUnavailable": {
+    "message": "1Password integration is unavailable.",
+    "description": "Error."
+  },
+  "opUnavailableReload": {
+    "message": "1Password integration is unavailable. Reload the extension in chrome://extensions.",
+    "description": "Error."
+  },
+  "syncHomeButton": {
+    "message": "Sync: $state$",
+    "description": "Home button that opens sync settings. $state$ is one of the syncState* values.",
+    "placeholders": {
+      "state": {
+        "content": "$1"
+      }
+    }
+  },
+  "syncStateLocalOnly": {
+    "message": "local only",
+    "description": "Sync state."
+  },
+  "syncStateDisconnected": {
+    "message": "disconnected",
+    "description": "Sync state."
+  },
+  "syncStateSynced": {
+    "message": "synced",
+    "description": "Sync state."
+  },
+  "syncStateSyncing": {
+    "message": "syncing",
+    "description": "Sync state."
+  },
+  "syncStatePending": {
+    "message": "pending",
+    "description": "Sync state."
+  },
+  "syncStateConflict": {
+    "message": "conflict",
+    "description": "Sync state."
+  },
+  "syncTitle": {
+    "message": "Profile synchronization",
+    "description": "Sync panel title."
+  },
+  "syncHelpScope": {
+    "message": "Only saved profiles are shared. Live settings, logins, invoices and the selected profile stay on this device.",
+    "description": "Explains what is synchronized."
+  },
+  "syncStatusInitial": {
+    "message": "Not connected",
+    "description": "Initial sync status."
+  },
+  "syncNotConnected": {
+    "message": "Not connected. Profiles are stored only on this device.",
+    "description": "Sync status when there is no account."
+  },
+  "syncEndpointLabel": {
+    "message": "Sync service URL",
+    "description": "Field label."
+  },
+  "syncEndpointPlaceholder": {
+    "message": "https://your-sync-service.example",
+    "description": "Example URL."
+  },
+  "syncUsernameLabel": {
+    "message": "Username",
+    "description": "Field label."
+  },
+  "syncPasswordLabel": {
+    "message": "Password",
+    "description": "Field label."
+  },
+  "syncHelpCredentials": {
+    "message": "Use a username of 3–64 letters, digits, dots, underscores or hyphens and a password of 12–128 characters. No email is required. Profiles remain usable locally without an account.",
+    "description": "Credential rules."
+  },
+  "syncHelpTrust": {
+    "message": "Connect only to a service you trust. Connecting enables automatic upload of your saved profiles, including workspace URLs and team IDs. Passwords are not saved by the extension.",
+    "description": "Security notice. Neutral tone."
+  },
+  "syncLogin": {
+    "message": "Sign in and synchronize",
+    "description": "Button."
+  },
+  "syncRegister": {
+    "message": "Create account and synchronize",
+    "description": "Button."
+  },
+  "syncNow": {
+    "message": "Sync now",
+    "description": "Button."
+  },
+  "syncDisconnect": {
+    "message": "Disconnect",
+    "description": "Button."
+  },
+  "syncConflictHelp": {
+    "message": "Both saved copies differ. Choosing one replaces the entire saved profile list, not your live settings. The replaced copy is backed up on this device.",
+    "description": "Conflict explanation."
+  },
+  "syncKeepLocal": {
+    "message": "Keep this device",
+    "description": "Conflict choice."
+  },
+  "syncUseRemote": {
+    "message": "Use cloud profiles",
+    "description": "Conflict choice."
+  },
+  "syncLastSync": {
+    "message": "Last sync: $date$",
+    "description": "Account line.",
+    "placeholders": {
+      "date": {
+        "content": "$1"
+      }
+    }
+  },
+  "syncConflictSummary": {
+    "message": "This device: $local$. Cloud: $remote$.",
+    "description": "Profile names on each side of a conflict.",
+    "placeholders": {
+      "local": {
+        "content": "$1"
+      },
+      "remote": {
+        "content": "$2"
+      }
+    }
+  },
+  "syncConflictEmpty": {
+    "message": "(empty)",
+    "description": "No profiles on one side."
+  },
+  "syncOpFetching": {
+    "message": "Fetching credentials from 1Password…",
+    "description": "Status."
+  },
+  "syncOpNeedEndpoint": {
+    "message": "Enter the Sync service URL (or add a URL field to the 1Password item).",
+    "description": "Error."
+  },
+  "syncOpMissingCreds": {
+    "message": "The 1Password item \"$item$\" is missing a username or password.",
+    "description": "Error.",
+    "placeholders": {
+      "item": {
+        "content": "$1"
+      }
+    }
+  },
+  "syncConfirmKeepLocal": {
+    "message": "Replace the cloud saved profile list with this device’s list? Other devices will receive this change.",
+    "description": "Confirm dialog."
+  },
+  "syncConfirmUseRemote": {
+    "message": "Replace this device’s saved profile list with the cloud list? Live settings stay unchanged.",
+    "description": "Confirm dialog."
+  },
+  "syncImportTooLarge": {
+    "message": "Profile file exceeds 256 KiB.",
+    "description": "Error."
+  },
+  "syncConfirmImport": {
+    "message": "Replace your saved profile list with this file? If connected, this change will synchronize. Live settings stay unchanged.",
+    "description": "Confirm dialog."
+  },
+  "syncErrorWorker": {
+    "message": "The sync service worker is unavailable. Reload the extension.",
+    "description": "Error."
+  },
+  "syncMsgConflict": {
+    "message": "Both copies differ. Export a backup or choose which saved profiles to keep. Live settings are not replaced.",
+    "description": "Sync status. English must match profile-sync.mjs."
+  },
+  "syncMsgSynced": {
+    "message": "Saved profiles are synchronized. Load a profile to apply its settings on this device.",
+    "description": "Sync status. English must match profile-sync.mjs."
+  },
+  "syncMsgChecking": {
+    "message": "Checking saved profiles…",
+    "description": "Sync status. English must match profile-sync.mjs."
+  },
+  "syncMsgPending": {
+    "message": "Changes saved on this device. Waiting to synchronize.",
+    "description": "Sync status. English must match profile-sync.mjs."
+  },
+  "syncMsgDisconnected": {
+    "message": "Disconnected. Local and remote profiles were not deleted.",
+    "description": "Sync status. English must match profile-sync.mjs."
+  },
+  "syncErrOrigin": {
+    "message": "Enter an HTTPS service origin, without a path (localhost HTTP is allowed for development).",
+    "description": "Sync error. English must match profile-sync.mjs."
+  },
+  "syncErrUnreachable": {
+    "message": "Cannot reach the sync or login service. Saved profiles remain on this device; retry when online.",
+    "description": "Sync error. English must match profile-sync.mjs."
+  },
+  "syncErrInvalidResponse": {
+    "message": "The service returned an invalid response.",
+    "description": "Sync error. English must match profile-sync.mjs."
+  },
+  "syncErrSession": {
+    "message": "Invalid login session. Sign in again.",
+    "description": "Sync error. English must match profile-sync.mjs."
+  },
+  "syncErrRevision": {
+    "message": "Invalid remote revision.",
+    "description": "Sync error. English must match profile-sync.mjs."
+  },
+  "syncErrNoBackup": {
+    "message": "No replacement backup is available on this device.",
+    "description": "Sync error. English must match profile-sync.mjs."
+  },
+  "syncErrStale": {
+    "message": "Profiles changed while this window was open. Reload them before saving again.",
+    "description": "Sync error. English must match profile-sync.mjs."
+  },
+  "syncErrDisconnectFirst": {
+    "message": "Disconnect before connecting a different account or service.",
+    "description": "Sync error. English must match profile-sync.mjs."
+  },
+  "syncErrUsername": {
+    "message": "Use a username of 3–64 ASCII letters, digits, dots, underscores or hyphens, starting with a letter or digit.",
+    "description": "Sync error. English must match profile-sync.mjs."
+  },
+  "syncErrPassword": {
+    "message": "Use a password of 12–128 characters.",
+    "description": "Sync error. English must match profile-sync.mjs."
+  },
+  "syncErrNoPasswordLogin": {
+    "message": "This service does not support own-account password login.",
+    "description": "Sync error. English must match profile-sync.mjs."
+  },
+  "syncErrNoConflict": {
+    "message": "There is no conflict to resolve.",
+    "description": "Sync error. English must match profile-sync.mjs."
+  },
+  "syncErrChoose": {
+    "message": "Choose this device or the cloud copy.",
+    "description": "Sync error. English must match profile-sync.mjs."
+  },
+  "syncErrUnknownAction": {
+    "message": "Unknown sync action.",
+    "description": "Sync error. English must match profile-sync.mjs."
+  },
+  "syncErrDocument": {
+    "message": "Invalid profile document.",
+    "description": "Sync error. English must match sync-schema.mjs."
+  },
+  "syncErrProfile": {
+    "message": "Invalid or duplicate profile.",
+    "description": "Sync error. English must match sync-schema.mjs."
+  },
+  "syncErrSettings": {
+    "message": "Invalid profile settings.",
+    "description": "Sync error. English must match sync-schema.mjs."
+  },
+  "syncErrProviderConfig": {
+    "message": "Invalid provider configuration.",
+    "description": "Sync error. English must match sync-schema.mjs."
+  },
+  "syncErrConfigValue": {
+    "message": "Invalid configuration value.",
+    "description": "Sync error. English must match sync-schema.mjs."
+  },
+  "syncErrDocumentSize": {
+    "message": "Profile document exceeds 256 KiB.",
+    "description": "Sync error. English must match sync-schema.mjs."
+  },
+  "recordTitle": {
+    "message": "Record Provider",
+    "description": "Record view title."
+  },
+  "recordConfirmTitle": {
+    "message": "Record on this tab?",
+    "description": "Confirmation panel title."
+  },
+  "recordTabLine": {
+    "message": "Tab: $value$",
+    "description": "Info line; $value$ is the tab title.",
+    "placeholders": {
+      "value": {
+        "content": "$1"
+      }
+    }
+  },
+  "recordUrlLine": {
+    "message": "URL: $value$",
+    "description": "Info line; $value$ is the URL.",
+    "placeholders": {
+      "value": {
+        "content": "$1"
+      }
+    }
+  },
+  "recordClicksLine": {
+    "message": "Clicks: $value$",
+    "description": "Info line; $value$ is a count.",
+    "placeholders": {
+      "value": {
+        "content": "$1"
+      }
+    }
+  },
+  "recordNetworkLine": {
+    "message": "Network: $value$",
+    "description": "Info line; $value$ is a count of network requests.",
+    "placeholders": {
+      "value": {
+        "content": "$1"
+      }
+    }
+  },
+  "recordDurationLine": {
+    "message": "Duration: $value$",
+    "description": "Info line; $value$ is the elapsed time.",
+    "placeholders": {
+      "value": {
+        "content": "$1"
+      }
+    }
+  },
+  "recordResultLine": {
+    "message": "Actions: $actions$ · Network: $network$ · Downloads: $downloads$",
+    "description": "Recording summary counts.",
+    "placeholders": {
+      "actions": {
+        "content": "$1"
+      },
+      "network": {
+        "content": "$2"
+      },
+      "downloads": {
+        "content": "$3"
+      }
+    }
+  },
+  "recordDurationValue": {
+    "message": "$seconds$s",
+    "description": "Elapsed seconds.",
+    "placeholders": {
+      "seconds": {
+        "content": "$1"
+      }
+    }
+  },
+  "recordUnknownTab": {
+    "message": "Unknown",
+    "description": "Tab title fallback."
+  },
+  "recordStart": {
+    "message": "Start Recording",
+    "description": "Button."
+  },
+  "recordHintStart": {
+    "message": "Start from the page you see after logging in (e.g., dashboard). Then navigate to the billing page and download 1-2 invoices.",
+    "description": "Recording instructions."
+  },
+  "recordRecording": {
+    "message": "Recording…",
+    "description": "Recording in progress."
+  },
+  "recordStop": {
+    "message": "Stop Recording",
+    "description": "Button."
+  },
+  "recordHintRecording": {
+    "message": "Navigate to the billing page and download 1-2 invoices.",
+    "description": "Recording instructions."
+  },
+  "recordComplete": {
+    "message": "Recording Complete",
+    "description": "Result panel title."
+  },
+  "recordExport": {
+    "message": "Export Recording JSON",
+    "description": "Button."
+  }
+}

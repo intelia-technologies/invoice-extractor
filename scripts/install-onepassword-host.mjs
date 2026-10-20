@@ -57,7 +57,8 @@ function discoverExtensionIdsFromProfileDir(userDataDir) {
           if (
             extPath === repoRoot ||
             extPath.endsWith('/invoice-extractor') ||
-            extName === 'Invoice Extractor'
+            extName === 'Invoice Extractor' ||
+            extName === '__MSG_extName__'
           ) {
             found.add(id);
           }

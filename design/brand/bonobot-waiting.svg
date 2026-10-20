@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="t">
+  <title id="t">Bonobot waiting (placeholder)</title>
+  <!-- PLACEHOLDER by the design system. Final character comes from the illustrator (see the Bonobot brief).
+       Fill ids map to tokens: bonobot-fur, bonobot-face, bonobot-lip, bonobot-metal, calco (LED). -->
+  <g id="antenna">
+    <rect x="62" y="6" width="4" height="18" rx="2" fill="#a3abb6"/>
+    <circle cx="64" cy="7" r="6" fill="#7d828c"/>
+    <circle cx="62" cy="5" r="2" fill="#e3e4ff"/>
+  </g>
+  <g id="ears">
+    <circle cx="17" cy="70" r="15" fill="#2b211d"/>
+    <circle cx="111" cy="70" r="15" fill="#2b211d"/>
+    <circle cx="17" cy="70" r="8" fill="#a3abb6"/>
+    <circle cx="111" cy="70" r="8" fill="#a3abb6"/>
+    <circle cx="17" cy="70" r="3" fill="#6b7380"/>
+    <circle cx="111" cy="70" r="3" fill="#6b7380"/>
+  </g>
+  <g id="head">
+    <circle cx="64" cy="70" r="46" fill="#2b211d"/>
+    <!-- the bonobo's centre parting -->
+    <path d="M64 30 C54 20 36 22 28 36 C40 30 52 32 62 40 Z" fill="#2b211d"/>
+    <path d="M64 30 C74 20 92 22 100 36 C88 30 76 32 66 40 Z" fill="#2b211d"/>
+    <path d="M64 28 L64 42" stroke="#4a3a33" stroke-width="3" stroke-linecap="round"/>
+    <rect x="30" y="44" width="68" height="6" rx="3" fill="#4a3a33"/>
+  </g>
+  <g id="face">
+    <path d="M64 56 C58 50 30 46 30 68 C30 80 38 84 42 86 C40 102 52 110 64 110 C76 110 88 102 86 86 C90 84 98 80 98 68 C98 46 70 50 64 56 Z" fill="#e9b8a2"/>
+  </g>
+  <g id="eyes">
+    <path d="M40 70 Q48 64 56 70" fill="none" stroke="#2b211d" stroke-width="3.5" stroke-linecap="round"/>
+    <path d="M72 70 Q80 64 88 70" fill="none" stroke="#2b211d" stroke-width="3.5" stroke-linecap="round"/>
+    <rect x="58" y="66" width="12" height="4" rx="2" fill="#a3abb6"/>
+  </g>
+  <g id="mouth">
+    <circle cx="60" cy="86" r="2" fill="#2b211d"/>
+    <circle cx="68" cy="86" r="2" fill="#2b211d"/>
+    <path d="M54 98 L74 98" stroke="#2b211d" stroke-width="3" stroke-linecap="round"/>
+  </g>
+  <text x="100" y="34" font-family="sans-serif" font-weight="700" font-size="18" fill="#7d828c">z</text>
+  <text x="112" y="20" font-family="sans-serif" font-weight="700" font-size="13" fill="#7d828c">z</text>
+</svg>

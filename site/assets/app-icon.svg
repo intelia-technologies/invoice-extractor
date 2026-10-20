@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Invoice Extractor">
+  <!-- App icon (48-128 px and favicon 180/512). Placeholder until the illustrator delivers the final face. -->
+  <rect x="4" y="4" width="120" height="120" rx="28" fill="#3d3fd8"/>
+  <rect x="70" y="10" width="4" height="14" rx="2" fill="#a9adff"/>
+  <circle cx="72" cy="12" r="6" fill="#e3e4ff"/>
+  <circle cx="22" cy="74" r="12" fill="#2b211d"/>
+  <circle cx="106" cy="74" r="12" fill="#2b211d"/>
+  <circle cx="22" cy="74" r="6" fill="#a3abb6"/>
+  <circle cx="106" cy="74" r="6" fill="#a3abb6"/>
+  <circle cx="64" cy="72" r="40" fill="#2b211d"/>
+  <path d="M64 38 C55 28 40 30 33 42 C44 36 54 39 62 46 Z" fill="#2b211d"/>
+  <path d="M64 38 C73 28 88 30 95 42 C84 36 74 39 66 46 Z" fill="#2b211d"/>
+  <path d="M64 36 L64 48" stroke="#4a3a33" stroke-width="3" stroke-linecap="round"/>
+  <path d="M64 60 C58 54 36 52 36 70 C36 80 42 84 46 86 C44 100 54 106 64 106 C74 106 84 100 82 86 C86 84 92 80 92 70 C92 52 70 54 64 60 Z" fill="#e9b8a2"/>
+  <circle cx="51" cy="71" r="9" fill="#ffffff"/>
+  <circle cx="77" cy="71" r="9" fill="#ffffff"/>
+  <circle cx="53" cy="72" r="4.5" fill="#3d3fd8"/>
+  <circle cx="79" cy="72" r="4.5" fill="#3d3fd8"/>
+  <path d="M52 92 Q64 102 76 92" fill="none" stroke="#2b211d" stroke-width="3.5" stroke-linecap="round"/>
+</svg>

@@ -1,59 +1,198 @@
 /* =====================================================================
-   Invoice Extractor — design tokens (interim "Ledger" system)
-   ---------------------------------------------------------------------
-   SINGLE SOURCE OF TRUTH for the website (site/) and the Chrome
-   extension (popup.css). Edit this file, then run:
-       node scripts/sync-design-tokens.mjs
-   which copies it to site/tokens.css. `npm test` fails if they diverge.
-
-   Concept: paper, ink and a rubber stamp. Invoices are paperwork; the
-   product turns paperwork into a filed, stamped "DONE".
-   - Light mode ("paper")  -> website, docs, marketing.
-   - Dark mode  ("ink")    -> the extension popup, terminals, agent UI.
-   This is an interim system until the full design system is delivered
-   (see docs/design-system-brief.md).
+   Invoice Extractor — design tokens (system "Calco")
+   GENERATED from design/tokens.json by scripts/build-design-tokens.mjs.
+   Do not edit by hand: edit tokens.json and run the script.
+   Light and dark follow the OS; [data-theme] on <html> forces one.
    ===================================================================== */
 
 :root {
-  /* ---- Brand primitives ---- */
-  --ie-paper: #f2ede3;         /* page background, light mode            */
-  --ie-paper-2: #e9e2d3;       /* inline code, subtle fills              */
-  --ie-receipt: #fbf8f1;       /* raised cards on paper                  */
-  --ie-ink: #16140f;           /* primary text on paper, dark background */
-  --ie-ink-2: #4a463d;         /* secondary text on paper                */
-  --ie-ink-3: #8a8476;         /* tertiary text / metadata on paper      */
-  --ie-rule: #d6cdb9;          /* hairlines and dividers on paper        */
+  --ie-white: #ffffff;
+  --ie-steel-50: #f3f4f1; /* Recycled-paper grey: light page background */
+  --ie-steel-100: #e9ebe6;
+  --ie-steel-200: #d5d8d2;
+  --ie-steel-400: #7d828c;
+  --ie-steel-500: #646a75;
+  --ie-steel-600: #555b66;
+  --ie-steel-900: #16181d;
+  --ie-night-50: #eceef2;
+  --ie-night-200: #a6abb6;
+  --ie-night-300: #7c8290;
+  --ie-night-500: #686e7b;
+  --ie-night-700: #2e333d;
+  --ie-night-850: #1f232b;
+  --ie-night-900: #171a20;
+  --ie-night-950: #0f1115; /* Dark page background (robot metal at night) */
+  --ie-calco-100: #e3e4ff;
+  --ie-calco-300: #a9adff;
+  --ie-calco-400: #8a8fff;
+  --ie-calco-500: #4f53e6;
+  --ie-calco-600: #3d3fd8;
+  --ie-calco-700: #2e2fb0;
+  --ie-calco-900: #1b1c5c;
+  --ie-green-100: #e2f3e8;
+  --ie-green-400: #5fd392;
+  --ie-green-700: #1d7a46;
+  --ie-green-900: #12301f;
+  --ie-orange-100: #fdf0dc;
+  --ie-orange-400: #f5b456;
+  --ie-orange-700: #a0520a;
+  --ie-orange-900: #3a2709;
+  --ie-red-100: #fbe4e4;
+  --ie-red-400: #ff8a86;
+  --ie-red-700: #c0262d;
+  --ie-red-900: #3d1517;
+  --ie-teal-100: #ddf1f3;
+  --ie-teal-400: #5cc9d6;
+  --ie-teal-700: #11707e;
+  --ie-teal-900: #0f2c31;
+  --ie-bonobot-fur: #2b211d;
+  --ie-bonobot-fur-light: #4a3a33;
+  --ie-bonobot-face: #e9b8a2;
+  --ie-bonobot-lip: #d98880;
+  --ie-bonobot-metal: #a3abb6;
+  --ie-bonobot-metal-dark: #6b7380;
+  --ie-font-display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif; /* Headlines, big numbers, wordmark. OFL. */
+  --ie-font-sans: "Atkinson Hyperlegible Next", system-ui, -apple-system, "Segoe UI", sans-serif; /* UI and running text. Built for legibility: 0/O and 1/l/I are distinct. OFL. */
+  --ie-font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace; /* Amounts, invoice numbers, IDs, commands. OFL. */
+  --ie-weight-regular: 400;
+  --ie-weight-medium: 500;
+  --ie-weight-semibold: 600;
+  --ie-weight-bold: 700;
+  --ie-weight-black: 800;
+  --ie-fs-2xs: 11px;
+  --ie-fs-xs: 12px;
+  --ie-fs-sm: 14px;
+  --ie-fs-md: 16px;
+  --ie-fs-lg: 18px;
+  --ie-fs-xl: clamp(20px, 1.1rem + 0.6vw, 24px);
+  --ie-fs-2xl: clamp(24px, 1.2rem + 1.4vw, 36px);
+  --ie-fs-3xl: clamp(32px, 1.4rem + 3vw, 56px);
+  --ie-fs-display: clamp(40px, 1.6rem + 5.2vw, 84px);
+  --ie-lh-tight: 1.05;
+  --ie-lh-snug: 1.25;
+  --ie-lh-body: 1.5;
+  --ie-space-0: 0px;
+  --ie-space-1: 4px;
+  --ie-space-2: 8px;
+  --ie-space-3: 12px;
+  --ie-space-4: 16px;
+  --ie-space-5: 20px;
+  --ie-space-6: 24px;
+  --ie-space-8: 32px;
+  --ie-space-10: 40px;
+  --ie-space-12: 48px;
+  --ie-space-16: 64px;
+  --ie-space-24: 96px;
+  --ie-radius-xs: 4px;
+  --ie-radius-sm: 6px;
+  --ie-radius-md: 10px;
+  --ie-radius-lg: 16px;
+  --ie-radius-pill: 999px;
+  --ie-size-target: 32px; /* Minimum hit target in the extension. */
+  --ie-size-icon-sm: 16px;
+  --ie-size-icon-md: 20px;
+  --ie-size-icon-lg: 24px;
+  --ie-size-popup: 420px;
+  --ie-size-content: 1160px;
+  --ie-size-measure: 68ch;
+  --ie-duration-instant: 80ms;
+  --ie-duration-fast: 140ms;
+  --ie-duration-base: 220ms;
+  --ie-duration-slow: 360ms;
+  --ie-duration-stamp: 520ms; /* Signature: Bonobot's stamp landing on the finished batch. */
+  --ie-ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ie-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ie-ease-stamp: cubic-bezier(0.3, 1.6, 0.5, 1); /* Overshoot for the stamp and copy-slide. */
 
-  --ie-stamp: #d8432b;         /* brand accent: CTA, "DONE", emphasis    */
-  --ie-stamp-light: #e8664c;   /* accent on dark surfaces                */
-  --ie-stamp-deep: #b8361f;    /* pressed / hover on accent              */
-  --ie-ledger: #1d6b4c;        /* success on paper ("saved", ticks)      */
-  --ie-ledger-light: #6fc39a;  /* success on dark                        */
-  --ie-amber: #e3a83d;         /* warning / needs configuration          */
-  --ie-alert: #ff5d73;         /* error on dark (distinct from stamp)    */
-  --ie-alert-deep: #b4232f;    /* error on paper                         */
+  /* ---- Semantic (light) ---- */
+  --ie-bg: #f3f4f1;
+  --ie-surface: #ffffff;
+  --ie-surface-2: #e9ebe6;
+  --ie-border: #d5d8d2; /* Decorative dividers only. */
+  --ie-border-strong: #7d828c; /* Input and control borders (3:1 non-text contrast). */
+  --ie-text: #16181d;
+  --ie-text-2: #555b66;
+  --ie-text-3: #646a75;
+  --ie-accent: #3d3fd8; /* Brand: primary action, links, focus ring, selection. */
+  --ie-accent-hover: #2e2fb0;
+  --ie-accent-text: #3d3fd8;
+  --ie-accent-soft: #e3e4ff;
+  --ie-on-accent: #ffffff;
+  --ie-copy: #16181d; /* Color of the signature carbon-copy offset shadow. */
+  --ie-focus: #3d3fd8;
+  --ie-success: #1d7a46;
+  --ie-success-soft: #e2f3e8;
+  --ie-warning: #a0520a;
+  --ie-warning-soft: #fdf0dc;
+  --ie-danger: #c0262d;
+  --ie-danger-soft: #fbe4e4;
+  --ie-on-danger: #ffffff;
+  --ie-info: #11707e;
+  --ie-info-soft: #ddf1f3;
+  --ie-logo-plate: #ffffff; /* Neutral capsule behind third-party provider logos. */
+  --ie-shadow-copy: 3px 3px 0px 0px var(--ie-copy); /* Signature: the carbon copy behind the primary action. */
+  --ie-shadow-copy-hover: 5px 5px 0px 0px var(--ie-copy);
+  --ie-shadow-copy-pressed: 1px 1px 0px 0px var(--ie-copy);
+  --ie-shadow-raised: 0px 8px 24px -12px #00000040;
+  color-scheme: light;
+}
 
-  /* ---- Dark mode ("ink") surfaces ---- */
-  --ie-dark-bg: #16140f;
-  --ie-dark-surface: #1f1c16;
-  --ie-dark-surface-2: #29251d;
-  --ie-dark-border: rgba(242, 237, 227, 0.10);
-  --ie-dark-border-strong: rgba(242, 237, 227, 0.20);
-  --ie-dark-text: rgba(242, 237, 227, 0.94);
-  --ie-dark-text-2: rgba(242, 237, 227, 0.64);
-  --ie-dark-text-3: rgba(242, 237, 227, 0.40);
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ie-bg: #0f1115;
+    --ie-surface: #171a20;
+    --ie-surface-2: #1f232b;
+    --ie-border: #2e333d;
+    --ie-border-strong: #686e7b;
+    --ie-text: #eceef2;
+    --ie-text-2: #a6abb6;
+    --ie-text-3: #7c8290;
+    --ie-accent: #4f53e6;
+    --ie-accent-hover: #3d3fd8;
+    --ie-accent-text: #8a8fff;
+    --ie-accent-soft: #1b1c5c;
+    --ie-on-accent: #ffffff;
+    --ie-copy: #a9adff;
+    --ie-focus: #8a8fff;
+    --ie-success: #5fd392;
+    --ie-success-soft: #12301f;
+    --ie-warning: #f5b456;
+    --ie-warning-soft: #3a2709;
+    --ie-danger: #ff8a86;
+    --ie-danger-soft: #3d1517;
+    --ie-on-danger: #0f1115;
+    --ie-info: #5cc9d6;
+    --ie-info-soft: #0f2c31;
+    --ie-logo-plate: #eceef2;
+    color-scheme: dark;
+  }
+}
 
-  /* ---- Typography ---- */
-  --ie-font-display: "Instrument Serif", "Iowan Old Style", Georgia, serif;   /* headlines, numbers */
-  --ie-font-sans: "IBM Plex Sans", system-ui, -apple-system, sans-serif;      /* UI and body text  */
-  --ie-font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace; /* labels, IDs, code */
-
-  /* ---- Shape ---- */
-  --ie-radius-sm: 4px;
-  --ie-radius-md: 6px;
-  --ie-radius-lg: 10px;
-
-  /* ---- Signature: the offset "stamp" shadow on primary actions ---- */
-  --ie-shadow-stamp: 4px 4px 0 var(--ie-stamp);
-  --ie-shadow-stamp-hover: 6px 6px 0 var(--ie-stamp);
+:root[data-theme="dark"] {
+  --ie-bg: #0f1115;
+  --ie-surface: #171a20;
+  --ie-surface-2: #1f232b;
+  --ie-border: #2e333d;
+  --ie-border-strong: #686e7b;
+  --ie-text: #eceef2;
+  --ie-text-2: #a6abb6;
+  --ie-text-3: #7c8290;
+  --ie-accent: #4f53e6;
+  --ie-accent-hover: #3d3fd8;
+  --ie-accent-text: #8a8fff;
+  --ie-accent-soft: #1b1c5c;
+  --ie-on-accent: #ffffff;
+  --ie-copy: #a9adff;
+  --ie-focus: #8a8fff;
+  --ie-success: #5fd392;
+  --ie-success-soft: #12301f;
+  --ie-warning: #f5b456;
+  --ie-warning-soft: #3a2709;
+  --ie-danger: #ff8a86;
+  --ie-danger-soft: #3d1517;
+  --ie-on-danger: #0f1115;
+  --ie-info: #5cc9d6;
+  --ie-info-soft: #0f2c31;
+  --ie-logo-plate: #eceef2;
+  color-scheme: dark;
 }

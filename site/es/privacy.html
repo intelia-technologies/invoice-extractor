@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Privacidad — Invoice Extractor</title>
+  <meta name="description" content="Qué guarda Invoice Extractor en tu ordenador, qué envía la sincronización opcional de perfiles y qué permisos de Chrome pide y por qué." />
+  <link rel="canonical" href="https://invoice-extractor.noscomelaia.com/es/privacy.html" />
+  <link rel="alternate" hreflang="en" href="https://invoice-extractor.noscomelaia.com/privacy.html" />
+  <link rel="alternate" hreflang="es" href="https://invoice-extractor.noscomelaia.com/es/privacy.html" />
+  <link rel="alternate" hreflang="x-default" href="https://invoice-extractor.noscomelaia.com/privacy.html" />
+  <meta property="og:title" content="Privacidad — Invoice Extractor" />
+  <meta property="og:description" content="Tus contraseñas, facturas e historial se quedan en tu ordenador. Aquí está exactamente qué sale de él y cuándo." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://invoice-extractor.noscomelaia.com/es/privacy.html" />
+  <meta property="og:image" content="https://invoice-extractor.noscomelaia.com/assets/icon512.png" />
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f3f4f1" />
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0f1115" />
+  <link rel="icon" type="image/svg+xml" href="../assets/app-icon.svg" />
+  <link rel="icon" type="image/png" sizes="32x32" href="../assets/favicon.png" />
+  <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png" />
+  <link rel="stylesheet" href="../fonts.css" />
+  <link rel="stylesheet" href="../tokens.css" />
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
+    <symbol id="i-github" viewBox="0 0 24 24"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.4 5.4 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+    <symbol id="i-x-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></symbol>
+  </svg>
+
+  <a class="skip" href="#main">Saltar al contenido</a>
+
+  <header class="topbar">
+    <div class="wrap">
+      <a class="wordmark" href="./" aria-label="Inicio de Invoice Extractor">
+        <img src="../assets/app-icon.svg" alt="" width="32" height="32" />
+        <span>Invoice Extractor</span>
+      </a>
+      <nav class="topnav" aria-label="Principal">
+        <a class="gh" href="https://github.com/intelia-technologies/invoice-extractor" rel="noopener">
+          <svg class="icon sm" aria-hidden="true"><use href="#i-github"/></svg><span class="gh-label">GitHub</span><span class="sr-only"> (código fuente)</span>
+        </a>
+      </nav>
+      <div class="lang" role="group" aria-label="Idioma">
+        <a href="../privacy.html" hreflang="en" lang="en" data-lang="en" aria-label="English">EN</a>
+        <span aria-current="page" lang="es">ES</span>
+      </div>
+    </div>
+  </header>
+
+  <main id="main" class="doc wrap">
+    <article class="prose">
+      <a class="back" href="./"><svg class="icon sm" aria-hidden="true"><use href="#i-arrow"/></svg>Volver al inicio</a>
+      <h1>Privacidad</h1>
+      <p class="meta">Última actualización: 20 de octubre de 2026</p>
+
+      <p>Invoice Extractor es software de código abierto mantenido por <a href="https://inteliatech.ai" rel="noopener">Intelia</a>. Esta página cubre la extensión de Chrome, la herramienta de línea de comandos, el servidor MCP, la Skill para agentes de IA y esta web.</p>
+
+      <div class="callout info">
+        <svg class="icon" aria-hidden="true"><use href="#i-info"/></svg>
+        <div><strong>En resumen</strong> Invoice Extractor funciona en tu ordenador. Nunca recibimos tus contraseñas, tus facturas ni tu navegación. La única excepción, opcional, es la sincronización de perfiles: la activas tú y eliges a qué servidor se conecta.</div>
+      </div>
+
+      <h2>Qué se queda en tu ordenador</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th scope="col">Dato</th><th scope="col">Dónde está</th><th scope="col">¿Sale de tu ordenador?</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Contraseñas de proveedores y códigos 2FA</td><td>Tu bóveda de 1Password o Bitwarden</td><td>Solo hacia la página de inicio de sesión de ese proveedor</td></tr>
+            <tr><td>Cookies y sesiones de proveedores</td><td>Chrome</td><td>Solo hacia ese proveedor</td></tr>
+            <tr><td>Facturas en PDF</td><td>Tu carpeta de descargas</td><td>No</td></tr>
+            <tr><td>Historial de descargas, progreso de la ejecución, perfil seleccionado</td><td>Almacenamiento de Chrome y <code>~/.config/invoice-extractor</code></td><td>No</td></tr>
+            <tr><td>Perfiles guardados</td><td>Almacenamiento de Chrome y <code>~/.config/invoice-extractor</code></td><td>Solo si activas la sincronización de perfiles</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Las credenciales se leen de tu bóveda con la herramienta oficial de línea de comandos <code>op</code> o <code>bw</code> en el momento de iniciar sesión, y no se escriben en ningún otro sitio.</p>
+
+      <h2>Sincronización opcional de perfiles</h2>
+      <p>La sincronización mantiene tus perfiles guardados iguales en varios ordenadores. Está desactivada hasta que inicias sesión en un servicio de sincronización desde la pantalla <b>Perfiles</b>. Todo funciona sin ella.</p>
+      <h3>Qué se envía</h3>
+      <ul>
+        <li>Los nombres de tus perfiles guardados.</li>
+        <li>Qué proveedores están seleccionados en cada perfil.</li>
+        <li>La configuración de cada proveedor, como la URL de un espacio de trabajo o el ID de una cuenta.</li>
+      </ul>
+      <h3>Qué no se envía nunca</h3>
+      <ul>
+        <li>Cookies, accesos y contraseñas de proveedores.</li>
+        <li>Facturas, historial de descargas y progreso de las ejecuciones.</li>
+        <li>Qué perfil tienes seleccionado en cada momento.</li>
+      </ul>
+      <div class="callout warning">
+        <svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg>
+        <div><strong>Elige un servicio de sincronización de confianza</strong> Las URL de espacios de trabajo y los ID de cuenta pueden ser datos personales. La extensión se conecta a cualquier servidor que implemente el contrato abierto de sincronización de perfiles: puedes usar el servicio de Intelia o montar el tuyo.</div>
+      </div>
+
+      <h2>Permisos de Chrome y para qué sirven</h2>
+      <p>La extensión pide permisos amplios porque cada página de facturación es distinta. Esto es para lo que sirve cada uno.</p>
+      <h4>Leer páginas de facturación</h4>
+      <p><code>&lt;all_urls&gt;</code>, <code>scripting</code>, <code>tabs</code>, <code>webNavigation</code> y <code>cookies</code> le permiten abrir la página de facturación de un proveedor, leer la tabla de facturas y comprobar que has iniciado sesión en la cuenta correcta.</p>
+      <h4>Guardar ficheros</h4>
+      <p><code>downloads</code> guarda los PDF. <code>debugger</code> solo se usa para imprimir en PDF los recibos que no tienen botón de descarga; mientras actúa, Chrome muestra una barra que avisa de que la extensión está depurando el navegador.</p>
+      <h4>Hablar con tu bóveda</h4>
+      <p><code>nativeMessaging</code> permite a la extensión pedir un acceso al pequeño programa auxiliar instalado en tu ordenador. <code>storage</code> y <code>alarms</code> guardan tus ajustes y ejecutan en segundo plano la sincronización opcional.</p>
+      <div class="callout danger">
+        <svg class="icon" aria-hidden="true"><use href="#i-x-circle"/></svg>
+        <div><strong>Instala solo la versión oficial</strong> Como la extensión puede leer las páginas que abres, una copia modificada podría hacer daño. Descárgala desde esta web o desde la página de versiones de GitHub, nunca desde un tercero.</div>
+      </div>
+
+      <h2>Esta web</h2>
+      <p>Estas páginas son estáticas. No usan cookies, no tienen analítica y no cargan fuentes ni scripts de terceros. Si eliges un idioma, esa preferencia se guarda en el almacenamiento local de tu navegador con la clave <code>ie-lang</code> y no se envía a ningún sitio. El proveedor de alojamiento puede conservar registros de acceso estándar. Las descargas las sirve GitHub, con su propia política de privacidad.</p>
+
+      <h2>Borrar tus datos</h2>
+      <ol>
+        <li>Quita la extensión en <code>chrome://extensions</code>. Chrome borra su almacenamiento con ella.</li>
+        <li>Borra la carpeta que usa la herramienta de línea de comandos:</li>
+      </ol>
+      <pre class="term"><code><span class="p">$</span> rm -rf ~/.config/invoice-extractor</code></pre>
+      <p>Tus facturas en PDF siguen en tu carpeta de descargas hasta que las borres. Si usaste la sincronización de perfiles, borra también tu cuenta en ese servicio.</p>
+
+      <h2>Preguntas</h2>
+      <p>Abre una incidencia en <a href="https://github.com/intelia-technologies/invoice-extractor/issues" rel="noopener">GitHub</a> o contacta con <a href="https://inteliatech.ai" rel="noopener">Intelia</a>. El código es público: cualquier afirmación de esta página se puede comprobar.</p>
+    </article>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap">
+      <div class="foot-brand">
+        <a class="wordmark" href="./"><img src="../assets/app-icon.svg" alt="" width="32" height="32" /><span>Invoice Extractor</span></a>
+        <p class="by">Licencia MIT · por <a href="https://inteliatech.ai" rel="noopener">Intelia</a> · alojado en Nos Come La IA</p>
+      </div>
+      <nav aria-label="Pie de página">
+        <a href="https://github.com/intelia-technologies/invoice-extractor" rel="noopener">Código fuente</a>
+        <a href="https://github.com/intelia-technologies/invoice-extractor/releases" rel="noopener">Versiones</a>
+        <a href="./">Inicio</a>
+        <a href="../privacy.html" hreflang="en" lang="en" data-lang="en">English</a>
+      </nav>
+    </div>
+  </footer>
+
+  <script src="../site.js"></script>
+</body>
+</html>
