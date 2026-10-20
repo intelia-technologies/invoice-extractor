@@ -1,0 +1,10 @@
+# Files excluded from the downloadable release zip (git archive)
+site/ export-ignore
+test/ export-ignore
+docs/ export-ignore
+.github/ export-ignore
+.claude/ export-ignore
+CLAUDE.md export-ignore
+dev-chrome.sh export-ignore
+.gitattributes export-ignore
+.gitignore export-ignore
