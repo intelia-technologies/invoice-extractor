@@ -115,6 +115,32 @@ Use `preNavigation` when the provider requires setup on a different page before 
 - `readySelector` — wait for this element before running steps
 - `steps` — array of click/waitFor actions (same syntax as preSteps, with `{{config.*}}` resolved in `text` fields)
 
+## Sign-in domains (`auth.loginDomains`)
+
+Vault autofill (extension, CLI and MCP) only types a username, password or code into a page that
+is on an allowed domain, and fails closed otherwise (nothing is typed, the user sees "sign-in page
+<host> does not match the saved login for <provider>; nothing was typed"). Allowed domains are:
+
+- the registrable domain (eTLD+1, e.g. `stripe.com`, `naturgy.es`, `example.co.uk`) of every URL
+  saved on the vault item (1Password `urls`, Bitwarden `login.uris`);
+- the registrable domain of the recipe's `billingUrl` (leading `{{config.*}}` labels are ignored,
+  so user config can never widen it);
+- each host listed in `auth.loginDomains`, plus its subdomains.
+
+The page must be `https` (plain `http` only on `localhost` test fixtures), and when the form is
+inside an iframe, that frame and every parent frame must be allowed. An explicit item reference
+(`_onepasswordItem`, `auth.item`) picks the item but does not skip this check.
+
+Add `loginDomains` only when the provider's sign-in form legitimately lives on another registrable
+domain than `billingUrl` — typically an SSO / OAuth identity provider:
+
+```json
+"auth": { "loginDomains": ["github.com"] }
+```
+
+Subdomains of the billing domain (`login.twilio.com` for `1console.twilio.com`,
+`accounts.google.com` for `admin.google.com`) are already allowed and need no entry.
+
 ## Org check
 
 Use `orgCheck` as a safety net when the provider supports multiple organizations/accounts. The

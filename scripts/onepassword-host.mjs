@@ -17,6 +17,7 @@ import {
   normalizeBitwardenItem,
   parseOpReference,
 } from '../onepassword.mjs';
+import { withAllowedLoginDomains } from '../login-domains.mjs';
 
 const execFileAsync = promisify(execFile);
 
@@ -551,7 +552,9 @@ export async function handleHostRequest(request, deps = {}) {
       if (authConfig.otpRef) {
         otp = String(await runOp(['read', authConfig.otpRef], vc.token)).trim();
       }
-      return {
+      // Direct op:// field references carry no saved URLs: only the recipe's own
+      // domains may receive them (the resolved billingUrl can contain user config).
+      return withAllowedLoginDomains({
         itemId: uRef?.item || provider.id,
         title: uRef?.item || provider.name || provider.id,
         vault: targetVault || vc.vault,
@@ -559,8 +562,8 @@ export async function handleHostRequest(request, deps = {}) {
         password,
         otp,
         hasOtpField: Boolean(otp),
-        urls: [billingUrl].filter(Boolean),
-      };
+        urls: [],
+      }, provider);
     }
 
     const items = await listAllItems();
@@ -580,11 +583,14 @@ export async function handleHostRequest(request, deps = {}) {
       );
     }
 
-    return hydrateCredentials(matched, {
+    // An explicit item reference may pick the item, but the sign-in domain check
+    // (allowedLoginDomains, enforced before typing) still applies to it.
+    const creds = await hydrateCredentials(matched, {
       usernameField: authConfig.usernameField,
       passwordField: authConfig.passwordField,
       otpField: authConfig.otpField,
     });
+    return withAllowedLoginDomains(creds, provider);
   }
 
   if (action === 'resolveProfileSync') {

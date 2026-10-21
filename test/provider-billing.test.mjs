@@ -1235,7 +1235,7 @@ async function runTests() {
     const loginTestResult = await fetchBlobPage.evaluate(async () => {
       const detected = window.__invoiceEngine.detectLoginForm({});
       const res = await window.__invoiceEngine.attemptAutoLogin(
-        { username: 'finance@intelia.com', password: 'vault-password-99', otp: '654321' },
+        { username: 'finance@intelia.com', password: 'vault-password-99', otp: '654321', allowedLoginDomains: ['127.0.0.1'] },
         {}
       );
       return { detected, res, completed: window.__loginCompleted };
@@ -1251,6 +1251,42 @@ async function runTests() {
       `Login form must receive exact 1Password credentials, got: ${JSON.stringify(loginTestResult.completed)}`
     );
     log('engine.js detectLoginForm and attemptAutoLogin complete 2-step username -> password -> 2FA OTP login');
+
+    // 12c-2: the popup only hands credentials to a page on the vault item's / recipe's sign-in domain
+    await fetchBlobPage.setContent(`
+      <form id="guard-form" onsubmit="event.preventDefault()">
+        <input id="guard-user" type="email" autocomplete="username" />
+        <input id="guard-pass" type="password" />
+      </form>
+    `);
+    const guardCheck = await popup.evaluate(async (tabId) => {
+      await injectEngine(tabId);
+      const blocked = await callEngineForLogin(
+        tabId,
+        { username: 'finance@intelia.com', password: 'vault-password-99', allowedLoginDomains: ['stripe.com'] },
+        {}
+      );
+      return { blocked, message: loginBlockedMessage(blocked, { name: 'Stripe' }) };
+    }, fetchBlobTabId);
+    const typedWhenBlocked = await fetchBlobPage.evaluate(() => [
+      document.getElementById('guard-user').value,
+      document.getElementById('guard-pass').value,
+    ]);
+    assert(guardCheck.blocked?.blocked === true && guardCheck.blocked.reason === 'domain-mismatch' && guardCheck.blocked.host === '127.0.0.1',
+      `Login on a host outside allowedLoginDomains must be refused, got: ${JSON.stringify(guardCheck.blocked)}`);
+    assert(typedWhenBlocked.every(v => v === ''), `Nothing may be typed on a refused page, got: ${JSON.stringify(typedWhenBlocked)}`);
+    assert(guardCheck.message.includes('127.0.0.1') && guardCheck.message.includes('Stripe'),
+      `Refusal message must name the host and provider, got: ${guardCheck.message}`);
+
+    const allowedCheck = await popup.evaluate(async (tabId) => callEngineForLogin(
+      tabId,
+      { username: 'finance@intelia.com', password: 'vault-password-99', allowedLoginDomains: ['127.0.0.1'] },
+      {}
+    ), fetchBlobTabId);
+    const typedWhenAllowed = await fetchBlobPage.evaluate(() => document.getElementById('guard-pass').value);
+    assert(allowedCheck?.filledPassword === true && typedWhenAllowed === 'vault-password-99',
+      `Login on an allowed host must be filled, got: ${JSON.stringify(allowedCheck)}`);
+    log('popup refuses autofill outside the allowed sign-in domains (nothing typed, message names host) and fills on an allowed host');
 
     // 12d: verifyLoggedInIdentity detects wrong active account and clearPageSessionData purges session state
     const identityCheckResult = await fetchBlobPage.evaluate(async () => {

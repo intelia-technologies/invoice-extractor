@@ -759,6 +759,34 @@
     "message": "No login fields found on the page",
     "description": "Error."
   },
+  "workflowLoginDomainMismatch": {
+    "message": "Sign-in page $host$ does not match the saved login for $provider$; nothing was typed.",
+    "description": "Autofill refused: the sign-in page host is not one of the domains saved on the vault item or declared by the provider recipe. Nothing was typed.",
+    "placeholders": {
+      "host": {
+        "content": "$1",
+        "example": "login.example.net"
+      },
+      "provider": {
+        "content": "$2",
+        "example": "Stripe"
+      }
+    }
+  },
+  "workflowLoginInsecure": {
+    "message": "Sign-in page $host$ is not using a secure connection (HTTPS); nothing was typed for $provider$.",
+    "description": "Autofill refused: the sign-in page is not served over HTTPS. Nothing was typed.",
+    "placeholders": {
+      "host": {
+        "content": "$1",
+        "example": "login.example.net"
+      },
+      "provider": {
+        "content": "$2",
+        "example": "Stripe"
+      }
+    }
+  },
   "workflowStatusVerifying": {
     "message": "$provider$: verifying the billing page… ($seconds$ s)",
     "description": "Status with elapsed seconds.",

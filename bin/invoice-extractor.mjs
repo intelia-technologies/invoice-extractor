@@ -21,6 +21,7 @@ import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { extractConfigFromUrls } from '../onepassword.mjs';
+import { describeLoginBlock, guardedAutoLogin } from '../login-domains.mjs';
 import {
   handleHostRequest,
   loadServiceAccountTokens,
@@ -335,12 +336,11 @@ export async function runAgentExtraction(options = {}, deps = {}) {
 
       if (!readyCheck.success && creds) {
         await injectEngineIntoFrame(page.mainFrame());
-        const loginRes = await page
-          .mainFrame()
-          .evaluate(
-            ([c, authCfg]) => window.__invoiceEngine.attemptAutoLogin(c, authCfg),
-            [creds, provider.auth || {}]
-          );
+        const loginRes = await guardedAutoLogin(page.mainFrame(), creds, provider.auth || {});
+        if (loginRes?.blocked) {
+          manifest.errors.push({ providerId: provider.id, error: describeLoginBlock({ ...loginRes, providerName: provider.name }) });
+          continue;
+        }
 
         if (loginRes?.attempted) {
           await page.waitForTimeout(4000);
@@ -391,12 +391,11 @@ export async function runAgentExtraction(options = {}, deps = {}) {
             await page.goto(billingUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
           } catch {}
           await injectEngineIntoFrame(page.mainFrame());
-          await page
-            .mainFrame()
-            .evaluate(
-              ([c, authCfg]) => window.__invoiceEngine.attemptAutoLogin(c, authCfg),
-              [creds, provider.auth || {}]
-            );
+          const reLoginRes = await guardedAutoLogin(page.mainFrame(), creds, provider.auth || {});
+          if (reLoginRes?.blocked) {
+            manifest.errors.push({ providerId: provider.id, error: describeLoginBlock({ ...reLoginRes, providerName: provider.name }) });
+            continue;
+          }
           await page.waitForTimeout(4000);
           try {
             await page.goto(billingUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
@@ -603,6 +602,7 @@ export async function inspectBillingPage(options = {}, deps = {}) {
 
     let signedInWith1Password = false;
     let resolvedItemTitle = null;
+    let loginBlocked = null;
 
     if (loginDet?.hasLoginForm || itemOverride || profileName) {
       let creds = null;
@@ -611,10 +611,11 @@ export async function inspectBillingPage(options = {}, deps = {}) {
         creds = await handleHostRequest(
           {
             action: 'resolveProvider',
+            // No billingUrl on this ad-hoc provider: only the vault item's own URLs may
+            // receive its login, never the address passed on the command line.
             provider: {
               id: hostname.split('.')[0],
               name: hostname.split('.')[0],
-              billingUrl: url,
             },
             billingUrl: url,
             itemOverride,
@@ -627,10 +628,10 @@ export async function inspectBillingPage(options = {}, deps = {}) {
 
       if (creds && loginDet?.hasLoginForm) {
         resolvedItemTitle = creds.title || null;
-        const loginRes = await page
-          .mainFrame()
-          .evaluate(c => window.__invoiceEngine.attemptAutoLogin(c, {}), creds)
-          .catch(() => null);
+        const loginRes = await guardedAutoLogin(page.mainFrame(), creds, {}).catch(() => null);
+        if (loginRes?.blocked) {
+          loginBlocked = describeLoginBlock({ ...loginRes, providerName: creds.title || new URL(url).hostname });
+        }
 
         if (loginRes?.attempted) {
           signedInWith1Password = true;
@@ -735,6 +736,7 @@ export async function inspectBillingPage(options = {}, deps = {}) {
       favIconUrl,
       signedInWith1Password,
       resolvedItemTitle,
+      loginBlocked,
       savedRecordingPath: outFile ? resolve(process.cwd(), String(outFile)) : null,
       analysis: fullRecording.analysis || {},
       iframes: iframes.map(f => ({

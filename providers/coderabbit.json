@@ -18,6 +18,9 @@
     "selector": "a[href='/']",
     "configField": "org"
   },
+  "auth": {
+    "loginDomains": ["github.com"]
+  },
   "preNavigation": {
     "url": "https://app.coderabbit.ai/settings/repositories",
     "readySelector": "button[aria-haspopup='menu']:has(img[alt$=' avatar'])",

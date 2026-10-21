@@ -187,6 +187,16 @@
         "accountHintSelector": {
           "type": "string",
           "description": "Optional CSS selector where the currently logged-in user email or account name is displayed."
+        },
+        "loginDomains": {
+          "type": "array",
+          "description": "Extra hosts where this provider's sign-in form legitimately lives when it is not on the billingUrl's registrable domain (SSO / identity provider, e.g. \"github.com\" for an OAuth-only service). Each host also covers its subdomains. Credentials are only ever typed on these hosts, the billingUrl's domain, or the URLs saved on the vault item.",
+          "items": {
+            "type": "string",
+            "pattern": "^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z]{2,}$"
+          },
+          "uniqueItems": true,
+          "minItems": 1
         }
       }
     },
