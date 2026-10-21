@@ -254,6 +254,9 @@ export async function typeVerificationCode(page, provider, rawCode, { allowedLog
 export function createVerificationRegistry({
   resume,
   ttlMs = CODE_STEP_TTL_MS,
+  // Safety net while the run that deferred a page is still busy with other providers; the
+  // user's window (ttlMs) starts when the run returns the verificationId (publish).
+  runGraceMs = 30 * 60 * 1000,
   watchIntervalMs = 3000,
   now = Date.now,
 } = {}) {
@@ -277,6 +280,16 @@ export function createVerificationRegistry({
     async acquire(launch, { headed = false } = {}) {
       // Concurrent runs share one in-flight launch: a persistent profile cannot be opened twice.
       while (!shared && launching) await launching.catch(() => {});
+      if (shared && headed && !shared.headed && entries.size > 0) {
+        // The hidden browser is held open by a page waiting for a code: reusing it would give
+        // another hidden run instead of a window the user can type into.
+        const waiting = [...entries.values()][0];
+        throw new VerificationCodeError(
+          `The hidden browser is still holding ${waiting.pending.providerName}'s page waiting for a verification code ` +
+            `(verificationId ${waiting.id}), so a visible window cannot be opened. Either submit the code with ` +
+            'invoice_extractor_submit_code, or cancel it with invoice_extractor_cancel_verification and then run again with headed: true.'
+        );
+      }
       if (shared) {
         shared.holds += 1;
         return shared.context;
@@ -325,6 +338,15 @@ export function createVerificationRegistry({
     await releaseContext();
   }
 
+  function armExpiry(entry, ms) {
+    clearTimeout(entry.expiryTimer);
+    entry.expiresAt = now() + ms;
+    entry.expiryTimer = setTimeout(() => {
+      exclusive(entry, () => close(entry.id, { status: 'expired' }));
+    }, ms);
+    entry.expiryTimer.unref?.();
+  }
+
   // Serializes work on one entry (background watcher vs. submit_code).
   function exclusive(entry, task) {
     const run = entry.queue.then(task, task);
@@ -349,15 +371,11 @@ export function createVerificationRegistry({
         if (now() > done.expiresAt + ttlMs) finished.delete(doneId);
       }
       const id = randomUUID();
-      const expiresAt = now() + ttlMs;
-      const entry = { id, pending, expiresAt, queue: Promise.resolve() };
+      const entry = { id, pending, expiresAt: 0, queue: Promise.resolve() };
       entries.set(id, entry);
       // The provider page holds the shared context open until it expires or completes.
       if (shared) shared.holds += 1;
-      entry.expiryTimer = setTimeout(() => {
-        exclusive(entry, () => close(id, { status: 'expired' }));
-      }, ttlMs);
-      entry.expiryTimer.unref?.();
+      armExpiry(entry, ttlMs + runGraceMs);
       if (watchIntervalMs > 0) {
         // The user may type the code in the headed window themselves: continue automatically.
         entry.watchTimer = setInterval(() => {
@@ -370,6 +388,33 @@ export function createVerificationRegistry({
 
     list() {
       return [...entries.values()].map(publicView);
+    },
+
+    /**
+     * Called when the run returns: starts the user's window (ttlMs) now that the ids can reach
+     * the client, and drops ids that are no longer usable (expired, completed, cancelled).
+     */
+    publish(ids = []) {
+      const views = [];
+      for (const id of ids) {
+        const entry = entries.get(id);
+        if (!entry) continue;
+        armExpiry(entry, ttlMs);
+        views.push(publicView(entry));
+      }
+      return views;
+    },
+
+    /** Sign-in domains of pages waiting for a code: their cookies must survive other providers. */
+    pendingDomains() {
+      const out = new Set();
+      for (const entry of entries.values()) {
+        for (const d of entry.pending.allowedLoginDomains || []) out.add(String(d).toLowerCase());
+        try {
+          out.add(new URL(entry.pending.billingUrl).hostname.toLowerCase());
+        } catch {}
+      }
+      return [...out];
     },
 
     /**
@@ -447,6 +492,39 @@ export function createVerificationRegistry({
   };
 }
 
+// A cookie for domain `cookieDomain` reaches hosts under `domain` (or the other way round).
+function cookieTouchesDomain(cookieDomain, domain) {
+  const c = String(cookieDomain || '').toLowerCase().replace(/^\.+/, '');
+  const d = String(domain || '').toLowerCase().replace(/^\.+/, '');
+  if (!c || !d) return false;
+  return c === d || c.endsWith(`.${d}`) || d.endsWith(`.${c}`);
+}
+
+/**
+ * Cookies to delete when signing a provider out to switch accounts: only those that reach that
+ * provider's sign-in domains, and never one that also reaches a page waiting for a code.
+ */
+export function scopedCookiesToClear(cookies = [], providerDomains = [], protectedDomains = []) {
+  return cookies.filter(
+    cookie =>
+      providerDomains.some(d => cookieTouchesDomain(cookie.domain, d)) &&
+      !protectedDomains.some(d => cookieTouchesDomain(cookie.domain, d))
+  );
+}
+
+/** True when two sets of sign-in domains share cookies (same site or parent/child). */
+export function domainsOverlap(a = [], b = []) {
+  return a.some(x => b.some(y => cookieTouchesDomain(x, y)));
+}
+
+export async function clearProviderCookies(context, providerDomains, protectedDomains = []) {
+  const doomed = scopedCookiesToClear(await context.cookies(), providerDomains, protectedDomains);
+  for (const { name, domain, path } of doomed) {
+    await context.clearCookies({ name, domain, path });
+  }
+  return doomed.length;
+}
+
 /** Instruction for the AI after a run left providers waiting for a code (MCP server). */
 export function buildNextStep(pendingVerification) {
   if (!pendingVerification?.length) return null;
@@ -458,7 +536,7 @@ export function buildNextStep(pendingVerification) {
   );
   const userPath = headed
     ? 'they can type it in the open browser window themselves (then call invoice_extractor_submit_code with only the verificationId to collect the invoices), or tell you the code and you call invoice_extractor_submit_code with it.'
-    : 'the browser window is hidden, so they tell you the code and you call invoice_extractor_submit_code with it (or run invoice_extractor_run again with headed: true so they can type it themselves).';
+    : 'the browser window is hidden, so they tell you the code and you call invoice_extractor_submit_code with it. If they would rather type it themselves, first cancel this verification with invoice_extractor_cancel_verification (the hidden browser stays open while it waits), then run invoice_extractor_run again with headed: true.';
   return [
     'These providers sent the user a one-time verification code and are waiting for it:',
     ...lines,
@@ -512,19 +590,26 @@ export function createCodeMailbox(stateDir, { id = randomUUID(), providerId, exp
   writePrivateFile(marker, JSON.stringify({ providerId, expiresAt, pid: process.pid }));
   return {
     id,
-    /** Reads and deletes a handed-over code, if any. */
+    /** Reads and deletes a handed-over code, if any: { code, nonce }. */
     take() {
       if (!existsSync(codeFile)) return null;
-      let code = null;
+      let raw = null;
       try {
-        code = readFileSync(codeFile, 'utf8');
+        raw = readFileSync(codeFile, 'utf8');
       } catch {}
       removeQuietly(codeFile);
-      return code;
+      if (raw == null) return null;
+      try {
+        const parsed = JSON.parse(raw);
+        return { code: String(parsed.code ?? ''), nonce: String(parsed.nonce || '') };
+      } catch {
+        return { code: raw, nonce: '' };
+      }
     },
-    reply(result) {
+    /** The answer echoes the submission's nonce, so submit-code only trusts its own result. */
+    reply(result, nonce = '') {
       removeQuietly(resultFile);
-      writePrivateFile(resultFile, JSON.stringify(result));
+      writePrivateFile(resultFile, JSON.stringify({ ...result, nonce }));
     },
     close() {
       removeQuietly(marker);
@@ -544,21 +629,23 @@ export async function handOverCode(stateDir, id, rawCode, { timeoutMs = 45000, i
   }
   const codeFile = join(dir, `${id}.code`);
   const resultFile = join(dir, `${id}.result.json`);
+  // Results are matched to this submission by a random nonce, so a stale result (or another
+  // submission's) is never mistaken for ours and nothing needs deleting before publishing.
+  const nonce = randomUUID();
   try {
-    writePrivateFile(codeFile, code);
+    writePrivateFile(codeFile, JSON.stringify({ code, nonce }));
   } catch {
     throw new VerificationCodeError('A code for this verification is already waiting to be used.', { retryable: true });
   }
-  // Only the submission that owns the code file may clear a stale result.
-  removeQuietly(resultFile);
   const deadline = now() + timeoutMs;
   try {
     while (now() < deadline) {
       await sleep(intervalMs);
       const result = readJson(resultFile);
-      if (result) {
+      if (result && result.nonce === nonce) {
         removeQuietly(resultFile);
-        return { providerId: pending.providerId, ...result };
+        const { nonce: _ignored, ...answer } = result;
+        return { providerId: pending.providerId, ...answer };
       }
     }
   } finally {

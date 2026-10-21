@@ -230,6 +230,7 @@ async function executeTool(name, args = {}) {
   if (name === 'invoice_extractor_run') {
     const defaultOut = join(homedir(), 'Desktop', 'Facturas');
     const profileName = String(args.profile || '').trim();
+    const deferred = [];
     const manifest = await verifications.runExclusive(profileName, () => runAgentExtraction({
       profileName,
       providerIds: Array.isArray(args.providers) ? args.providers : [],
@@ -239,9 +240,19 @@ async function executeTool(name, args = {}) {
       headed: Boolean(args.headed),
       verificationMode: 'defer',
       contextProvider: verifications.contextProvider,
-      onVerificationPending: pending =>
-        verifications.add({ ...pending, profileName, profileKey: profileName.toLowerCase() }),
-    }));
+      pendingDomains: () => verifications.pendingDomains(),
+      onVerificationPending: pending => {
+        const view = verifications.add({ ...pending, profileName, profileKey: profileName.toLowerCase() });
+        deferred.push(view.verificationId);
+        return view;
+      },
+    })).catch(async err => {
+      // Nobody will ever receive these ids: release their pages.
+      for (const id of deferred) await verifications.cancel(id);
+      throw err;
+    });
+    // The user's 10 minutes start now that the ids reach the client; drop any already gone.
+    manifest.pendingVerification = verifications.publish(deferred);
     const nextStep = buildNextStep(manifest.pendingVerification);
     return nextStep ? { ...manifest, nextStep } : manifest;
   }

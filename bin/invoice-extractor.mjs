@@ -33,8 +33,10 @@ import {
   writeLocalState,
 } from '../scripts/onepassword-host.mjs';
 import {
+  clearProviderCookies,
   CODE_STEP_TTL_MS,
   createCodeMailbox,
+  domainsOverlap,
   detectCodeStep,
   handOverCode,
   redactCode,
@@ -283,8 +285,9 @@ export async function waitForCodeFromCli(
   });
   try {
     while (Date.now() < Date.parse(expiresAt)) {
-      const handed = mailbox.take();
-      if (handed != null) {
+      const submission = mailbox.take();
+      if (submission != null) {
+        const { code: handed, nonce } = submission;
         try {
           await typeVerificationCode(page, provider, handed, {
             allowedLoginDomains: ctx.allowedLoginDomains,
@@ -294,16 +297,19 @@ export async function waitForCodeFromCli(
             inject: injectEngineIntoFrame,
             timeoutMs: acceptTimeoutMs,
           });
-          mailbox.reply({
-            accepted,
-            message: accepted
-              ? `${provider.name} accepted the code; downloading invoices.`
-              : `${provider.name} did not accept the code (still on the verification step). Check the newest email and submit again.`,
-          });
+          mailbox.reply(
+            {
+              accepted,
+              message: accepted
+                ? `${provider.name} accepted the code; downloading invoices.`
+                : `${provider.name} did not accept the code (still on the verification step). Check the newest email and submit again.`,
+            },
+            nonce
+          );
           if (accepted) return true;
           onEvent({ event: 'verification_code_rejected', verificationId: mailbox.id, providerId: provider.id, expiresAt });
         } catch (err) {
-          mailbox.reply({ accepted: false, message: redactCode(err.message, handed) });
+          mailbox.reply({ accepted: false, message: redactCode(err.message, handed) }, nonce);
         }
         continue;
       }
@@ -347,6 +353,15 @@ async function handleVerificationStep(page, provider, ctx, run, deps) {
     verificationRequired: true,
   });
   return { status: 'error' };
+}
+
+// Hosts whose cookies belong to this provider's session (sign-in hosts + billing host).
+function providerSignInDomains(provider, creds, billingUrl = provider.billingUrl) {
+  const domains = new Set(creds?.allowedLoginDomains || buildAllowedLoginDomains({ provider }));
+  try {
+    domains.add(new URL(billingUrl).hostname.toLowerCase());
+  } catch {}
+  return [...domains];
 }
 
 function rememberSessionOwner(provider, owner, run, deps) {
@@ -393,6 +408,15 @@ async function signInToProvider(page, context, provider, run, deps) {
   }
 
   const billingUrl = resolveBillingUrl(provider, provConfig);
+  const pendingDomains = run.pendingDomains();
+  if (pendingDomains.length && domainsOverlap(providerSignInDomains(provider, null, billingUrl), pendingDomains)) {
+    // Signing in here would replace the session of a page still waiting for its code.
+    manifest.skippedProviders.push({
+      providerId: provider.id,
+      reason: 'Shares its sign-in session with a provider waiting for a verification code; submit or cancel that code, then run again.',
+    });
+    return { status: 'skipped' };
+  }
   try {
     await page.goto(billingUrl, { waitUntil: 'domcontentloaded', timeout: 25000 });
   } catch {}
@@ -475,7 +499,8 @@ async function signInToProvider(page, context, provider, run, deps) {
     if (ownerMismatch || idCheck?.mismatchDetected) {
       // Perform logout + re-login
       await page.mainFrame().evaluate(() => window.__invoiceEngine.clearPageSessionData());
-      await context.clearCookies();
+      // Only this provider's cookies, and never those of a page waiting for a code.
+      await clearProviderCookies(context, providerSignInDomains(provider, creds), run.pendingDomains());
       if (provider.auth?.logoutUrl) {
         try {
           await page.goto(provider.auth.logoutUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
@@ -662,6 +687,7 @@ export async function runAgentExtraction(options = {}, deps = {}) {
     verificationMode = 'fail',
     waitForCodeMs = CODE_STEP_TTL_MS,
     onVerificationPending = null,
+    pendingDomains = () => [],
     onEvent = undefined,
     contextProvider = null,
   } = options;
@@ -728,6 +754,7 @@ export async function runAgentExtraction(options = {}, deps = {}) {
     verificationMode: deferring ? 'defer' : verificationMode === 'wait' ? 'wait' : 'fail',
     waitForCodeMs,
     onEvent,
+    pendingDomains,
   };
 
   // A shared browser may already hold pages waiting for a code: always work in a fresh tab then.

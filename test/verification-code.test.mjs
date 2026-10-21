@@ -16,8 +16,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   buildNextStep,
+  clearProviderCookies,
   codeInPage,
   createCodeMailbox,
+  domainsOverlap,
+  scopedCookiesToClear,
   createVerificationRegistry,
   detectCodeStep,
   handOverCode,
@@ -244,6 +247,7 @@ test('buildNextStep states the rule: read the email if possible, otherwise ask t
   assert.match(text, /ask the user/);
   assert.match(text, /id-1/);
   assert.match(text, /browser window is hidden/);
+  assert.match(text, /first cancel this verification with invoice_extractor_cancel_verification.*then run invoice_extractor_run again with headed: true/);
   assert.match(buildNextStep([{ ...entry, browserVisible: true }]), /type it in the open browser window/);
   assert.equal(buildNextStep([]), null);
 });
@@ -320,17 +324,101 @@ test('registry: the user typing the code in the window is picked up automaticall
 });
 
 test('registry: entries expire, close the page and reject later submissions', async () => {
-  const registry = createVerificationRegistry({ resume: async () => null, ttlMs: 30, watchIntervalMs: 0 });
+  const registry = createVerificationRegistry({ resume: async () => null, ttlMs: 30, runGraceMs: 0, watchIntervalMs: 0 });
   const context = fakeContext();
   await registry.contextProvider.acquire(async () => context);
   const page = { closed: false, async close() { this.closed = true; } };
   const view = registry.add(pendingFor(page));
+  registry.publish([view.verificationId]);
   await registry.contextProvider.release();
   await new Promise(r => setTimeout(r, 80));
   assert.equal(page.closed, true);
   assert.equal(context.closed, true);
   await assert.rejects(registry.submit(view.verificationId, CODE), /expired/);
   await assert.rejects(registry.submit('unknown', CODE), /Unknown verificationId/);
+});
+
+test('registry: the user window starts when the run returns the id; ids gone by then are dropped', async () => {
+  let clock = 1_000_000;
+  const registry = createVerificationRegistry({
+    resume: async () => null,
+    ttlMs: 10 * 60_000,
+    runGraceMs: 60,
+    watchIntervalMs: 0,
+    now: () => clock,
+  });
+  await registry.contextProvider.acquire(async () => fakeContext());
+  const slow = registry.add(pendingFor({ async close() {} }));
+  const lost = registry.add(pendingFor({ async close() {} }));
+  await registry.cancel(lost.verificationId); // e.g. completed or expired while the run went on
+  clock += 9 * 60_000; // the run spent 9 minutes on other providers
+  const published = registry.publish([slow.verificationId, lost.verificationId]);
+  assert.deepEqual(published.map(v => v.verificationId), [slow.verificationId]);
+  assert.equal(published[0].expiresAt, new Date(clock + 10 * 60_000).toISOString(), 'full 10 minutes from publication');
+  await new Promise(r => setTimeout(r, 120)); // past the run grace: the published entry stays
+  assert.equal(registry.list().length, 1);
+  await registry.closeAll();
+});
+
+test('registry: a headed run is refused while a hidden browser holds a pending page', async () => {
+  const registry = createVerificationRegistry({ resume: async () => null, watchIntervalMs: 0 });
+  const hidden = fakeContext();
+  await registry.contextProvider.acquire(async () => hidden, { headed: false });
+  const view = registry.add(pendingFor({ async close() {} }));
+  await registry.contextProvider.release();
+  let launched = false;
+  await assert.rejects(
+    registry.contextProvider.acquire(async () => { launched = true; return fakeContext(); }, { headed: true }),
+    err => /cancel it with invoice_extractor_cancel_verification and then run again with headed: true/.test(err.message) &&
+      err.message.includes(view.verificationId)
+  );
+  assert.equal(launched, false);
+  // A hidden run may still reuse it; after cancelling, a headed run gets a fresh visible browser.
+  assert.equal(await registry.contextProvider.acquire(async () => fakeContext(), { headed: false }), hidden);
+  await registry.contextProvider.release();
+  await registry.cancel(view.verificationId);
+  assert.equal(hidden.closed, true);
+  const visible = fakeContext();
+  assert.equal(await registry.contextProvider.acquire(async () => visible, { headed: true }), visible);
+  assert.equal(registry.contextProvider.headed, true);
+  await registry.contextProvider.release();
+});
+
+test('switching accounts only clears that provider\'s cookies, never a pending provider\'s', async () => {
+  const cookies = [
+    { name: 'sid', domain: '.holded.com', path: '/' },
+    { name: 'app', domain: 'app.holded.com', path: '/' },
+    { name: 'sid', domain: 'dashboard.stripe.com', path: '/' },
+    { name: 'mkt', domain: '.stripe.com', path: '/' },
+    { name: 'shared', domain: '.example.com', path: '/' },
+  ];
+  const cleared = [];
+  const context = {
+    async cookies() { return cookies; },
+    async clearCookies(filter) { cleared.push(filter); },
+  };
+  // Stripe switches account while Holded waits for its code.
+  const n = await clearProviderCookies(context, ['dashboard.stripe.com'], ['app.holded.com']);
+  assert.equal(n, 2);
+  assert.deepEqual(cleared, [
+    { name: 'sid', domain: 'dashboard.stripe.com', path: '/' },
+    { name: 'mkt', domain: '.stripe.com', path: '/' },
+  ]);
+  // A parent cookie reaching the pending provider's host is kept even if it reaches ours too.
+  assert.deepEqual(
+    scopedCookiesToClear(cookies, ['a.example.com'], ['b.example.com']).map(c => c.name),
+    []
+  );
+  assert.ok(domainsOverlap(['app.holded.com'], ['holded.com']));
+  assert.ok(!domainsOverlap(['dashboard.stripe.com'], ['app.holded.com']));
+});
+
+test('registry: pendingDomains lists the sign-in hosts of pages waiting for a code', async () => {
+  const registry = createVerificationRegistry({ resume: async () => null, watchIntervalMs: 0 });
+  await registry.contextProvider.acquire(async () => fakeContext());
+  registry.add({ ...pendingFor({ async close() {} }), allowedLoginDomains: ['app.holded.com'], billingUrl: HOLDED_BILLING });
+  assert.deepEqual(registry.pendingDomains().sort(), ['app.holded.com']);
+  await registry.closeAll();
 });
 
 test('registry: concurrent runs share one browser launch and hold accounting stays correct', async () => {
@@ -423,18 +511,22 @@ test('submit-code hands the code over in a 0600 file that is deleted right after
 
     const handing = handOverCode(stateDir, mailbox.id, '482-913', { intervalMs: 10 });
     let taken = null;
+    let lastNonce = '';
     for (let i = 0; i < 100 && taken == null; i++) {
       const codeFile = path.join(dir, `${mailbox.id}.code`);
       if (existsSync(codeFile)) {
         if (process.platform !== 'win32') assert.equal(statSync(codeFile).mode & 0o777, 0o600);
-        taken = mailbox.take();
+        const submission = mailbox.take();
+        taken = submission?.code;
+        lastNonce = submission?.nonce;
       } else {
         await new Promise(r => setTimeout(r, 10));
       }
     }
     assert.equal(taken, CODE);
     assert.ok(!existsSync(path.join(dir, `${mailbox.id}.code`)), 'code file deleted after reading');
-    mailbox.reply({ accepted: true, message: 'Holded accepted the code; downloading invoices.' });
+    // Our answer must carry the submission nonce; read it from the code file the run consumed.
+    mailbox.reply({ accepted: true, message: 'Holded accepted the code; downloading invoices.' }, lastNonce);
     const result = await handing;
     assert.equal(result.accepted, true);
     assert.equal(result.providerId, 'holded');
@@ -457,9 +549,35 @@ test('a second submit-code never replaces a code already waiting to be used', as
       handOverCode(stateDir, mailbox.id, '999999', { intervalMs: 10 }),
       err => /already waiting/.test(err.message) && err.retryable
     );
-    assert.equal(mailbox.take(), CODE, 'the first submission is the one delivered');
-    mailbox.reply({ accepted: true, message: 'ok' });
+    const delivered = mailbox.take();
+    assert.equal(delivered.code, CODE, 'the first submission is the one delivered');
+    mailbox.reply({ accepted: true, message: 'ok' }, delivered.nonce);
     assert.equal((await first).accepted, true);
+    mailbox.close();
+  } finally {
+    rmSync(stateDir, { recursive: true, force: true });
+  }
+});
+
+test('submit-code only trusts the result carrying its own nonce (stale results never confuse it)', async () => {
+  const stateDir = mkdtempSync(path.join(tmpdir(), 'ie-verif-'));
+  try {
+    const mailbox = createCodeMailbox(stateDir, {
+      providerId: 'holded',
+      expiresAt: new Date(Date.now() + 60000).toISOString(),
+    });
+    // A stale answer from an earlier submission is already on disk.
+    mailbox.reply({ accepted: false, message: 'old' }, 'stale-nonce');
+    const handing = handOverCode(stateDir, mailbox.id, CODE, { intervalMs: 20, timeoutMs: 3000 });
+    const codeFile = path.join(stateDir, 'verification', `${mailbox.id}.code`);
+    while (!existsSync(codeFile)) await new Promise(r => setTimeout(r, 2));
+    // The run answers immediately after the code appears (the race Codex described).
+    const submission = mailbox.take();
+    mailbox.reply({ accepted: true, message: 'fresh' }, submission.nonce);
+    const result = await handing;
+    assert.equal(result.accepted, true);
+    assert.equal(result.message, 'fresh');
+    assert.equal(result.nonce, undefined);
     mailbox.close();
   } finally {
     rmSync(stateDir, { recursive: true, force: true });
