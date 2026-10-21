@@ -148,6 +148,10 @@ Each entry must be a plain lowercase host name containing at least one dot: no s
 path or wildcard, and never a bare public suffix (`com`, `co.uk`, `uk.com`, `amazonaws.com`,
 `github.io`…). The schema rejects malformed entries and the runtime ignores them.
 
+The same allowed hosts apply when agent mode (CLI `run --wait-for-code`, MCP
+`invoice_extractor_submit_code`) types a one-time verification code: the code is only typed
+on a page of the provider, and refused otherwise.
+
 ## Org check
 
 Use `orgCheck` as a safety net when the provider supports multiple organizations/accounts. The

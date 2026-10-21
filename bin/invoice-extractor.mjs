@@ -12,7 +12,8 @@
  *   invoice-extractor profiles [--sync-1p]
  *   invoice-extractor config set --profile Acme --provider stripe --key accountId --value acct_123
  *   invoice-extractor op-save --vault personal --title "Stripe Acme" --url "https://dashboard.stripe.com" --username "billing@acme.com" --tags "Acme"
- *   invoice-extractor run --profile Acme [--providers holded,stripe] [--since 2026-09-01] [--max 50] [--out ./invoices] [--headed]
+ *   invoice-extractor run --profile Acme [--providers holded,stripe] [--since 2026-09-01] [--max 50] [--out ./invoices] [--headed] [--wait-for-code[=minutes]]
+ *   invoice-extractor submit-code --id <verificationId> --code <code>   (or the code on stdin)
  */
 
 import { execFileSync } from 'node:child_process';
@@ -21,15 +22,26 @@ import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { extractConfigFromUrls } from '../onepassword.mjs';
-import { describeLoginBlock, guardedAutoLogin } from '../login-domains.mjs';
+import { buildAllowedLoginDomains, describeLoginBlock, guardedAutoLogin } from '../login-domains.mjs';
 import {
   handleHostRequest,
   loadServiceAccountTokens,
   readLocalState,
   resolveBwBinary,
   resolveOpBinary,
+  resolveStatePath,
   writeLocalState,
 } from '../scripts/onepassword-host.mjs';
+import {
+  CODE_STEP_TTL_MS,
+  createCodeMailbox,
+  detectCodeStep,
+  handOverCode,
+  redactCode,
+  typeVerificationCode,
+  VerificationCodeError,
+  waitForCodeStepExit,
+} from '../scripts/verification-code.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = resolve(__dirname, '..');
@@ -221,6 +233,422 @@ async function waitForSelectorInFrame(page, provider, selector, timeoutSec = 10)
   return { success: false, frame: page.mainFrame() };
 }
 
+function verificationRequiredMessage(provider) {
+  return `${provider.name} asked for a verification code; rerun with --wait-for-code or use the extension.`;
+}
+
+// After the password: navigate to the billing page (login often lands on a dashboard) and wait
+// for its readySelector.
+async function reachBillingAfterLogin(page, provider, billingUrl) {
+  const currentUrl = page.url();
+  if (!currentUrl.includes(new URL(billingUrl).pathname)) {
+    try {
+      await page.goto(billingUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
+    } catch {}
+  } else if (billingUrl.includes('#')) {
+    try {
+      await page.goto(billingUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
+      await page.reload({ waitUntil: 'domcontentloaded', timeout: 20000 });
+    } catch {}
+  }
+  return waitForSelectorInFrame(page, provider, provider.readySelector, 12);
+}
+
+function emitStderrEvent(event) {
+  process.stderr.write(`${JSON.stringify(event)}\n`);
+}
+
+// CLI `run --wait-for-code`: wait for the user to type the code in the headed window, or for
+// `invoice-extractor submit-code` to hand it over through a 0600 file in the state directory.
+export async function waitForCodeFromCli(
+  page,
+  provider,
+  ctx,
+  step,
+  { waitForCodeMs, onEvent = emitStderrEvent, acceptTimeoutMs = 20000 },
+  deps
+) {
+  const expiresAt = new Date(Date.now() + waitForCodeMs).toISOString();
+  const mailbox = createCodeMailbox(dirname(resolveStatePath(deps)), { providerId: provider.id, expiresAt });
+  onEvent({
+    event: 'verification_code_required',
+    verificationId: mailbox.id,
+    providerId: provider.id,
+    providerName: provider.name,
+    pageHost: new URL(page.url()).hostname,
+    hint: step.hint || '',
+    requestedAt: ctx.requestedAt,
+    expiresAt,
+    submitWith: `echo <code> | invoice-extractor submit-code --id ${mailbox.id}`,
+  });
+  try {
+    while (Date.now() < Date.parse(expiresAt)) {
+      const handed = mailbox.take();
+      if (handed != null) {
+        try {
+          await typeVerificationCode(page, provider, handed, {
+            allowedLoginDomains: ctx.allowedLoginDomains,
+            inject: injectEngineIntoFrame,
+          });
+          const accepted = await waitForCodeStepExit(page, provider, ctx, {
+            inject: injectEngineIntoFrame,
+            timeoutMs: acceptTimeoutMs,
+          });
+          mailbox.reply({
+            accepted,
+            message: accepted
+              ? `${provider.name} accepted the code; downloading invoices.`
+              : `${provider.name} did not accept the code (still on the verification step). Check the newest email and submit again.`,
+          });
+          if (accepted) return true;
+          onEvent({ event: 'verification_code_rejected', verificationId: mailbox.id, providerId: provider.id, expiresAt });
+        } catch (err) {
+          mailbox.reply({ accepted: false, message: redactCode(err.message, handed) });
+        }
+        continue;
+      }
+      if (page.isClosed()) return false; // the user closed the window
+      const left = await waitForCodeStepExit(page, provider, ctx, { inject: injectEngineIntoFrame, timeoutMs: 0 });
+      if (left) return true;
+      await new Promise(r => setTimeout(r, 1500));
+    }
+    return false;
+  } finally {
+    mailbox.close();
+  }
+}
+
+/**
+ * Right after auto-login: if the provider is asking for a one-time code (email/SMS), either wait
+ * for it (CLI --wait-for-code), defer it (MCP server keeps the page open), or fail clearly.
+ * Returns { status: 'none' | 'error' | 'pending', step }.
+ */
+async function handleVerificationStep(page, provider, ctx, run, deps) {
+  const step = await detectCodeStep(page, provider, ctx, { inject: injectEngineIntoFrame });
+  if (!step.awaiting) return { status: 'none' };
+
+  if (run.verificationMode === 'wait') {
+    if (await waitForCodeFromCli(page, provider, ctx, step, run, deps)) return { status: 'none' };
+    run.manifest.errors.push({
+      providerId: provider.id,
+      error: `${provider.name} asked for a verification code and none was accepted within ${Math.round(
+        run.waitForCodeMs / 60000
+      )} minutes.`,
+      verificationRequired: true,
+    });
+    return { status: 'error' };
+  }
+
+  if (run.verificationMode === 'defer') return { status: 'pending', step };
+
+  run.manifest.errors.push({
+    providerId: provider.id,
+    error: verificationRequiredMessage(provider),
+    verificationRequired: true,
+  });
+  return { status: 'error' };
+}
+
+function rememberSessionOwner(provider, owner, run, deps) {
+  run.state = writeLocalState(
+    {
+      sessionOwners: {
+        [provider.id]: {
+          itemId: owner.itemId,
+          username: (owner.username || '').toLowerCase(),
+          profileId: run.activeProfile?.id || null,
+          updatedAt: Date.now(),
+        },
+      },
+    },
+    { merge: true },
+    deps
+  );
+}
+
+/**
+ * Navigates to the provider, signs in with password-manager credentials when needed and waits for
+ * the billing page. Returns { status: 'ready' | 'skipped' | 'error' | 'pending', ... }.
+ */
+async function signInToProvider(page, context, provider, run, deps) {
+  const { manifest } = run;
+  const provConfig = {
+    ...(run.state.providerConfigs?.[provider.id] || {}),
+    ...(run.activeProfile?.configs?.[provider.id] || {}),
+  };
+
+  // Check required URL config fields
+  const missingRequired = Object.keys(provider.config || {}).filter(key => {
+    if (!isConfigFieldRequiredForNavigation(provider, key)) return false;
+    const val = provConfig[key] || provider.config[key]?.default || '';
+    return !String(val).trim();
+  });
+
+  if (missingRequired.length > 0) {
+    manifest.skippedProviders.push({
+      providerId: provider.id,
+      reason: `Missing required URL config field(s): ${missingRequired.join(', ')}`,
+    });
+    return { status: 'skipped' };
+  }
+
+  const billingUrl = resolveBillingUrl(provider, provConfig);
+  try {
+    await page.goto(billingUrl, { waitUntil: 'domcontentloaded', timeout: 25000 });
+  } catch {}
+
+  let readyCheck = await waitForSelectorInFrame(page, provider, provider.readySelector, 6);
+
+  // Resolve 1Password credentials for login or account verification
+  let creds = null;
+  try {
+    creds = await handleHostRequest(
+      {
+        action: 'resolveProvider',
+        provider,
+        billingUrl,
+        itemOverride: provConfig._onepasswordItem || '',
+        profileName: run.activeProfile?.name || run.profileName || '',
+        providerConfig: provConfig,
+      },
+      deps
+    );
+  } catch {}
+
+  // Everything needed to continue after a verification code. Never the password.
+  const signIn = (loginStartUrl, requestedAt) => ({
+    provider,
+    provConfig,
+    billingUrl,
+    loginStartUrl,
+    requestedAt,
+    hasOtpCredential: Boolean(creds?.otp),
+    // Same hosts the password may be typed on (vault item URLs, billingUrl host, auth.loginDomains).
+    allowedLoginDomains: creds?.allowedLoginDomains || buildAllowedLoginDomains({ provider }),
+    owner: { itemId: creds?.itemId || null, username: creds?.username || '' },
+  });
+
+  // Auto-login, then deal with a verification-code step before leaving the sign-in page.
+  const loginAndVerify = async () => {
+    const loginStartUrl = page.url();
+    const requestedAt = new Date().toISOString();
+    await injectEngineIntoFrame(page.mainFrame());
+    const loginRes = await guardedAutoLogin(page.mainFrame(), creds, provider.auth || {});
+    if (loginRes?.blocked) {
+      manifest.errors.push({ providerId: provider.id, error: describeLoginBlock({ ...loginRes, providerName: provider.name }) });
+      return { status: 'error' };
+    }
+    if (!loginRes?.attempted) return { status: 'none', attempted: false };
+    await page.waitForTimeout(4000);
+    const ctx = signIn(loginStartUrl, requestedAt);
+    const verdict = await handleVerificationStep(page, provider, ctx, run, deps);
+    if (verdict.status === 'pending') return { status: 'pending', signIn: ctx, step: verdict.step };
+    if (verdict.status === 'error') return { status: 'error' };
+    return { status: 'none', attempted: true };
+  };
+
+  if (!readyCheck.success && creds) {
+    const login = await loginAndVerify();
+    if (login.status !== 'none') return login;
+    if (login.attempted) readyCheck = await reachBillingAfterLogin(page, provider, billingUrl);
+  }
+
+  // If ready, verify identity matches expected 1Password credentials
+  if (readyCheck.success && creds) {
+    const previousOwner = run.state.sessionOwners?.[provider.id];
+    await injectEngineIntoFrame(page.mainFrame());
+    const idCheck = await page.mainFrame().evaluate(
+      ([expected, authCfg]) => window.__invoiceEngine.verifyLoggedInIdentity(expected, authCfg),
+      [
+        {
+          username: creds.username || '',
+          previousUsername: previousOwner?.username || '',
+        },
+        provider.auth || {},
+      ]
+    );
+
+    const ownerMismatch = Boolean(
+      previousOwner?.itemId && creds.itemId && previousOwner.itemId !== creds.itemId
+    );
+
+    if (ownerMismatch || idCheck?.mismatchDetected) {
+      // Perform logout + re-login
+      await page.mainFrame().evaluate(() => window.__invoiceEngine.clearPageSessionData());
+      await context.clearCookies();
+      if (provider.auth?.logoutUrl) {
+        try {
+          await page.goto(provider.auth.logoutUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
+        } catch {}
+      }
+      try {
+        await page.goto(billingUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
+      } catch {}
+      const login = await loginAndVerify();
+      if (login.status !== 'none') return login;
+      try {
+        await page.goto(billingUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
+        if (billingUrl.includes('#')) await page.reload({ waitUntil: 'domcontentloaded', timeout: 20000 });
+      } catch {}
+      readyCheck = await waitForSelectorInFrame(page, provider, provider.readySelector, 12);
+    }
+
+    if (readyCheck.success) rememberSessionOwner(provider, creds, run, deps);
+  }
+
+  if (!readyCheck.success) {
+    manifest.errors.push({
+      providerId: provider.id,
+      error: 'Billing page readySelector not reached (check login or 2FA challenge). Run with --headed to inspect.',
+    });
+    return { status: 'error' };
+  }
+
+  return { status: 'ready', readyCheck, provConfig };
+}
+
+/** On the billing page: learn config from the URL, run preSteps, extract rows and download. */
+async function extractProviderInvoices(page, provider, { readyCheck, provConfig }, run, deps) {
+  const { manifest } = run;
+
+  // Auto-learn URL parameters (e.g. Stripe acct_... from redirected URL) and persist back to state!
+  const learned = extractConfigFromUrls([page.url()], provider);
+  for (const [k, v] of Object.entries(learned)) {
+    if (!provConfig[k] && v) {
+      setProfileOrProviderConfig(
+        {
+          profileName: run.activeProfile?.name || run.profileName,
+          providerId: provider.id,
+          key: k,
+          value: v,
+        },
+        deps
+      );
+      manifest.learnedConfigs[`${provider.id}.${k}`] = v;
+    }
+  }
+
+  const targetFrame = readyCheck.frame;
+  await injectEngineIntoFrame(targetFrame);
+
+  // Run extract.preSteps if defined
+  for (const step of provider.extract?.preSteps || []) {
+    if (step.action === 'diagnose') continue;
+    try {
+      await targetFrame.evaluate(s => window.__invoiceEngine.executeStep(s), step);
+    } catch {}
+  }
+
+  // Extract rows
+  const previousDownloads = run.skipDedup
+    ? []
+    : (run.state.history || [])
+        .filter(h => String(h).startsWith(`${provider.id}::`))
+        .map(h => String(h).slice(`${provider.id}::`.length));
+
+  const extraction = await targetFrame.evaluate(
+    ([prov, cfg]) => window.__invoiceEngine.extractRows(prov, cfg),
+    [
+      provider,
+      {
+        maxInvoices: run.maxInvoices,
+        sinceDate: run.sinceDate,
+        previousDownloads,
+        seen: [],
+      },
+    ]
+  );
+
+  const invoices = extraction?.invoices || [];
+  const newHistoryKeys = [];
+
+  for (const inv of invoices) {
+    const filename = (inv.filename || `${provider.id}_${inv.date || 'invoice'}.pdf`).replace(/[/\\?%*:|"<>]/g, '_');
+    const destPath = join(run.outDir, filename);
+
+    let downloaded = false;
+    try {
+      if (inv.downloadUrl && (provider.download.method === 'direct-link' || provider.download.method === 'fetch-blob')) {
+        const b64 = await targetFrame.evaluate(async url => {
+          const res = await fetch(url, { credentials: 'include' });
+          if (!res.ok) return null;
+          const blob = await res.blob();
+          return new Promise(resolve => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.readAsDataURL(blob);
+          });
+        }, inv.downloadUrl);
+
+        if (b64 && b64.includes(',')) {
+          const buf = Buffer.from(b64.split(',')[1], 'base64');
+          writeFileSync(destPath, buf);
+          downloaded = true;
+        }
+      }
+
+      if (!downloaded && provider.download.method === 'click-download') {
+        const [download] = await Promise.all([
+          page.waitForEvent('download', { timeout: 12000 }).catch(() => null),
+          targetFrame.evaluate(
+            ([rowSel, rowIdx, steps]) => window.__invoiceEngine.clickInRow(rowSel, rowIdx, steps),
+            [provider.extract.rows, inv.__rowIndex, provider.download.steps || []]
+          ),
+        ]);
+        if (download) {
+          await download.saveAs(destPath);
+          downloaded = true;
+        }
+      }
+    } catch (dlErr) {
+      manifest.errors.push({ providerId: provider.id, filename, error: dlErr.message });
+    }
+
+    if (downloaded) {
+      const dedupVal =
+        inv[provider.extract?.dedup || 'downloadUrl'] ||
+        inv.downloadUrl ||
+        inv.id ||
+        inv.invoiceNumber ||
+        filename;
+      newHistoryKeys.push(`${provider.id}::${dedupVal}`);
+      manifest.downloadedFiles.push({
+        providerId: provider.id,
+        filename,
+        path: destPath,
+        date: inv.date || null,
+        amount: inv.amount || null,
+        invoiceNumber: inv.invoiceNumber || inv.id || null,
+      });
+    }
+  }
+
+  if (newHistoryKeys.length > 0) {
+    run.state = writeLocalState({ history: newHistoryKeys }, { merge: true }, deps);
+  }
+}
+
+function newManifest({ profile, outDir, sinceDate }) {
+  return {
+    profile,
+    outDir,
+    sinceDate,
+    startedAt: new Date().toISOString(),
+    downloadedFiles: [],
+    learnedConfigs: {},
+    skippedProviders: [],
+    errors: [],
+  };
+}
+
+/**
+ * Options beyond the basics:
+ * - verificationMode: 'fail' (default) records a clear error when a provider asks for a one-time
+ *   code; 'wait' (CLI --wait-for-code) waits up to `waitForCodeMs`; 'defer' (MCP server) hands the
+ *   open page to `onVerificationPending(pending)` and continues with the other providers.
+ * - contextProvider: { acquire(launch), release() } to share one browser between runs and pages
+ *   kept open for a code (required by 'defer').
+ */
 export async function runAgentExtraction(options = {}, deps = {}) {
   const {
     profileName = '',
@@ -231,6 +659,11 @@ export async function runAgentExtraction(options = {}, deps = {}) {
     headed = false,
     userDataDir = join(homedir(), '.config', 'invoice-extractor', 'browser-profile'),
     skipDedup = false,
+    verificationMode = 'fail',
+    waitForCodeMs = CODE_STEP_TTL_MS,
+    onVerificationPending = null,
+    onEvent = undefined,
+    contextProvider = null,
   } = options;
 
   const allProviders = loadAllProviders();
@@ -270,288 +703,129 @@ export async function runAgentExtraction(options = {}, deps = {}) {
   mkdirSync(userDataDir, { recursive: true, mode: 0o700 });
 
   const { chromium } = await import('playwright');
-  const context = await chromium.launchPersistentContext(userDataDir, {
-    headless: !headed,
-    acceptDownloads: true,
-    viewport: { width: 1366, height: 900 },
-  });
+  const launch = () =>
+    chromium.launchPersistentContext(userDataDir, {
+      headless: !headed,
+      acceptDownloads: true,
+      viewport: { width: 1366, height: 900 },
+    });
+  const context = contextProvider ? await contextProvider.acquire(launch, { headed }) : await launch();
+  const browserVisible = contextProvider ? Boolean(contextProvider.headed ?? headed) : headed;
 
-  const manifest = {
-    profile: activeProfile?.name || null,
-    outDir,
+  const deferring = verificationMode === 'defer' && Boolean(contextProvider && onVerificationPending);
+  const manifest = newManifest({ profile: activeProfile?.name || null, outDir, sinceDate });
+  if (deferring) manifest.pendingVerification = [];
+
+  const run = {
+    manifest,
+    state,
+    activeProfile,
+    profileName,
     sinceDate,
-    startedAt: new Date().toISOString(),
-    downloadedFiles: [],
-    learnedConfigs: {},
-    skippedProviders: [],
-    errors: [],
+    maxInvoices,
+    outDir,
+    skipDedup,
+    verificationMode: deferring ? 'defer' : verificationMode === 'wait' ? 'wait' : 'fail',
+    waitForCodeMs,
+    onEvent,
   };
 
+  // A shared browser may already hold pages waiting for a code: always work in a fresh tab then.
+  let page = contextProvider ? await context.newPage() : context.pages()[0] || (await context.newPage());
   try {
-    const page = context.pages()[0] || (await context.newPage());
-
     for (const provider of targetProviders) {
-      const provConfig = {
-        ...(state.providerConfigs?.[provider.id] || {}),
-        ...(activeProfile?.configs?.[provider.id] || {}),
-      };
-
-      // Check required URL config fields
-      const missingRequired = Object.keys(provider.config || {}).filter(key => {
-        if (!isConfigFieldRequiredForNavigation(provider, key)) return false;
-        const val = provConfig[key] || provider.config[key]?.default || '';
-        return !String(val).trim();
-      });
-
-      if (missingRequired.length > 0) {
-        manifest.skippedProviders.push({
+      const outcome = await signInToProvider(page, context, provider, run, deps);
+      if (outcome.status === 'pending') {
+        const pending = {
+          ...outcome.signIn,
+          page,
           providerId: provider.id,
-          reason: `Missing required URL config field(s): ${missingRequired.join(', ')}`,
-        });
+          providerName: provider.name,
+          pageHost: new URL(page.url()).hostname,
+          hint: outcome.step.hint || '',
+          headed: browserVisible,
+          runOptions: { profileName, activeProfile, sinceDate, maxInvoices, outDir, skipDedup },
+          deps,
+        };
+        manifest.pendingVerification.push(await onVerificationPending(pending));
+        page = await context.newPage();
         continue;
       }
-
-      const billingUrl = resolveBillingUrl(provider, provConfig);
-      try {
-        await page.goto(billingUrl, { waitUntil: 'domcontentloaded', timeout: 25000 });
-      } catch {}
-
-      let readyCheck = await waitForSelectorInFrame(page, provider, provider.readySelector, 6);
-
-      // Resolve 1Password credentials for login or account verification
-      let creds = null;
-      try {
-        creds = await handleHostRequest(
-          {
-            action: 'resolveProvider',
-            provider,
-            billingUrl,
-            itemOverride: provConfig._onepasswordItem || '',
-            profileName: activeProfile?.name || profileName || '',
-            providerConfig: provConfig,
-          },
-          deps
-        );
-      } catch {}
-
-      if (!readyCheck.success && creds) {
-        await injectEngineIntoFrame(page.mainFrame());
-        const loginRes = await guardedAutoLogin(page.mainFrame(), creds, provider.auth || {});
-        if (loginRes?.blocked) {
-          manifest.errors.push({ providerId: provider.id, error: describeLoginBlock({ ...loginRes, providerName: provider.name }) });
-          continue;
-        }
-
-        if (loginRes?.attempted) {
-          await page.waitForTimeout(4000);
-          const currentUrl = page.url();
-          if (!currentUrl.includes(new URL(billingUrl).pathname)) {
-            try {
-              await page.goto(billingUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
-            } catch {}
-          } else if (billingUrl.includes('#')) {
-            try {
-              await page.goto(billingUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
-              await page.reload({ waitUntil: 'domcontentloaded', timeout: 20000 });
-            } catch {}
-          }
-          readyCheck = await waitForSelectorInFrame(page, provider, provider.readySelector, 12);
-        }
-      }
-
-      // If ready, verify identity matches expected 1Password credentials
-      if (readyCheck.success && creds) {
-        const previousOwner = state.sessionOwners?.[provider.id];
-        await injectEngineIntoFrame(page.mainFrame());
-        const idCheck = await page.mainFrame().evaluate(
-          ([expected, authCfg]) => window.__invoiceEngine.verifyLoggedInIdentity(expected, authCfg),
-          [
-            {
-              username: creds.username || '',
-              previousUsername: previousOwner?.username || '',
-            },
-            provider.auth || {},
-          ]
-        );
-
-        const ownerMismatch = Boolean(
-          previousOwner?.itemId && creds.itemId && previousOwner.itemId !== creds.itemId
-        );
-
-        if (ownerMismatch || idCheck?.mismatchDetected) {
-          // Perform logout + re-login
-          await page.mainFrame().evaluate(() => window.__invoiceEngine.clearPageSessionData());
-          await context.clearCookies();
-          if (provider.auth?.logoutUrl) {
-            try {
-              await page.goto(provider.auth.logoutUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
-            } catch {}
-          }
-          try {
-            await page.goto(billingUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
-          } catch {}
-          await injectEngineIntoFrame(page.mainFrame());
-          const reLoginRes = await guardedAutoLogin(page.mainFrame(), creds, provider.auth || {});
-          if (reLoginRes?.blocked) {
-            manifest.errors.push({ providerId: provider.id, error: describeLoginBlock({ ...reLoginRes, providerName: provider.name }) });
-            continue;
-          }
-          await page.waitForTimeout(4000);
-          try {
-            await page.goto(billingUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
-            if (billingUrl.includes('#')) await page.reload({ waitUntil: 'domcontentloaded', timeout: 20000 });
-          } catch {}
-          readyCheck = await waitForSelectorInFrame(page, provider, provider.readySelector, 12);
-        }
-
-        if (readyCheck.success) {
-          state = writeLocalState(
-            {
-              sessionOwners: {
-                [provider.id]: {
-                  itemId: creds.itemId,
-                  username: (creds.username || '').toLowerCase(),
-                  profileId: activeProfile?.id || null,
-                  updatedAt: Date.now(),
-                },
-              },
-            },
-            { merge: true },
-            deps
-          );
-        }
-      }
-
-      if (!readyCheck.success) {
-        manifest.errors.push({
-          providerId: provider.id,
-          error: 'Billing page readySelector not reached (check login or 2FA challenge). Run with --headed to inspect.',
-        });
-        continue;
-      }
-
-      // Auto-learn URL parameters (e.g. Stripe acct_... from redirected URL) and persist back to state!
-      const learned = extractConfigFromUrls([page.url()], provider);
-      for (const [k, v] of Object.entries(learned)) {
-        if (!provConfig[k] && v) {
-          setProfileOrProviderConfig(
-            {
-              profileName: activeProfile?.name || profileName,
-              providerId: provider.id,
-              key: k,
-              value: v,
-            },
-            deps
-          );
-          manifest.learnedConfigs[`${provider.id}.${k}`] = v;
-        }
-      }
-
-      const targetFrame = readyCheck.frame;
-      await injectEngineIntoFrame(targetFrame);
-
-      // Run extract.preSteps if defined
-      for (const step of provider.extract?.preSteps || []) {
-        if (step.action === 'diagnose') continue;
-        try {
-          await targetFrame.evaluate(s => window.__invoiceEngine.executeStep(s), step);
-        } catch {}
-      }
-
-      // Extract rows
-      const previousDownloads = skipDedup
-        ? []
-        : (state.history || [])
-            .filter(h => String(h).startsWith(`${provider.id}::`))
-            .map(h => String(h).slice(`${provider.id}::`.length));
-
-      const extraction = await targetFrame.evaluate(
-        ([prov, cfg]) => window.__invoiceEngine.extractRows(prov, cfg),
-        [
-          provider,
-          {
-            maxInvoices,
-            sinceDate,
-            previousDownloads,
-            seen: [],
-          },
-        ]
-      );
-
-      const invoices = extraction?.invoices || [];
-      const newHistoryKeys = [];
-
-      for (const inv of invoices) {
-        const filename = (inv.filename || `${provider.id}_${inv.date || 'invoice'}.pdf`).replace(/[/\\?%*:|"<>]/g, '_');
-        const destPath = join(outDir, filename);
-
-        let downloaded = false;
-        try {
-          if (inv.downloadUrl && (provider.download.method === 'direct-link' || provider.download.method === 'fetch-blob')) {
-            const b64 = await targetFrame.evaluate(async url => {
-              const res = await fetch(url, { credentials: 'include' });
-              if (!res.ok) return null;
-              const blob = await res.blob();
-              return new Promise(resolve => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result);
-                reader.readAsDataURL(blob);
-              });
-            }, inv.downloadUrl);
-
-            if (b64 && b64.includes(',')) {
-              const buf = Buffer.from(b64.split(',')[1], 'base64');
-              writeFileSync(destPath, buf);
-              downloaded = true;
-            }
-          }
-
-          if (!downloaded && provider.download.method === 'click-download') {
-            const [download] = await Promise.all([
-              page.waitForEvent('download', { timeout: 12000 }).catch(() => null),
-              targetFrame.evaluate(
-                ([rowSel, rowIdx, steps]) => window.__invoiceEngine.clickInRow(rowSel, rowIdx, steps),
-                [provider.extract.rows, inv.__rowIndex, provider.download.steps || []]
-              ),
-            ]);
-            if (download) {
-              await download.saveAs(destPath);
-              downloaded = true;
-            }
-          }
-        } catch (dlErr) {
-          manifest.errors.push({ providerId: provider.id, filename, error: dlErr.message });
-        }
-
-        if (downloaded) {
-          const dedupVal =
-            inv[provider.extract?.dedup || 'downloadUrl'] ||
-            inv.downloadUrl ||
-            inv.id ||
-            inv.invoiceNumber ||
-            filename;
-          newHistoryKeys.push(`${provider.id}::${dedupVal}`);
-          manifest.downloadedFiles.push({
-            providerId: provider.id,
-            filename,
-            path: destPath,
-            date: inv.date || null,
-            amount: inv.amount || null,
-            invoiceNumber: inv.invoiceNumber || inv.id || null,
-          });
-        }
-      }
-
-      if (newHistoryKeys.length > 0) {
-        state = writeLocalState({ history: newHistoryKeys }, { merge: true }, deps);
-      }
+      if (outcome.status !== 'ready') continue;
+      await extractProviderInvoices(page, provider, outcome, run, deps);
     }
   } finally {
-    await context.close();
+    if (contextProvider) {
+      await page.close().catch(() => {});
+      await contextProvider.release();
+    } else {
+      await context.close();
+    }
   }
 
   manifest.completedAt = new Date().toISOString();
   return manifest;
+}
+
+/**
+ * Continues a provider left on its verification-code step (MCP server). With `code`, types it
+ * and submits; without, only checks whether the user finished the step in the browser window
+ * (waiting up to `waitMs`). Returns null while still waiting, a run manifest once signed in, and
+ * throws VerificationCodeError when the provider rejects the code.
+ */
+export async function resumeAfterVerification(pending, { code, waitMs = 0 } = {}) {
+  const { page, provider, billingUrl } = pending;
+  const deps = pending.deps || {};
+  const ctx = {
+    billingUrl,
+    loginStartUrl: pending.loginStartUrl,
+    hasOtpCredential: pending.hasOtpCredential,
+  };
+
+  if (code != null) {
+    await typeVerificationCode(page, provider, code, {
+      allowedLoginDomains: pending.allowedLoginDomains || buildAllowedLoginDomains({ provider }),
+      inject: injectEngineIntoFrame,
+    });
+    const accepted = await waitForCodeStepExit(page, provider, ctx, {
+      inject: injectEngineIntoFrame,
+      timeoutMs: pending.acceptTimeoutMs ?? 20000,
+    });
+    if (!accepted) {
+      throw new VerificationCodeError(
+        `${provider.name} did not accept the code (still on the verification step). Check for a newer email and try again.`,
+        { retryable: true }
+      );
+    }
+  } else {
+    const left = await waitForCodeStepExit(page, provider, ctx, { inject: injectEngineIntoFrame, timeoutMs: waitMs });
+    if (!left) return null;
+  }
+
+  const opts = pending.runOptions || {};
+  const run = {
+    manifest: newManifest({ profile: opts.activeProfile?.name || null, outDir: opts.outDir, sinceDate: opts.sinceDate || null }),
+    state: readLocalState(deps),
+    activeProfile: opts.activeProfile || null,
+    profileName: opts.profileName || '',
+    sinceDate: opts.sinceDate || null,
+    maxInvoices: opts.maxInvoices || 999,
+    outDir: opts.outDir,
+    skipDedup: Boolean(opts.skipDedup),
+  };
+
+  const readyCheck = await reachBillingAfterLogin(page, provider, billingUrl);
+  if (!readyCheck.success) {
+    run.manifest.errors.push({
+      providerId: provider.id,
+      error: 'Signed in after the verification code, but the billing page readySelector was not reached.',
+    });
+  } else {
+    if (pending.owner?.itemId) rememberSessionOwner(provider, pending.owner, run, deps);
+    await extractProviderInvoices(page, provider, { readyCheck, provConfig: pending.provConfig || {} }, run, deps);
+  }
+  run.manifest.completedAt = new Date().toISOString();
+  return run.manifest;
 }
 
 async function injectRecorderIntoFrame(frame, rootDir = ROOT_DIR) {
@@ -1311,6 +1585,23 @@ export async function runSetup(
   };
 }
 
+// `--wait-for-code` → 10 minutes; `--wait-for-code=5` → 5 minutes; absent → fail fast.
+export function parseWaitForCode(flag) {
+  if (flag === undefined || flag === false) return { verificationMode: 'fail' };
+  const minutes = flag === true ? CODE_STEP_TTL_MS / 60000 : Number(flag);
+  if (!Number.isFinite(minutes) || minutes <= 0 || minutes > 60) {
+    throw new Error('--wait-for-code expects a number of minutes between 1 and 60 (default 10).');
+  }
+  return { verificationMode: 'wait', waitForCodeMs: Math.round(minutes * 60000) };
+}
+
+async function readStdin() {
+  if (process.stdin.isTTY) return '';
+  const chunks = [];
+  for await (const chunk of process.stdin) chunks.push(chunk);
+  return Buffer.concat(chunks).toString('utf8');
+}
+
 async function main() {
   const { command, subcommand, flags } = parseCliArgs(process.argv.slice(2));
   const providers = loadAllProviders();
@@ -1449,8 +1740,25 @@ async function main() {
       outDir: flags.out ? resolve(process.cwd(), String(flags.out)) : resolve(process.cwd(), 'downloads'),
       headed: Boolean(flags.headed),
       skipDedup: Boolean(flags['skip-dedup']),
+      ...parseWaitForCode(flags['wait-for-code']),
     });
     console.log(JSON.stringify({ ok: true, ...manifest }, null, 2));
+    return;
+  }
+
+  if (command === 'submit-code') {
+    // Prefer stdin (`echo 123456 | invoice-extractor submit-code --id ...`): argv is visible to
+    // other local processes and lands in shell history.
+    const code = typeof flags.code === 'string' ? flags.code : await readStdin();
+    try {
+      const res = await handOverCode(dirname(resolveStatePath()), String(flags.id || ''), code);
+      console.log(JSON.stringify({ ok: Boolean(res.accepted), ...res }, null, 2));
+      if (!res.accepted) process.exitCode = 1;
+    } catch (err) {
+      const message = err instanceof VerificationCodeError ? err.message : redactCode(err.message, code);
+      console.error(JSON.stringify({ ok: false, error: message, retryable: Boolean(err.retryable) }, null, 2));
+      process.exitCode = 1;
+    }
     return;
   }
 

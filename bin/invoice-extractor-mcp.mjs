@@ -13,6 +13,7 @@ import { createInterface } from 'node:readline';
 import {
   loadAllProviders,
   onboardProvider,
+  resumeAfterVerification,
   runAgentExtraction,
   runDoctor,
   runSetup,
@@ -20,11 +21,20 @@ import {
   syncProfilesFrom1PasswordToState,
 } from './invoice-extractor.mjs';
 import { handleHostRequest, readLocalState } from '../scripts/onepassword-host.mjs';
+import {
+  buildNextStep,
+  createVerificationRegistry,
+  redactCode,
+  VerificationCodeError,
+} from '../scripts/verification-code.mjs';
 
 const SERVER_INFO = {
   name: 'invoice-extractor',
   version: '1.0.0',
 };
+
+// Provider pages waiting for a one-time verification code (kept open up to 10 minutes).
+const verifications = createVerificationRegistry({ resume: resumeAfterVerification });
 
 const TOOLS = [
   {
@@ -53,7 +63,10 @@ const TOOLS = [
   {
     name: 'invoice_extractor_run',
     description:
-      'Download SaaS invoices for a client profile or specific providers using 1Password credentials. Saves PDFs to Desktop/Facturas by default.',
+      'Download SaaS invoices for a client profile or specific providers using 1Password credentials. Saves PDFs to Desktop/Facturas by default. ' +
+      'Passwords never reach you. If a provider emails/texts a one-time verification code after the password, the run does not fail: ' +
+      'that provider is listed in `pendingVerification` (its page stays open for 10 minutes) and `nextStep` explains what to do. ' +
+      'Rule: if you can read the user\'s email, read the provider\'s code there and call invoice_extractor_submit_code; if not, ask the user.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -80,9 +93,32 @@ const TOOLS = [
         },
         headed: {
           type: 'boolean',
-          description: 'Open visible browser window (use if 2FA SMS or manual inspection is needed).',
+          description:
+            'Open visible browser window (lets the user type an SMS/email verification code or solve a captcha themselves).',
         },
       },
+    },
+  },
+  {
+    name: 'invoice_extractor_submit_code',
+    description:
+      'Continue a provider that is waiting for a one-time verification code (listed in pendingVerification by invoice_extractor_run). ' +
+      'Get the code from the user\'s email if you can read it (newest message from that provider after requestedAt); otherwise ask the user for it. ' +
+      'Types the code on the provider page (only if the page still belongs to that provider), signs in and downloads that provider\'s invoices, returning them like a run. ' +
+      'Omit code if the user typed it in the open browser window themselves. A rejected code returns an error and can be retried until expiresAt.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        verificationId: {
+          type: 'string',
+          description: 'verificationId from pendingVerification.',
+        },
+        code: {
+          type: 'string',
+          description: 'The one-time code (4-10 letters or digits; spaces and dashes are ignored). Omit if the user typed it in the browser.',
+        },
+      },
+      required: ['verificationId'],
     },
   },
   {
@@ -178,14 +214,41 @@ async function executeTool(name, args = {}) {
 
   if (name === 'invoice_extractor_run') {
     const defaultOut = join(homedir(), 'Desktop', 'Facturas');
-    return runAgentExtraction({
+    const manifest = await runAgentExtraction({
       profileName: args.profile || '',
       providerIds: Array.isArray(args.providers) ? args.providers : [],
       sinceDate: args.sinceDate || null,
       maxInvoices: args.maxInvoices || 999,
       outDir: args.outDir ? resolve(args.outDir) : defaultOut,
       headed: Boolean(args.headed),
+      verificationMode: 'defer',
+      contextProvider: verifications.contextProvider,
+      onVerificationPending: pending => verifications.add(pending),
     });
+    const nextStep = buildNextStep(manifest.pendingVerification);
+    return nextStep ? { ...manifest, nextStep } : manifest;
+  }
+
+  if (name === 'invoice_extractor_submit_code') {
+    const hasCode = typeof args.code === 'string' && args.code.trim() !== '';
+    try {
+      const outcome = await verifications.submit(String(args.verificationId || ''), hasCode ? args.code : null, {
+        waitMs: hasCode ? 0 : 60000,
+      });
+      if (outcome.status === 'waiting') {
+        return {
+          ...outcome,
+          nextStep:
+            'The provider page is still on the verification step. Get the code from the user\'s email or from the user and call invoice_extractor_submit_code again with it.',
+        };
+      }
+      return { completedBy: outcome.completedBy, ...outcome.result };
+    } catch (err) {
+      if (err instanceof VerificationCodeError) {
+        throw new Error(`${err.message}${err.retryable ? ' (retryable)' : ''}`);
+      }
+      throw new Error(redactCode(`Could not continue after the verification code: ${err.message}`, args.code));
+    }
   }
 
   if (name === 'invoice_extractor_onboard_provider') {
@@ -227,6 +290,9 @@ function sendJson(msg) {
 }
 
 const rl = createInterface({ input: process.stdin, terminal: false });
+rl.on('close', () => {
+  verifications.closeAll().finally(() => process.exit(0));
+});
 
 rl.on('line', async line => {
   const trimmed = line.trim();
