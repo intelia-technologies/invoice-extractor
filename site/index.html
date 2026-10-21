@@ -93,13 +93,14 @@
         <p class="lede">
           Invoice Extractor signs into each provider's billing page with the logins you already keep in
           <strong>1Password</strong> or <strong>Bitwarden</strong>, finds every invoice and saves it as a named PDF on your disk.
-          Do it yourself from the Chrome extension, or ask your AI assistant to do it for you.
+          Do it yourself from the Chrome extension, or ask your AI assistant to do it for you. No AI browsing page by page, so it costs few tokens and gives the same result every time.
         </p>
         <div class="cta">
           <a class="btn btn-primary" href="https://github.com/intelia-technologies/invoice-extractor/releases/latest/download/invoice-extractor.zip">
             <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
             <span class="btn-text"><span class="btn-label">Download</span><span class="btn-sub" data-download-sub>One zip for macOS, Windows and Linux</span></span>
           </a>
+          <a class="btn-quiet" href="#agents">Use it with your AI <svg class="icon sm" aria-hidden="true"><use href="#i-arrow"/></svg></a>
           <a class="btn-quiet" href="#install">Installation guide <svg class="icon sm" aria-hidden="true"><use href="#i-arrow"/></svg></a>
         </div>
         <p class="hero-trust"><svg class="icon sm" aria-hidden="true"><use href="#i-shield"/></svg><span>Runs on your computer. Your passwords never reach us or your AI. <a href="#security">See what stays where</a></span></p>
@@ -197,7 +198,7 @@
               </div>
             </figure>
             <p>The assistant starts the run on your computer and gets back only the result: which PDFs were saved and where, and which providers couldn't finish. If a provider asks for a one-time code by email or SMS, the run waits on that page. An assistant with access to your email reads the code and enters it; otherwise it asks you, and you type it in the browser window or tell it. Your password never goes into the chat.</p>
-            <p>It also saves tokens. During a run the assistant doesn't open or read the billing pages; the engine on your computer does. The assistant spends tokens on your request and on the list of files saved, not on the pages themselves.</p>
+            <p><strong>Cheaper and predictable.</strong> An AI agent that browses on its own spends tokens on every page it reads, and takes a different path each time. Here a fixed recipe drives the run on your computer: the assistant only spends tokens on your request and on the list of files saved, and the same run gives the same result every month. From the extension it uses no AI tokens at all.</p>
             <p class="way-safe"><svg class="icon sm" aria-hidden="true"><use href="#i-shield"/></svg><span>Runs on your computer. Your passwords never reach us or your AI.</span></p>
           </div>
           <div class="way">
@@ -419,6 +420,7 @@
         <div>
           <h2 id="closing-title">Close the month in one run.</h2>
           <p>Free and open source. One zip for macOS, Windows and Linux; the three steps above do the rest.</p>
+          <p class="closing-links"><a class="btn-quiet" href="#agents">Connect it to your AI <svg class="icon sm" aria-hidden="true"><use href="#i-arrow"/></svg></a><a class="btn-quiet" href="https://github.com/intelia-technologies/invoice-extractor/blob/main/CONTRIBUTING.md#adding-a-provider" rel="noopener">Add a provider on GitHub <svg class="icon sm" aria-hidden="true"><use href="#i-arrow"/></svg></a></p>
         </div>
         <div class="closing-cta">
           <video class="closing-video" width="240" height="240" muted playsinline preload="none" poster="assets/bonobot-stamp-poster.jpg" aria-hidden="true" tabindex="-1" data-play-once>
