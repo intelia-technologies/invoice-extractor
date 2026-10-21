@@ -279,7 +279,7 @@ export function buildRows(ours, woob, cozy) {
 }
 
 function cell(v) {
-  return String(v).replace(/\|/g, '\\|').replace(/\n/g, ' ');
+  return String(v).replace(/\\/g, '\\\\').replace(/\|/g, '\\|').replace(/\n/g, ' ');
 }
 
 function sortRows(a, b) {
