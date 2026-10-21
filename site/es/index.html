@@ -128,14 +128,15 @@
         <div class="trust-copy">
           <h2>Tus contraseñas no nos llegan. Ni a tu IA.</h2>
           <p>Todo funciona en tu ordenador. Al iniciar sesión, Invoice Extractor pide el acceso a 1Password o Bitwarden y lo escribe en la página de facturación, en un navegador de tu ordenador: tu Chrome con la extensión, o un navegador de automatización aparte cuando lo lanza un asistente.</p>
-          <p>Tu asistente solo pide una ejecución y lee el resultado. Las contraseñas y los códigos 2FA no forman parte de ningún resultado que reciba. Si la configuración necesita un token de tu bóveda, lo pide un diálogo del sistema, así que nunca pasa por el chat.</p>
+          <p>Tu asistente solo pide una ejecución y lee el resultado. Las contraseñas nunca forman parte de lo que recibe. Si un proveedor envía un código de un solo uso por email, tu asistente lo lee de tu correo solo si le has dado acceso; si no, te lo pide. Si la configuración necesita un token de tu bóveda, lo pide un diálogo del sistema, así que nunca pasa por el chat.</p>
           <p>El código es abierto (MIT): cada línea de este recibo se puede comprobar.</p>
           <a class="more-link" href="privacy.html">Lee la política de privacidad <svg class="icon sm" aria-hidden="true"><use href="#i-arrow"/></svg></a>
         </div>
         <div class="receipt">
           <div class="sheet-head"><span>Recibo</span><span>Qué se queda dónde</span></div>
           <dl>
-            <div><dt>Contraseñas y códigos 2FA</dt><dd><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>En tu bóveda</span><span class="why">Se leen al iniciar sesión, se escriben en la página de acceso y en ningún otro sitio.</span></dd></div>
+            <div><dt>Contraseñas y códigos 2FA guardados</dt><dd><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>En tu bóveda</span><span class="why">Se leen al iniciar sesión y solo se escriben en el dominio de acceso del propio proveedor. Si la página no coincide con el acceso guardado, no se escribe nada. No se guardan en ningún otro sitio.</span></dd></div>
+            <div><dt>Códigos por email</dt><dd><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>De un solo uso</span><span class="why">Tu asistente lee el código de tu correo si le has dado acceso; si no, te lo pide. Solo se escribe en la página de ese proveedor y no se guarda.</span></dd></div>
             <div><dt>Tu asistente de IA</dt><dd><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>Solo resultados</span><span class="why">Nombres de fichero, fechas, importes y errores. Puede ver nombres de perfiles y cuentas y los emails de acceso, para distinguir unas cuentas de otras. Esos resultados van a la IA que uses, con sus condiciones.</span></dd></div>
             <div><dt>Acceso a la bóveda</dt><dd><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>En este ordenador</span><span class="why">Con Touch ID o Windows Hello no se guarda nada. Un token de cuenta de servicio o una sesión de Bitwarden, si eliges uno, se guarda en tu carpeta personal y no se envía a ningún sitio.</span></dd></div>
             <div><dt>Cuenta en la nube</dt><dd><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>No hace falta</span><span class="why">Los perfiles y el historial viven en <code>~/.config/invoice-extractor</code>. Hay sincronización opcional de perfiles; todo funciona sin ella.</span></dd></div>
@@ -147,7 +148,7 @@
       </div>
       <div class="wrap">
         <figure class="mo-sec" data-mo="security" aria-labelledby="sec-flow-title">
-          <figcaption class="mo-head"><span id="sec-flow-title">Flujo local previsto</span><span class="mo-pill">Esquema</span></figcaption>
+          <figcaption class="mo-head"><span id="sec-flow-title">Flujo local</span><span class="mo-pill">Esquema</span></figcaption>
           <div class="mo-sec-flow">
             <div class="mo-sec-pc">
               <p class="mo-sec-pc-label"><svg class="icon sm" aria-hidden="true"><use href="#i-monitor"/></svg>Tu ordenador</p>
@@ -161,10 +162,10 @@
             <div class="mo-node mo-node-ext" data-at="4"><span class="mo-tick" data-at="5" aria-hidden="true"><svg class="icon sm"><use href="#i-check"/></svg></span><span class="mo-node-icon"><svg class="icon" aria-hidden="true"><use href="#i-globe"/></svg></span><strong>Web del proveedor</strong><small>Fuera de tu ordenador</small></div>
           </div>
           <ul class="mo-sec-blocked">
-            <li class="mo-blocked"><span class="mo-cross" data-at="6" aria-hidden="true"><svg class="icon sm"><use href="#i-x"/></svg></span><span><strong>Tu IA</strong><small>Sin envío previsto</small></span></li>
-            <li class="mo-blocked"><span class="mo-cross" data-at="7" aria-hidden="true"><svg class="icon sm"><use href="#i-x"/></svg></span><span><strong>Intelia</strong><small>Sin envío previsto</small></span></li>
+            <li class="mo-blocked"><span class="mo-cross" data-at="6" aria-hidden="true"><svg class="icon sm"><use href="#i-x"/></svg></span><span><strong>Tu IA</strong><small>Nunca recibe tu contraseña</small></span></li>
+            <li class="mo-blocked"><span class="mo-cross" data-at="7" aria-hidden="true"><svg class="icon sm"><use href="#i-x"/></svg></span><span><strong>Intelia</strong><small>Nunca recibe tu contraseña</small></span></li>
           </ul>
-          <p class="mo-sec-note">Un esquema del flujo previsto, no una auditoría. La sincronización opcional de perfiles va aparte, y no nos llega nada salvo que la actives.</p>
+          <p class="mo-sec-note">La contraseña solo se escribe en el dominio de acceso del propio proveedor: si la página no coincide con el acceso guardado, no se escribe nada. La sincronización opcional de perfiles va aparte, y no nos llega nada salvo que la actives.</p>
         </figure>
       </div>
     </section>
@@ -185,11 +186,11 @@
                 <blockquote class="mo-chat-user"><span class="mo-type-real">«Descarga las facturas del mes pasado de Acme.»</span><span class="mo-type" aria-hidden="true"></span></blockquote>
                 <p class="mo-chat-run mo-rv" data-at="1"><span class="mo-dots" aria-hidden="true"><i></i><i></i><i></i></span><span data-mo-wait="Ejecutando en tu ordenador…">Ejecución terminada en tu ordenador</span></p>
                 <div class="mo-chat-reply mo-rv" data-at="2"><p class="mo-chat-title"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>7 PDF guardados</p><p class="mo-chat-path"><svg class="icon sm" aria-hidden="true"><use href="#i-folder"/></svg>~/Facturas/2026-09</p></div>
-                <p class="mo-chat-warn mo-rv" data-at="3"><svg class="icon sm" aria-hidden="true"><use href="#i-mail"/></svg><span>Otro proveedor pide un código por email, así que aparece como pendiente. Ese lo haces tú desde la extensión.</span></p>
+                <p class="mo-chat-warn mo-rv" data-at="3"><svg class="icon sm" aria-hidden="true"><use href="#i-mail"/></svg><span>Otro proveedor envió un código por email. Lo he leído de tu correo, lo he introducido y también está terminado.</span></p>
                 <p class="mo-chat-tags mo-rv" data-at="4"><span class="mo-pill">Resultado de ejecución</span><span class="mo-pill">Sin navegación paso a paso</span></p>
               </div>
             </figure>
-            <p>El asistente lanza la ejecución en tu ordenador y solo recibe el resultado: qué PDF se han guardado y dónde, y qué proveedores no han podido terminar. Si un proveedor pide un código por email o SMS, aparece como pendiente: ese lo haces tú desde la extensión, que espera mientras escribes el código en la propia página del proveedor. El código nunca pasa por el chat.</p>
+            <p>El asistente lanza la ejecución en tu ordenador y solo recibe el resultado: qué PDF se han guardado y dónde, y qué proveedores no han podido terminar. Si un proveedor pide un código de un solo uso por email o SMS, la ejecución espera en esa página. Si el asistente tiene acceso a tu correo, lee el código y lo introduce; si no, te lo pide, y tú lo escribes en la ventana del navegador o se lo dices. Tu contraseña nunca pasa por el chat.</p>
             <p>Además, ahorras tokens. Durante la ejecución el asistente no abre ni lee las páginas de facturación; eso lo hace el motor en tu ordenador. El asistente gasta tokens en tu petición y en la lista de ficheros guardados, no en las páginas.</p>
             <p class="way-safe"><svg class="icon sm" aria-hidden="true"><use href="#i-shield"/></svg><span>Funciona en tu ordenador. Tus contraseñas no nos llegan ni a nosotros ni a tu IA.</span></p>
           </div>

@@ -134,14 +134,15 @@
         <div class="trust-copy">
           <h2>Your passwords never reach us or your AI.</h2>
           <p>Everything runs on your computer. At sign-in, Invoice Extractor asks 1Password or Bitwarden for the login and types it into the billing page, in a browser on your computer: your Chrome with the extension, or a separate automation browser when an assistant runs it.</p>
-          <p>Your assistant only asks for a run and reads the result. Passwords and 2FA codes are not part of any result it receives. When setup needs a vault token, a system dialog asks for it, so it never passes through the chat.</p>
+          <p>Your assistant only asks for a run and reads the result. Passwords are never part of what it receives. If a provider emails a one-time sign-in code, your assistant reads it from your inbox only if you have given it access to your email; otherwise it asks you. When setup needs a vault token, a system dialog asks for it, so it never passes through the chat.</p>
           <p>The code is open source (MIT), so every line of this receipt can be checked.</p>
           <a class="more-link" href="privacy.html">Read the privacy policy <svg class="icon sm" aria-hidden="true"><use href="#i-arrow"/></svg></a>
         </div>
         <div class="receipt">
           <div class="sheet-head"><span>Receipt</span><span>What stays where</span></div>
           <dl>
-            <div><dt>Passwords and 2FA codes</dt><dd><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>In your vault</span><span class="why">Read at sign-in, typed into the login page, written nowhere else.</span></dd></div>
+            <div><dt>Passwords and saved 2FA codes</dt><dd><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>In your vault</span><span class="why">Read at sign-in and typed only on the provider's own sign-in domain. If the page doesn't match the saved login, nothing is typed. Written nowhere else.</span></dd></div>
+            <div><dt>Codes sent by email</dt><dd><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>Single use</span><span class="why">Your assistant reads the code from your inbox if you gave it access, or asks you. It is typed only on that provider's page and never saved.</span></dd></div>
             <div><dt>Your AI assistant</dt><dd><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>Results only</span><span class="why">File names, dates, amounts and errors. It can see profile and account names and login emails, so it can tell accounts apart. Those results go to the AI you use, under its terms.</span></dd></div>
             <div><dt>Vault access</dt><dd><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>On this computer</span><span class="why">Touch ID or Windows Hello saves nothing. A service-account token or Bitwarden session, if you choose one, is saved in your home folder and sent nowhere else.</span></dd></div>
             <div><dt>Cloud account</dt><dd><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>Not needed</span><span class="why">Profiles and history live in <code>~/.config/invoice-extractor</code>. Optional profile sync exists; everything works without it.</span></dd></div>
@@ -153,7 +154,7 @@
       </div>
       <div class="wrap">
         <figure class="mo-sec" data-mo="security" aria-labelledby="sec-flow-title">
-          <figcaption class="mo-head"><span id="sec-flow-title">Intended local workflow</span><span class="mo-pill">Diagram</span></figcaption>
+          <figcaption class="mo-head"><span id="sec-flow-title">Local workflow</span><span class="mo-pill">Diagram</span></figcaption>
           <div class="mo-sec-flow">
             <div class="mo-sec-pc">
               <p class="mo-sec-pc-label"><svg class="icon sm" aria-hidden="true"><use href="#i-monitor"/></svg>Your computer</p>
@@ -167,10 +168,10 @@
             <div class="mo-node mo-node-ext" data-at="4"><span class="mo-tick" data-at="5" aria-hidden="true"><svg class="icon sm"><use href="#i-check"/></svg></span><span class="mo-node-icon"><svg class="icon" aria-hidden="true"><use href="#i-globe"/></svg></span><strong>Provider website</strong><small>Outside your computer</small></div>
           </div>
           <ul class="mo-sec-blocked">
-            <li class="mo-blocked"><span class="mo-cross" data-at="6" aria-hidden="true"><svg class="icon sm"><use href="#i-x"/></svg></span><span><strong>Your AI</strong><small>No transfer intended</small></span></li>
-            <li class="mo-blocked"><span class="mo-cross" data-at="7" aria-hidden="true"><svg class="icon sm"><use href="#i-x"/></svg></span><span><strong>Intelia</strong><small>No transfer intended</small></span></li>
+            <li class="mo-blocked"><span class="mo-cross" data-at="6" aria-hidden="true"><svg class="icon sm"><use href="#i-x"/></svg></span><span><strong>Your AI</strong><small>Never gets your password</small></span></li>
+            <li class="mo-blocked"><span class="mo-cross" data-at="7" aria-hidden="true"><svg class="icon sm"><use href="#i-x"/></svg></span><span><strong>Intelia</strong><small>Never gets your password</small></span></li>
           </ul>
-          <p class="mo-sec-note">A diagram of the intended flow, not an audit. Optional profile sync is separate, and nothing reaches us unless you turn it on.</p>
+          <p class="mo-sec-note">The password is only typed on the provider's own sign-in domain: if the page doesn't match the saved login, nothing is typed. Optional profile sync is separate, and nothing reaches us unless you turn it on.</p>
         </figure>
       </div>
     </section>
@@ -191,11 +192,11 @@
                 <blockquote class="mo-chat-user"><span class="mo-type-real">“Download last month's invoices for Acme.”</span><span class="mo-type" aria-hidden="true"></span></blockquote>
                 <p class="mo-chat-run mo-rv" data-at="1"><span class="mo-dots" aria-hidden="true"><i></i><i></i><i></i></span><span data-mo-wait="Running on your computer…">Run finished on your computer</span></p>
                 <div class="mo-chat-reply mo-rv" data-at="2"><p class="mo-chat-title"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>7 PDFs saved</p><p class="mo-chat-path"><svg class="icon sm" aria-hidden="true"><use href="#i-folder"/></svg>~/Invoices/2026-09</p></div>
-                <p class="mo-chat-warn mo-rv" data-at="3"><svg class="icon sm" aria-hidden="true"><use href="#i-mail"/></svg><span>Another provider asks for a code sent by email, so it is listed as not finished. Run that one yourself from the extension.</span></p>
+                <p class="mo-chat-warn mo-rv" data-at="3"><svg class="icon sm" aria-hidden="true"><use href="#i-mail"/></svg><span>Another provider emailed a sign-in code. I read it from your inbox, entered it and finished that one too.</span></p>
                 <p class="mo-chat-tags mo-rv" data-at="4"><span class="mo-pill">Run result</span><span class="mo-pill">No step-by-step browsing</span></p>
               </div>
             </figure>
-            <p>The assistant starts the run on your computer and gets back only the result: which PDFs were saved and where, and which providers couldn't finish. If a provider asks for a code sent by email or SMS, it is listed as not finished: run that one yourself from the extension, which waits while you type the code on the provider's own page. The code never goes into the chat.</p>
+            <p>The assistant starts the run on your computer and gets back only the result: which PDFs were saved and where, and which providers couldn't finish. If a provider asks for a one-time code by email or SMS, the run waits on that page. An assistant with access to your email reads the code and enters it; otherwise it asks you, and you type it in the browser window or tell it. Your password never goes into the chat.</p>
             <p>It also saves tokens. During a run the assistant doesn't open or read the billing pages; the engine on your computer does. The assistant spends tokens on your request and on the list of files saved, not on the pages themselves.</p>
             <p class="way-safe"><svg class="icon sm" aria-hidden="true"><use href="#i-shield"/></svg><span>Runs on your computer. Your passwords never reach us or your AI.</span></p>
           </div>
