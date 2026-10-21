@@ -115,6 +115,7 @@ strong, b { font-weight: var(--ie-weight-bold); }
   font-weight: var(--ie-weight-bold); color: var(--ie-text); text-decoration: underline; text-decoration-color: var(--ie-border-strong);
 }
 .btn-quiet:hover { text-decoration-color: currentColor; }
+.closing-links { display: flex; flex-wrap: wrap; gap: var(--ie-space-2) var(--ie-space-6); margin-top: var(--ie-space-4); }
 
 /* ---------- Hero ---------- */
 .hero {

@@ -87,13 +87,14 @@
         <p class="lede">
           Invoice Extractor entra en la página de facturación de cada proveedor con los accesos que ya guardas en
           <strong>1Password</strong> o <strong>Bitwarden</strong>, localiza cada factura y la guarda en PDF, con su nombre, en tu ordenador.
-          Hazlo tú desde la extensión de Chrome o pídele a tu asistente de IA que lo haga por ti.
+          Hazlo tú desde la extensión de Chrome o pídele a tu asistente de IA que lo haga por ti. Sin una IA navegando página a página: gasta pocos tokens y da siempre el mismo resultado.
         </p>
         <div class="cta">
           <a class="btn btn-primary" href="https://github.com/intelia-technologies/invoice-extractor/releases/latest/download/invoice-extractor.zip">
             <svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>
             <span class="btn-text"><span class="btn-label">Descargar</span><span class="btn-sub" data-download-sub>Un solo zip para macOS, Windows y Linux</span></span>
           </a>
+          <a class="btn-quiet" href="#agents">Úsalo con tu IA <svg class="icon sm" aria-hidden="true"><use href="#i-arrow"/></svg></a>
           <a class="btn-quiet" href="#install">Guía de instalación <svg class="icon sm" aria-hidden="true"><use href="#i-arrow"/></svg></a>
         </div>
         <p class="hero-trust"><svg class="icon sm" aria-hidden="true"><use href="#i-shield"/></svg><span>Funciona en tu ordenador. Tus contraseñas no nos llegan ni a nosotros ni a tu IA. <a href="#security">Mira qué se queda dónde</a></span></p>
@@ -191,7 +192,7 @@
               </div>
             </figure>
             <p>El asistente lanza la ejecución en tu ordenador y solo recibe el resultado: qué PDF se han guardado y dónde, y qué proveedores no han podido terminar. Si un proveedor pide un código de un solo uso por email o SMS, la ejecución espera en esa página. Si el asistente tiene acceso a tu correo, lee el código y lo introduce; si no, te lo pide, y tú lo escribes en la ventana del navegador o se lo dices. Tu contraseña nunca pasa por el chat.</p>
-            <p>Además, ahorras tokens. Durante la ejecución el asistente no abre ni lee las páginas de facturación; eso lo hace el motor en tu ordenador. El asistente gasta tokens en tu petición y en la lista de ficheros guardados, no en las páginas.</p>
+            <p><strong>Más barato y previsible.</strong> Un agente de IA que navega solo gasta tokens en cada página que lee y cada vez sigue un camino distinto. Aquí la ejecución la guía una receta fija, en tu ordenador: el asistente solo gasta tokens en tu petición y en la lista de ficheros guardados, y la misma ejecución da el mismo resultado cada mes. Desde la extensión no gasta ningún token de IA.</p>
             <p class="way-safe"><svg class="icon sm" aria-hidden="true"><use href="#i-shield"/></svg><span>Funciona en tu ordenador. Tus contraseñas no nos llegan ni a nosotros ni a tu IA.</span></p>
           </div>
           <div class="way">
@@ -413,6 +414,7 @@
         <div>
           <h2 id="closing-title">Cierra el mes de una vez.</h2>
           <p>Gratis y de código abierto. Un solo zip para macOS, Windows y Linux; los tres pasos de arriba hacen el resto.</p>
+          <p class="closing-links"><a class="btn-quiet" href="#agents">Conéctalo a tu IA <svg class="icon sm" aria-hidden="true"><use href="#i-arrow"/></svg></a><a class="btn-quiet" href="https://github.com/intelia-technologies/invoice-extractor/blob/main/CONTRIBUTING.md#adding-a-provider" rel="noopener">Aporta un proveedor en GitHub <svg class="icon sm" aria-hidden="true"><use href="#i-arrow"/></svg></a></p>
         </div>
         <div class="closing-cta">
           <video class="closing-video" width="240" height="240" muted playsinline preload="none" poster="../assets/bonobot-stamp-poster.jpg" aria-hidden="true" tabindex="-1" data-play-once>
