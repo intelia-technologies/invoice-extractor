@@ -5,6 +5,9 @@
   "icon": "⚡",
   "billingUrl": "https://omega.naturgy.es/",
   "readySelector": ".invoice-ammount",
+  "auth": {
+    "loginDomains": ["naturgy.es"]
+  },
   "extract": {
     "rows": ".facturas > div:has(.invoice-ammount)",
     "fields": {

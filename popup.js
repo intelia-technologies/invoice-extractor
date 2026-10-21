@@ -1191,6 +1191,83 @@ async function callEngine(tabId, funcName, args = [], frameId) {
   return results[0]?.result;
 }
 
+// Sign-in domain binding (see login-domains.mjs). `domains` is creds.allowedLoginDomains:
+// suffixes built from the vault item URLs and the provider recipe. https only (http on localhost).
+function checkLoginUrl(rawUrl, domains) {
+  const list = (Array.isArray(domains) ? domains : [])
+    .map(d => String(d || '').toLowerCase().replace(/^\.+|\.+$/g, ''))
+    .filter(Boolean);
+  let parsed;
+  try { parsed = new URL(rawUrl); } catch { return { ok: false, reason: 'invalid-url', host: '' }; }
+  const host = parsed.hostname.toLowerCase().replace(/\.+$/, '');
+  if (list.length === 0) return { ok: false, reason: 'no-allowed-domains', host };
+  const local = host === 'localhost' || host.endsWith('.localhost') || host === '[::1]' ||
+    /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host);
+  if (!(parsed.protocol === 'https:' || (parsed.protocol === 'http:' && local))) {
+    return { ok: false, reason: 'insecure', host };
+  }
+  if (!list.some(d => host === d || host.endsWith(`.${d}`))) return { ok: false, reason: 'domain-mismatch', host };
+  return { ok: true, host };
+}
+
+// Autofill entry point. The address is the one Chrome reports for the tab's top frame (page
+// scripts cannot fake it), and the engine call is pinned to that exact document (documentId),
+// so a navigation in between cannot carry the credentials to another page. Fails closed: if
+// the call cannot be pinned to the document whose address was checked, nothing is sent.
+// engine.js re-checks at the moment of typing.
+const LOGIN_FRAME_LOOKUP_ATTEMPTS = 3;
+
+async function getCheckedLoginFrame(tabId) {
+  for (let attempt = 0; attempt < LOGIN_FRAME_LOOKUP_ATTEMPTS; attempt++) {
+    try {
+      const frame = await chrome.webNavigation.getFrame({ tabId, frameId: 0 });
+      if (frame?.documentId && frame.url) return frame;
+    } catch {}
+    if (attempt < LOGIN_FRAME_LOOKUP_ATTEMPTS - 1) await new Promise(r => setTimeout(r, 250));
+  }
+  return null;
+}
+
+async function callEngineForLogin(tabId, creds, authConfig) {
+  const frame = await getCheckedLoginFrame(tabId);
+  if (!frame) {
+    let host = '';
+    try { host = new URL((await chrome.tabs.get(tabId))?.url || '').hostname; } catch {}
+    return { attempted: false, blocked: true, reason: 'page-changed', host };
+  }
+  const check = checkLoginUrl(frame.url, creds?.allowedLoginDomains);
+  if (!check.ok) return { attempted: false, blocked: true, reason: check.reason, host: check.host };
+
+  let results;
+  try {
+    results = await chrome.scripting.executeScript({
+      // Only this document: if the tab has navigated since the check, Chrome refuses to inject.
+      target: { tabId, documentIds: [frame.documentId] },
+      func: async (c, a) => {
+        const engine = window.__invoiceEngine;
+        if (!engine || !engine.attemptAutoLogin) throw new Error('Engine function "attemptAutoLogin" not found');
+        return await engine.attemptAutoLogin(c, a);
+      },
+      args: [creds, authConfig],
+      world: 'MAIN'
+    });
+  } catch (error) {
+    // The checked document is gone (navigated, closed or replaced): the script never ran.
+    if (/document|frame|tab/i.test(error?.message || '')) {
+      return { attempted: false, blocked: true, reason: 'page-changed', host: check.host };
+    }
+    throw error;
+  }
+  return results[0]?.result;
+}
+
+function loginBlockedMessage(loginRes, provider) {
+  const host = loginRes?.host || '?';
+  if (loginRes?.reason === 'page-changed') return t('workflowLoginPageChanged', [host, provider.name]);
+  const key = loginRes?.reason === 'insecure' ? 'workflowLoginInsecure' : 'workflowLoginDomainMismatch';
+  return t(key, [host, provider.name]);
+}
+
 // Run preSteps via engine. For iframe providers, re-finds frame after each step.
 async function runPreSteps(tabId, provider, frameId) {
   const steps = provider.extract.preSteps;
@@ -2656,6 +2733,14 @@ async function processCurrentSite() {
       await handOverVerificationStep(targetTab.id, provider, iframeId);
       await saveState();
       return;
+    } else if (autoLogged.blocked) {
+      // Sign-in page is not the provider's own domain: keep the refusal on screen and let
+      // the user sign in by hand (or skip) instead of overwriting it with progress messages.
+      lastProviderError = autoLogged.error;
+      showButtons(true, false, false, true, false, false, true);
+      startLoginPolling(targetTab.id, provider, iframeId);
+      await saveState();
+      return;
     } else if (!autoLogged.attempted) {
       if (provider.iframe?.urlPattern && iframeId == null) {
         iframeId = await findIframeIdWithRetry(targetTab.id, provider.iframe.urlPattern, 10000);
@@ -2884,7 +2969,13 @@ async function attemptProvider1PasswordLogin(
     const loginStartUrl = loginTabBefore?.url || '';
 
     await injectEngine(tabId);
-    const loginRes = await callEngine(tabId, 'attemptAutoLogin', [creds, provider.auth || {}]);
+    const loginRes = await callEngineForLogin(tabId, creds, provider.auth || {});
+    if (loginRes?.blocked) {
+      // Always shown, also on the automatic path: the user must know why nothing was filled.
+      const message = loginBlockedMessage(loginRes, provider);
+      showStatus(message);
+      return { attempted: false, ready: false, blocked: true, error: message };
+    }
     if (!loginRes?.attempted) {
       if (manual) {
         showStatus(t('workflowStatusProviderMessage', [provider.name, loginRes?.reason || t('workflowNoLoginFields')]));

@@ -32,7 +32,7 @@ The extension can fetch credentials (username, password, and 6-digit TOTP codes)
    npm run install:1password
    ```
 2. Reload the extension in `chrome://extensions`.
-3. **SaaS Billing Auto-Login:** When a provider tab lands on a login screen, the extension matches the provider against 1Password items by URL domain, provider name, or the optional `1Password Item` override in the provider's settings, and fills username, password, and 2FA OTP automatically (1-step or 2-step flows). You can also click **🔑 Sign in with 1Password** in the workflow panel at any time.
+3. **SaaS Billing Auto-Login:** When a provider tab lands on a login screen, the extension matches the provider against 1Password items by URL domain, provider name, or the optional `1Password Item` override in the provider's settings, and fills username, password, and 2FA OTP automatically (1-step or 2-step flows). You can also click **🔑 Sign in with 1Password** in the workflow panel at any time. Credentials are only typed on an HTTPS page whose host is (a subdomain of) a host saved on the vault item, the provider's billing host, or a sign-in domain the recipe declares in `auth.loginDomains` — hosts are never widened automatically to a parent domain. On any other page nothing is typed and the panel says which host was refused.
 4. **Profile Sync Auto-Login:** In **Profiles**, click **🔑 Sign in with 1Password** to authenticate against the synchronization service using an item titled `Profile Sync` or `Invoice Extractor` (or matching the sync service URL).
 
 ## Optional profile synchronization

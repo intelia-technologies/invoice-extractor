@@ -660,8 +660,60 @@
     };
   }
 
+  // Sign-in domain binding (see login-domains.mjs). `allowedLoginDomains` is a list of
+  // domain suffixes computed outside the page from the vault item URLs and the recipe. This
+  // frame and every ancestor frame must be https (http only on localhost) and sit on one of
+  // them, otherwise nothing is typed. Callers also check before handing credentials over;
+  // this repeats the check at the moment of typing.
+  function isLocalLoginHost(host) {
+    return host === 'localhost' || host.endsWith('.localhost') || host === '[::1]' ||
+      /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host);
+  }
+
+  function checkLoginFrame(allowedDomains) {
+    const domains = (Array.isArray(allowedDomains) ? allowedDomains : [])
+      .map(d => String(d || '').toLowerCase().replace(/^\.+|\.+$/g, ''))
+      .filter(Boolean);
+    const frameHost = String(location.hostname || '').toLowerCase();
+    if (domains.length === 0) return { ok: false, reason: 'no-allowed-domains', host: frameHost };
+
+    const chain = [location.href];
+    const ancestors = location.ancestorOrigins;
+    if (ancestors) {
+      for (let i = 0; i < ancestors.length; i++) chain.push(ancestors[i]);
+    } else if (window.top !== window) {
+      try {
+        chain.push(window.top.location.href);
+      } catch {
+        return { ok: false, reason: 'unknown-top-frame', host: frameHost };
+      }
+    }
+
+    for (const entry of chain) {
+      let parsed;
+      try { parsed = new URL(entry); } catch { return { ok: false, reason: 'invalid-url', host: String(entry || '') }; }
+      const host = parsed.hostname.toLowerCase().replace(/\.+$/, '');
+      const secure = parsed.protocol === 'https:' || (parsed.protocol === 'http:' && isLocalLoginHost(host));
+      if (!secure) return { ok: false, reason: 'insecure', host: host || parsed.protocol };
+      if (!domains.some(d => host === d || host.endsWith(`.${d}`))) {
+        return { ok: false, reason: 'domain-mismatch', host };
+      }
+    }
+    return { ok: true, host: frameHost };
+  }
+
+  function loginBlocked(check) {
+    console.warn(`attemptAutoLogin: refused on ${check.host} (${check.reason}); nothing was typed`);
+    return { attempted: false, blocked: true, reason: check.reason, host: check.host };
+  }
+
   async function attemptAutoLogin(credentials = {}, authConfig = {}) {
-    const { username = '', password = '', otp = '' } = credentials;
+    const { username = '', password = '', otp = '', allowedLoginDomains = [] } = credentials;
+    const domainCheck = checkLoginFrame(allowedLoginDomains);
+    if (!domainCheck.ok) return loginBlocked(domainCheck);
+    // Re-checked before every secret: a same-document flow could have changed frames' state.
+    const stillAllowed = () => checkLoginFrame(allowedLoginDomains).ok;
+
     let filledUsername = false;
     let filledPassword = false;
     let filledOtp = false;
@@ -684,6 +736,7 @@
 
     // Step 1: Fill username if present
     if (userEl && username) {
+      if (!stillAllowed()) return loginBlocked(checkLoginFrame(allowedLoginDomains));
       setNativeInputValue(userEl, username);
       filledUsername = true;
       await sleep(150);
@@ -716,6 +769,7 @@
 
     // Step 2: Fill password if present
     if (passEl && password) {
+      if (!stillAllowed()) return loginBlocked(checkLoginFrame(allowedLoginDomains));
       setNativeInputValue(passEl, password);
       filledPassword = true;
       await sleep(150);
@@ -749,6 +803,7 @@
 
     // Step 3: Fill OTP / 2FA code if present
     if (otpEl && otp) {
+      if (!stillAllowed()) return loginBlocked(checkLoginFrame(allowedLoginDomains));
       setNativeInputValue(otpEl, otp);
       filledOtp = true;
       await sleep(150);

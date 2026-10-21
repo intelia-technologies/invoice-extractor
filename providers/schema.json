@@ -187,6 +187,16 @@
         "accountHintSelector": {
           "type": "string",
           "description": "Optional CSS selector where the currently logged-in user email or account name is displayed."
+        },
+        "loginDomains": {
+          "type": "array",
+          "description": "Human-reviewed hosts where this provider's sign-in form legitimately lives when it is not the billingUrl host or one of its subdomains (sibling subdomain such as auth.openai.com, or an SSO / OAuth identity provider). Use the provider's own domain, e.g. \"openai.com\". Each entry also covers its subdomains. Plain lowercase host with at least one dot: no scheme, port, path or wildcard, never a bare public suffix. Credentials are only ever typed on these hosts, the exact billingUrl host, or the exact hosts saved on the vault item (each with subdomains).",
+          "items": {
+            "type": "string",
+            "pattern": "^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z]{2,}$"
+          },
+          "uniqueItems": true,
+          "minItems": 1
         }
       }
     },

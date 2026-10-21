@@ -5,6 +5,9 @@
   "icon": "📞",
   "billingUrl": "https://1console.twilio.com/organization/{{config.organizationId}}/billing/group/{{config.billingGroupId}}/payments/bills",
   "readySelector": "table.border-collapse.text-left",
+  "auth": {
+    "loginDomains": ["twilio.com"]
+  },
   "config": {
     "organizationId": {
       "title": "Organization ID (OR...)",

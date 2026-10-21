@@ -2,6 +2,8 @@
 // Service Account tokens remain in ~/.zshrc.local inside the local Native Messaging
 // host process and are never exposed to the browser or stored in chrome.storage.
 
+import { withAllowedLoginDomains } from './login-domains.mjs';
+
 export const NATIVE_HOST_NAME = 'com.intelia.invoice_extractor.op';
 
 export const DEFAULT_VAULTS = [
@@ -524,8 +526,10 @@ export function createOnePasswordBridge({ sendNativeMessage } = {}) {
             providers: input.providers || [],
             vaultHint: input.vaultHint || '',
           });
-        case 'resolveProvider':
-          return callHost({
+        case 'resolveProvider': {
+          // Recomputed here so an older installed native host still yields the sign-in
+          // domains the engine requires before typing anything.
+          const creds = await callHost({
             action: 'resolveProvider',
             provider: input.provider || {},
             billingUrl: input.billingUrl || '',
@@ -534,6 +538,8 @@ export function createOnePasswordBridge({ sendNativeMessage } = {}) {
             profileName: input.profileName || '',
             providerConfig: input.providerConfig || {},
           });
+          return withAllowedLoginDomains(creds, input.provider || {});
+        }
         case 'resolveProfileSync':
           return callHost({
             action: 'resolveProfileSync',

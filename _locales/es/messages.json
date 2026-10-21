@@ -759,6 +759,48 @@
     "message": "No hay campos de inicio de sesión en la página",
     "description": "Error."
   },
+  "workflowLoginDomainMismatch": {
+    "message": "La página de inicio de sesión $host$ no coincide con el acceso guardado de $provider$; no se ha escrito nada.",
+    "description": "Autofill refused: the sign-in page host is not one of the domains saved on the vault item or declared by the provider recipe. Nothing was typed.",
+    "placeholders": {
+      "host": {
+        "content": "$1",
+        "example": "login.example.net"
+      },
+      "provider": {
+        "content": "$2",
+        "example": "Stripe"
+      }
+    }
+  },
+  "workflowLoginInsecure": {
+    "message": "La página de inicio de sesión $host$ no usa una conexión segura (HTTPS); no se ha escrito nada para $provider$.",
+    "description": "Autofill refused: the sign-in page is not served over HTTPS. Nothing was typed.",
+    "placeholders": {
+      "host": {
+        "content": "$1",
+        "example": "login.example.net"
+      },
+      "provider": {
+        "content": "$2",
+        "example": "Stripe"
+      }
+    }
+  },
+  "workflowLoginPageChanged": {
+    "message": "La página de inicio de sesión $host$ cambió mientras se iniciaba sesión en $provider$; no se ha escrito nada. Inténtalo de nuevo.",
+    "description": "Autofill refused: the page navigated between the sign-in address check and filling, so the credentials could not be bound to the checked page. Nothing was typed.",
+    "placeholders": {
+      "host": {
+        "content": "$1",
+        "example": "login.example.net"
+      },
+      "provider": {
+        "content": "$2",
+        "example": "Stripe"
+      }
+    }
+  },
   "workflowStatusVerifying": {
     "message": "$provider$: comprobando la página de facturación… ($seconds$ s)",
     "description": "Status with elapsed seconds.",

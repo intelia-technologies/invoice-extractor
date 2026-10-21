@@ -5,6 +5,9 @@
   "icon": "📱",
   "billingUrl": "https://www.lowi.es/milowi/#/facturas/",
   "readySelector": ".bill-list .bill-card",
+  "auth": {
+    "loginDomains": ["lowi.es"]
+  },
   "extract": {
     "rows": ".bill-list > .bill-card",
     "fields": {

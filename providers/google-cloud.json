@@ -27,6 +27,9 @@
     "urlPattern": "payments.google.com/payments"
   },
   "readySelector": "table.b3id-widget-table.b3-widget-table",
+  "auth": {
+    "loginDomains": ["google.com"]
+  },
   "extract": {
     "preSteps": [
       {

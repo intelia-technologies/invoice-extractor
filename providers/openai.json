@@ -6,6 +6,7 @@
   "billingUrl": "https://platform.openai.com/settings/organization/billing/history",
   "readySelector": "table.tbl.billing-history-table.tbl-compact",
   "auth": {
+    "loginDomains": ["openai.com"],
     "logoutUrl": "https://platform.openai.com/logout"
   },
   "config": {
