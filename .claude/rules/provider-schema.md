@@ -48,7 +48,11 @@ each invoice URL in a new page of the signed-in browser. Before opening it, the 
 `https` (plain `http` only on `localhost` test fixtures) and its host must be the `billingUrl`
 host, an `auth.loginDomains` entry, or a `download.allowedHosts` entry (each with subdomains).
 Otherwise that invoice is refused with an error and the run continues. The same check applies to
-the page the URL redirects to before `postLoadClick` clicks or `debugger-print` prints.
+the page the URL redirects to before `postLoadClick` clicks or `debugger-print` prints, and to
+the URL the downloaded file finally comes from (after redirects; a `blob:` URL counts as its
+page's origin) before it is saved. List the provider's file host too if its PDFs are served from
+another host (Stripe hosted invoices download from `pay.stripe.com`). With `IE_DEBUG=1`, agent
+mode prints a `debug_download_host` line on stderr for every saved invoice.
 
 Declare `allowedHosts` when invoices live on a third-party host such as Stripe-hosted invoices,
 and keep it as narrow as the URLs the recipe extracts:

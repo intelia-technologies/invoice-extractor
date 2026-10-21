@@ -19,6 +19,8 @@ import {
   checkInvoiceUrl,
   chromeDownloadInvoice,
   chromeDownloadUrl,
+  downloadSourceUrl,
+  fetchPdfFallback,
   printInvoiceToPdf,
 } from '../scripts/agent-downloads.mjs';
 import { resumeAfterVerification } from '../bin/invoice-extractor.mjs';
@@ -54,7 +56,9 @@ test('real recipes: Stripe hosts are allowed only where declared, billing host a
   const openai = recipe('openai');
   assert.ok(checkInvoiceUrl('https://invoice.stripe.com/i/acct_1/live_abc', openai).ok);
   assert.ok(checkInvoiceUrl('https://platform.openai.com/receipt/1', openai).ok);
-  assert.equal(checkInvoiceUrl('https://pay.stripe.com/receipts/x', openai).ok, false, 'OpenAI only extracts invoice.stripe.com');
+  // The hosted invoice's "Download invoice" PDF is served from pay.stripe.com/invoice/.../pdf.
+  assert.ok(checkInvoiceUrl('https://pay.stripe.com/invoice/acct_1/invst_2/pdf', openai).ok);
+  assert.equal(checkInvoiceUrl('https://files.stripe.com/x', openai).ok, false, 'only the declared Stripe hosts');
 
   const shortcut = recipe('shortcut');
   assert.ok(checkInvoiceUrl('https://pay.stripe.com/receipts/acct_1/ch_2', shortcut).ok);
@@ -86,6 +90,60 @@ test('chromeDownloadUrl appends urlSuffix once, like the extension', () => {
   assert.equal(chromeDownloadUrl('https://a.test/i/1/', { urlSuffix: '/pdf' }), 'https://a.test/i/1/pdf');
   assert.equal(chromeDownloadUrl('https://a.test/i/1', { urlSuffix: '/pdf' }), 'https://a.test/i/1/pdf');
   assert.equal(chromeDownloadUrl('https://a.test/i/1', {}), 'https://a.test/i/1');
+});
+
+test('downloadSourceUrl: blob URLs carry their page origin, data URLs belong to the page that started them', () => {
+  const dl = (url, pageUrl = 'https://invoice.stripe.test/i/1') => ({ url: () => url, page: () => ({ url: () => pageUrl }) });
+  assert.equal(downloadSourceUrl(dl('https://pay.stripe.test/x.pdf')), 'https://pay.stripe.test/x.pdf');
+  assert.equal(downloadSourceUrl(dl('blob:https://invoice.stripe.test/5f0c')), 'https://invoice.stripe.test/5f0c');
+  assert.equal(downloadSourceUrl(dl('data:application/pdf;base64,JVBERi0=')), 'https://invoice.stripe.test/i/1');
+  assert.equal(checkInvoiceUrl(downloadSourceUrl(dl('blob:null/5f0c')), ACME).ok, false);
+});
+
+// Fake APIRequestContext: answers by URL and records every request made.
+function fakeRequest(responses) {
+  const asked = [];
+  return {
+    asked,
+    async get(url, opts) {
+      asked.push(url);
+      assert.equal(opts.maxRedirects, 0, 'redirects are followed by hand, hop by hop');
+      const r = responses[url] || { status: 404 };
+      return {
+        status: () => r.status,
+        ok: () => r.status >= 200 && r.status < 300,
+        headers: () => r.headers || {},
+        body: async () => Buffer.from(r.body || ''),
+      };
+    },
+  };
+}
+
+test('request fallback checks every redirect hop before following it', async () => {
+  const out = mkdtempSync(path.join(tmpdir(), 'ie-agent-fb-'));
+  try {
+    const away = fakeRequest({
+      'https://invoice.stripe.test/i/1': { status: 302, headers: { location: 'https://cdn.other.test/1.pdf' } },
+      'https://cdn.other.test/1.pdf': { status: 200, body: '%PDF-1.4 foreign' },
+    });
+    const r1 = await fetchPdfFallback(away, ACME, 'https://invoice.stripe.test/i/1', path.join(out, '1.pdf'));
+    assert.equal(r1.success, false);
+    assert.match(r1.error, /Refused to save a download from cdn\.other\.test/);
+    assert.deepEqual(away.asked, ['https://invoice.stripe.test/i/1'], 'the foreign host is never requested');
+    assert.ok(!existsSync(path.join(out, '1.pdf')));
+
+    const within = fakeRequest({
+      'https://invoice.stripe.test/i/2': { status: 302, headers: { location: '/files/2.pdf' } },
+      'https://invoice.stripe.test/files/2.pdf': { status: 200, body: '%PDF-1.4 ok' },
+    });
+    assert.deepEqual(await fetchPdfFallback(within, ACME, 'https://invoice.stripe.test/i/2', path.join(out, '2.pdf')), { success: true });
+    assert.equal(readFileSync(path.join(out, '2.pdf'), 'utf8'), '%PDF-1.4 ok');
+
+    const html = fakeRequest({ 'https://invoice.stripe.test/i/3': { status: 200, body: '<html>' } });
+    assert.equal((await fetchPdfFallback(html, ACME, 'https://invoice.stripe.test/i/3', path.join(out, '3.pdf'))).success, false);
+  } finally {
+    rmSync(out, { recursive: true, force: true });
+  }
 });
 
 // ─── Part 2: real browser against synthetic pages (no network) ────────────────────────────
@@ -129,6 +187,22 @@ const ROUTES = {
   // Link opening in a new tab.
   'https://invoice.stripe.test/i/blank': () => html(`<a target="_blank" href="/files/blank.pdf">Download invoice</a>`),
   'https://invoice.stripe.test/files/blank.pdf': () => attachment('blank.pdf'),
+  // An allowed page whose download comes from a host the recipe does not list.
+  'https://invoice.stripe.test/i/offsite': () => html(`<script>location.replace('https://cdn.other.test/x.pdf')</script>`),
+  'https://cdn.other.test/x.pdf': () => attachment('x.pdf'),
+  // The page builds the PDF itself (blob: URL of an allowed origin).
+  'https://invoice.stripe.test/i/blob': () => html(`<script>
+    const url = URL.createObjectURL(new Blob(['%PDF-1.4 from blob'], { type: 'application/pdf' }));
+    const a = Object.assign(document.createElement('a'), { href: url, download: 'blob.pdf' });
+    document.body.append(a); setTimeout(() => a.click(), 100);
+  </script>`),
+  // Two invoices whose popups open after different delays (concurrent helpers).
+  'https://invoice.stripe.test/i/slow': () => html(`<a target="_blank" href="/files/slow.pdf">Download invoice</a>
+    <script>setTimeout(() => document.querySelector('a').click(), 900)</script>`),
+  'https://invoice.stripe.test/files/slow.pdf': () => ({ ...attachment('slow.pdf'), body: '%PDF-1.4 SLOW' }),
+  'https://invoice.stripe.test/i/fast': () => html(`<a target="_blank" href="/files/fast.pdf">Download invoice</a>
+    <script>setTimeout(() => document.querySelector('a').click(), 100)</script>`),
+  'https://invoice.stripe.test/files/fast.pdf': () => ({ ...attachment('fast.pdf'), body: '%PDF-1.4 FAST' }),
   // Plain HTML, never a download.
   'https://invoice.stripe.test/i/nothing': () => html('<p>Nothing to see</p>'),
   // A redirect off the allowed hosts before the click.
@@ -215,6 +289,41 @@ test('chrome-download reports a missing button, no download, and a redirect off 
     assert.equal(r3.success, false);
     assert.match(r3.error, /login\.other\.test/);
     assert.ok(!existsSync(path.join(out, 'c.pdf')));
+    assert.equal(context.pages().length, 0);
+  });
+});
+
+test('a download whose bytes come from an unlisted host is refused and not saved', { skip: browserSkip }, async () => {
+  await withContext(async (context, out) => {
+    const dest = path.join(out, 'offsite.pdf');
+    const r = await chromeDownloadInvoice(context, ACME, 'https://invoice.stripe.test/i/offsite', dest, { timeoutMs: 8000 });
+    assert.equal(r.success, false);
+    assert.match(r.error, /Refused to save a download from cdn\.other\.test/);
+    assert.ok(!existsSync(dest));
+
+    // A blob: built by an allowed page is that page's own content.
+    const blobDest = path.join(out, 'blob.pdf');
+    assert.deepEqual(await chromeDownloadInvoice(context, ACME, 'https://invoice.stripe.test/i/blob', blobDest, { timeoutMs: 8000 }), { success: true });
+    assert.equal(readFileSync(blobDest, 'utf8'), '%PDF-1.4 from blob');
+    assert.equal(context.pages().length, 0);
+  });
+});
+
+test('concurrent helpers in one browser each keep their own popup download', { skip: browserSkip }, async () => {
+  await withContext(async (context, out) => {
+    const slow = path.join(out, 'slow.pdf');
+    const fast = path.join(out, 'fast.pdf');
+    // The slow helper is waiting while the fast one's popup opens and downloads.
+    const [a, b] = await Promise.all([
+      chromeDownloadInvoice(context, ACME, 'https://invoice.stripe.test/i/slow', slow, { timeoutMs: 8000 }),
+      (async () => {
+        await new Promise(r => setTimeout(r, 150));
+        return chromeDownloadInvoice(context, ACME, 'https://invoice.stripe.test/i/fast', fast, { timeoutMs: 8000 });
+      })(),
+    ]);
+    assert.deepEqual([a, b], [{ success: true }, { success: true }]);
+    assert.equal(readFileSync(slow, 'utf8'), '%PDF-1.4 SLOW');
+    assert.equal(readFileSync(fast, 'utf8'), '%PDF-1.4 FAST');
     assert.equal(context.pages().length, 0);
   });
 });

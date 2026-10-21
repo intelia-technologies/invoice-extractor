@@ -17,6 +17,7 @@
  */
 
 import { writeFileSync } from 'node:fs';
+import { basename } from 'node:path';
 import { buildAllowedLoginDomains, checkLoginLocation, isValidLoginDomain } from '../login-domains.mjs';
 
 export const DOWNLOAD_TIMEOUT_MS = 25000;
@@ -24,6 +25,7 @@ const LOAD_TIMEOUT_MS = 12000;
 const PRINT_LOAD_TIMEOUT_MS = 10000;
 const PRINT_SETTLE_MS = 2000;
 const DEFAULT_POST_LOAD_WAIT_MS = 2000;
+const MAX_FALLBACK_REDIRECTS = 5;
 
 // Same options popup.js passes to chrome.debugger 'Page.printToPDF'.
 export const PRINT_TO_PDF_OPTIONS = Object.freeze({
@@ -74,25 +76,63 @@ export function chromeDownloadUrl(url, downloadCfg = {}) {
   return downloadCfg.urlSuffix ? String(url).replace(/\/?$/, '') + downloadCfg.urlSuffix : String(url);
 }
 
-// Resolves with the first download started by `page` or by any page it (or the context) opens
-// afterwards (target=_blank links, window.open). Popups are collected so the caller closes them.
-function watchDownloads(context, page) {
+// Resolves with the first download started by `page` or by a popup it opens (target=_blank
+// links, window.open), at any depth. Only this page's own popups are watched, never the shared
+// context's pages, so concurrent helpers in one browser (MCP) cannot take each other's downloads.
+// Popups are collected so the caller closes them.
+function watchDownloads(page) {
   const popups = [];
   let resolve;
   const promise = new Promise(r => { resolve = r; });
   const onDownload = d => resolve(d);
-  const onPage = p => { popups.push(p); p.on('download', onDownload); };
+  const onPopup = p => {
+    popups.push(p);
+    p.on('download', onDownload);
+    p.on('popup', onPopup);
+  };
   page.on('download', onDownload);
-  context.on('page', onPage);
+  page.on('popup', onPopup);
   return {
     promise,
     popups,
     stop() {
-      page.off('download', onDownload);
-      context.off('page', onPage);
-      for (const p of popups) p.off('download', onDownload);
+      for (const p of [page, ...popups]) {
+        p.off('download', onDownload);
+        p.off('popup', onPopup);
+      }
     },
   };
+}
+
+// The URL a browser download really came from. A blob: URL carries the origin of the page that
+// built it; a data: URL has none, so it is attributed to the page that started it.
+export function downloadSourceUrl(download) {
+  const url = String(download?.url?.() || '');
+  if (url.startsWith('blob:')) return url.slice(5);
+  if (url.startsWith('data:')) return download.page?.()?.url?.() || '';
+  return url;
+}
+
+function refusedSource(check, provider) {
+  const host = check.host || 'an unknown host';
+  return `Refused to save a download from ${host}: it ${check.reason === 'insecure' ? 'is not https' : `is not a ${provider.name || provider.id} host`}. ` +
+    'If this is the provider\'s own file host, add it to download.allowedHosts in the recipe.';
+}
+
+// IE_DEBUG=1: one JSON line on stderr per saved invoice with the host its bytes came from.
+function debugDownloadHost(provider, destPath, url, source) {
+  if (!process.env.IE_DEBUG) return;
+  let host = '';
+  try { host = new URL(url).hostname; } catch {}
+  process.stderr.write(`${JSON.stringify({
+    event: 'debug_download_host',
+    providerId: provider.id,
+    filename: basename(destPath),
+    method: provider.download?.method,
+    source,
+    host,
+    url: String(url).split(/[?#]/)[0],
+  })}\n`);
 }
 
 // Same click as the extension's postLoadClick (in the page, `el.click()`), plus the documented
@@ -125,7 +165,7 @@ export async function chromeDownloadInvoice(context, provider, invoiceUrl, destP
   const deadline = Date.now() + timeoutMs;
   const left = () => Math.max(0, deadline - Date.now());
   const page = await context.newPage();
-  const watch = watchDownloads(context, page);
+  const watch = watchDownloads(page);
   try {
     // A download triggered by the navigation itself aborts goto ("Download is starting").
     const nav = page.goto(url, { waitUntil: 'load', timeout: Math.min(LOAD_TIMEOUT_MS, left()) })
@@ -158,9 +198,17 @@ export async function chromeDownloadInvoice(context, provider, invoiceUrl, destP
       if (cfg.postLoadClick) return { success: false, error: `No download started within ${Math.round(timeoutMs / 1000)} s.` };
       // Extension fallback: download the URL itself. Only accepted when it really is a PDF
       // (a hosted invoice page is HTML, not the invoice).
-      return await fetchPdfFallback(context, url, destPath, deadline);
+      return await fetchPdfFallback(context.request, provider, url, destPath, deadline);
     }
 
+    // Where the bytes really come from (after redirects), checked before anything is saved.
+    const source = downloadSourceUrl(download);
+    const sourceCheck = checkInvoiceUrl(source, provider);
+    if (!sourceCheck.ok) {
+      await download.cancel().catch(() => {});
+      return { success: false, error: refusedSource(sourceCheck, provider) };
+    }
+    debugDownloadHost(provider, destPath, source, 'download-event');
     await download.saveAs(destPath);
     const failure = await download.failure();
     if (failure) return { success: false, error: `Download failed: ${failure}` };
@@ -172,13 +220,30 @@ export async function chromeDownloadInvoice(context, provider, invoiceUrl, destP
   }
 }
 
-async function fetchPdfFallback(context, url, destPath, deadline) {
+// Extension fallback without a browser download: fetch the URL with the browser's cookies.
+// Redirects are followed one hop at a time and each hop is checked first, so cookies and the
+// request never reach a host the recipe does not vouch for. `request` is an APIRequestContext.
+export async function fetchPdfFallback(request, provider, url, destPath, deadline = Date.now() + DOWNLOAD_TIMEOUT_MS) {
+  let current = url;
   try {
-    const res = await context.request.get(url, { timeout: Math.max(1000, deadline - Date.now()) });
-    const body = res.ok() ? await res.body() : null;
-    if (body && body.subarray(0, 5).toString('latin1') === '%PDF-') {
-      writeFileSync(destPath, body);
-      return { success: true };
+    for (let hop = 0; hop <= MAX_FALLBACK_REDIRECTS; hop++) {
+      const check = checkInvoiceUrl(current, provider);
+      if (!check.ok) return { success: false, error: refusedSource(check, provider) };
+      const res = await request.get(current, { timeout: Math.max(1000, deadline - Date.now()), maxRedirects: 0 });
+      const status = res.status();
+      if (status >= 300 && status < 400) {
+        const location = res.headers().location;
+        if (!location) break;
+        current = new URL(location, current).href;
+        continue;
+      }
+      const body = res.ok() ? await res.body() : null;
+      if (body && body.subarray(0, 5).toString('latin1') === '%PDF-') {
+        debugDownloadHost(provider, destPath, current, 'request-fallback');
+        writeFileSync(destPath, body);
+        return { success: true };
+      }
+      break;
     }
   } catch {}
   return { success: false, error: 'No download started and the URL did not return a PDF.' };
@@ -214,6 +279,7 @@ export async function printInvoiceToPdf(
       if (!pdf || pdf.subarray(0, 5).toString('latin1') !== '%PDF-') {
         return { success: false, error: 'Printing the receipt produced an empty PDF.' };
       }
+      debugDownloadHost(provider, destPath, page.url(), 'print');
       writeFileSync(destPath, pdf);
       return { success: true };
     } finally {
