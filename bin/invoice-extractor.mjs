@@ -473,6 +473,7 @@ async function signInToProvider(page, context, provider, run, deps) {
 
   // Resolve 1Password credentials for login or account verification
   let creds = null;
+  let credsError = '';
   try {
     creds = await (deps.resolveCredentials || handleHostRequest)(
       {
@@ -485,7 +486,10 @@ async function signInToProvider(page, context, provider, run, deps) {
       },
       deps
     );
-  } catch {}
+  } catch (err) {
+    // Kept for the error below: "no saved login" is a different fix from "sign-in failed".
+    credsError = err?.message || String(err);
+  }
 
   // Everything needed to continue after a verification code. Never the password.
   const signIn = (loginStartUrl, requestedAt) => ({
@@ -619,7 +623,13 @@ async function signInToProvider(page, context, provider, run, deps) {
   if (!readyCheck.success) {
     manifest.errors.push({
       providerId: provider.id,
-      error: 'Billing page readySelector not reached (check login or 2FA challenge). Run with --headed to inspect.',
+      error: creds
+        ? 'Billing page readySelector not reached (check login or 2FA challenge). Run with --headed to inspect.'
+        : !credsError || /no item found/i.test(credsError)
+          ? `Not signed in to ${provider.name} and no saved login was found for it${
+              credsError ? ` (${credsError})` : ''
+            }. Add its login to your password manager, or set the item in the profile.`
+          : `Not signed in to ${provider.name}: reading its login from the password manager failed (${credsError}).`,
     });
     return { status: 'error' };
   }
