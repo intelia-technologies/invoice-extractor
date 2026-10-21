@@ -625,9 +625,11 @@ async function signInToProvider(page, context, provider, run, deps) {
       providerId: provider.id,
       error: creds
         ? 'Billing page readySelector not reached (check login or 2FA challenge). Run with --headed to inspect.'
-        : `Not signed in to ${provider.name} and no saved login was found for it${
-            credsError ? ` (${credsError})` : ''
-          }. Add its login to your password manager, or set the item in the profile.`,
+        : !credsError || /no item found/i.test(credsError)
+          ? `Not signed in to ${provider.name} and no saved login was found for it${
+              credsError ? ` (${credsError})` : ''
+            }. Add its login to your password manager, or set the item in the profile.`
+          : `Not signed in to ${provider.name}: reading its login from the password manager failed (${credsError}).`,
     });
     return { status: 'error' };
   }
