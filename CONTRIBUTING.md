@@ -115,6 +115,10 @@ billing pages while you're logged in, so the rules are strict and non-negotiable
 - **Don't capture secrets.** Selectors and templates should target invoice metadata and download
   links, not auth tokens, cookies, or session identifiers. Scrub any sample DOM you attach to a
   PR or issue.
+- **Upstream projects are reference only.** woob (LGPL) and Cozy konnectors (AGPL) may be consulted
+  to learn how a portal works (endpoints, date formats, click order), but pasting their code into
+  this repository is not allowed: those licenses are incompatible with this project's MIT license.
+  Write every recipe from your own observation of the real page.
 
 ## Pull request checklist
 
