@@ -4,70 +4,93 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
+import Ajv from 'ajv';
 import {
   buildAllowedLoginDomains,
   checkLoginLocation,
   describeLoginBlock,
   guardedAutoLogin,
   hostMatchesDomains,
-  registrableDomain,
+  isValidLoginDomain,
   templateHost,
 } from '../login-domains.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const allowedFor = (itemUrls, provider = {}) => buildAllowedLoginDomains({ itemUrls, provider });
+const allows = (domains, url) => checkLoginLocation({ url }, domains).ok;
 
-test('registrable domain handles plain, multi-part and shared-hosting suffixes', () => {
-  assert.equal(registrableDomain('dashboard.stripe.com'), 'stripe.com');
-  assert.equal(registrableDomain('https://omega.naturgy.es/login'), 'naturgy.es');
-  assert.equal(registrableDomain('billing.example.co.uk'), 'example.co.uk');
-  assert.equal(registrableDomain('a.b.tienda.com.es'), 'tienda.com.es');
-  assert.equal(registrableDomain('shop.example.com.au'), 'example.com.au');
-  assert.equal(registrableDomain('acme.github.io'), 'acme.github.io');
-  assert.equal(registrableDomain('co.uk'), '', 'a bare public suffix is not registrable');
-  assert.equal(registrableDomain('com'), 'com');
-  assert.equal(registrableDomain('localhost:8080'), 'localhost');
-  assert.equal(registrableDomain('127.0.0.1'), '127.0.0.1');
-});
-
-test('host matching accepts the domain and its subdomains, never look-alikes', () => {
-  const allowed = ['stripe.com', 'example.co.uk'];
+test('host matching accepts the host and its subdomains, never look-alikes', () => {
+  const allowed = ['stripe.com'];
   assert.equal(hostMatchesDomains('stripe.com', allowed), true);
   assert.equal(hostMatchesDomains('dashboard.stripe.com', allowed), true);
-  assert.equal(hostMatchesDomains('login.example.co.uk', allowed), true);
   assert.equal(hostMatchesDomains('evilstripe.com', allowed), false);
   assert.equal(hostMatchesDomains('stripe.com.evil.io', allowed), false);
-  assert.equal(hostMatchesDomains('other.co.uk', allowed), false);
   assert.equal(hostMatchesDomains('stripe.co', allowed), false);
 });
 
-test('allowed sign-in domains come from vault item URLs plus the recipe, never user config', () => {
-  const stripe = {
-    billingUrl: 'https://dashboard.stripe.com/{{config.accountId}}/settings/plans-and-fees/invoice-history',
-  };
-  assert.deepEqual(
-    buildAllowedLoginDomains({ itemUrls: [{ href: 'https://www.stripe.com/login' }, 'https://billing.acme.co.uk'], provider: stripe }),
-    ['acme.co.uk', 'stripe.com']
-  );
+test('vault item and billingUrl hosts are never widened to a guessed parent domain', () => {
+  // Exact host + subdomains only: app.holded.com does not allow holded.com or a sibling.
+  const holded = allowedFor(['https://app.holded.com/login'], {});
+  assert.deepEqual(holded, ['app.holded.com']);
+  assert.equal(allows(holded, 'https://app.holded.com/login'), true);
+  assert.equal(allows(holded, 'https://eu.app.holded.com/login'), true);
+  assert.equal(allows(holded, 'https://holded.com/login'), false);
+  assert.equal(allows(holded, 'https://www.holded.com/login'), false);
 
-  // Item without URLs falls back to the recipe's own domains.
-  assert.deepEqual(
-    buildAllowedLoginDomains({ itemUrls: [], provider: { billingUrl: 'https://app.coderabbit.ai/x', auth: { loginDomains: ['github.com'] } } }),
-    ['coderabbit.ai', 'github.com']
-  );
+  // Shared namespaces stay per tenant: no "uk.com" or "amazonaws.com" from a partial suffix list.
+  const ukCom = allowedFor(['https://alice.uk.com/login'], {});
+  assert.deepEqual(ukCom, ['alice.uk.com']);
+  assert.equal(allows(ukCom, 'https://bob.uk.com/login'), false);
+  const apiGateway = allowedFor(['https://abc123.execute-api.eu-west-1.amazonaws.com/prod/login'], {});
+  assert.deepEqual(apiGateway, ['abc123.execute-api.eu-west-1.amazonaws.com']);
+  assert.equal(allows(apiGateway, 'https://evil.execute-api.eu-west-1.amazonaws.com/login'), false);
+  assert.equal(allows(apiGateway, 'https://s3.amazonaws.com/login'), false);
+  assert.equal(allows(allowedFor(['https://acme.github.io']), 'https://evil.github.io/'), false);
 
-  // A config placeholder in the host is dropped, so a typed value can never become an allowed domain.
-  assert.equal(templateHost('https://{{config.workspace}}.webflow.com/billing'), 'webflow.com');
+  // billingUrl: exact host; a host with a config placeholder contributes nothing.
+  assert.equal(templateHost('https://dashboard.stripe.com/{{config.accountId}}/invoices'), 'dashboard.stripe.com');
+  assert.equal(templateHost('https://{{config.workspace}}.webflow.com/billing'), '');
   assert.equal(templateHost('https://{{config.host}}/billing'), '');
-  assert.deepEqual(buildAllowedLoginDomains({ provider: { billingUrl: 'https://{{config.host}}/billing' } }), []);
+  assert.deepEqual(allowedFor([], { billingUrl: 'https://{{config.ws}}.example.com/billing' }), []);
 
-  // App URIs and bare public suffixes never widen the list.
+  // App URIs never count.
+  assert.deepEqual(allowedFor([{ uri: 'androidapp://com.stripe.android' }, { href: 'https://dashboard.stripe.com' }]), ['dashboard.stripe.com']);
+});
+
+test('sibling sign-in subdomain is refused without loginDomains and allowed with it', () => {
+  const bare = { billingUrl: 'https://platform.openai.com/settings/organization/billing/history' };
+  assert.equal(allows(allowedFor([], bare), 'https://auth.openai.com/log-in'), false);
+  assert.equal(allows(allowedFor([], bare), 'https://platform.openai.com/login'), true);
+
+  const declared = { ...bare, auth: { loginDomains: ['openai.com'] } };
+  assert.deepEqual(allowedFor([], declared), ['openai.com', 'platform.openai.com']);
+  assert.equal(allows(allowedFor([], declared), 'https://auth.openai.com/log-in'), true);
+  assert.equal(allows(allowedFor([], declared), 'https://openai.com.evil.io/log-in'), false);
+
+  // Item without URLs falls back to the recipe's own hosts (billingUrl + loginDomains).
   assert.deepEqual(
-    buildAllowedLoginDomains({
-      itemUrls: [{ uri: 'androidapp://com.stripe.android' }, { href: 'https://dashboard.stripe.com' }],
-      provider: { auth: { loginDomains: ['co.uk', 'accounts.google.com'] } },
-    }),
-    ['accounts.google.com', 'stripe.com']
+    allowedFor([], { billingUrl: 'https://app.coderabbit.ai/x', auth: { loginDomains: ['github.com'] } }),
+    ['app.coderabbit.ai', 'github.com']
   );
+});
+
+test('invalid loginDomains entries are rejected by the code and by the schema', () => {
+  const invalid = ['com', 'uk', 'localhost', '*.stripe.com', 'https://stripe.com', 'stripe.com/login', 'stripe.com:443', 'Stripe.com', '.stripe.com', '', 42];
+  for (const entry of invalid) {
+    assert.equal(isValidLoginDomain(entry), false, `${JSON.stringify(entry)} must be rejected`);
+  }
+  assert.deepEqual(allowedFor([], { auth: { loginDomains: invalid } }), [], 'invalid entries never reach the allowed list');
+  for (const entry of ['stripe.com', 'accounts.google.com', 'naturgy.es']) assert.equal(isValidLoginDomain(entry), true);
+
+  const ajv = new Ajv({ allErrors: true, strict: false });
+  const schema = JSON.parse(readFileSync(join(ROOT, 'providers', 'schema.json'), 'utf8'));
+  const validate = ajv.compile(schema);
+  const base = JSON.parse(readFileSync(join(ROOT, 'providers', 'openai.json'), 'utf8'));
+  const withDomains = loginDomains => ({ ...base, auth: { ...base.auth, loginDomains } });
+  assert.equal(validate(withDomains(['openai.com'])), true, JSON.stringify(validate.errors));
+  for (const entry of ['com', '*.openai.com', 'https://openai.com', 'openai.com/login', 'OpenAI.com']) {
+    assert.equal(validate(withDomains([entry])), false, `schema must reject ${entry}`);
+  }
 });
 
 test('sign-in location check: https on an allowed domain only, iframe ancestors included', () => {
@@ -147,7 +170,7 @@ test('explicit item reference still chooses the item, but its login is bound to 
     deps
   );
   assert.equal(creds.title, 'Stripe Acme');
-  assert.deepEqual(creds.allowedLoginDomains, ['stripe.com']);
+  assert.deepEqual(creds.allowedLoginDomains, ['dashboard.stripe.com']);
   assert.equal(checkLoginLocation({ url: 'https://stripe.com.evil.io/login' }, creds.allowedLoginDomains).ok, false);
   assert.equal(checkLoginLocation({ url: 'https://dashboard.stripe.com/login' }, creds.allowedLoginDomains).ok, true);
 
@@ -160,7 +183,7 @@ test('explicit item reference still chooses the item, but its login is bound to 
     },
     deps
   );
-  assert.deepEqual(noUrlCreds.allowedLoginDomains, ['coderabbit.ai', 'github.com']);
+  assert.deepEqual(noUrlCreds.allowedLoginDomains, ['app.coderabbit.ai', 'github.com']);
   assert.equal(checkLoginLocation({ url: 'https://github.com/login' }, noUrlCreds.allowedLoginDomains).ok, true);
   assert.equal(checkLoginLocation({ url: 'https://gitlab.com/users/sign_in' }, noUrlCreds.allowedLoginDomains).ok, false);
 });
@@ -174,7 +197,7 @@ test('Bitwarden login.uris feed the allowed sign-in domains like 1Password urls'
     login: { username: 'ops', password: 'pw', uris: [{ uri: 'https://accounts.hetzner.com/login' }, { uri: 'androidapp://com.hetzner' }] },
   });
   const creds = withAllowedLoginDomains(extractCredentialsFromOpItem(item), { billingUrl: 'https://accounts.hetzner.com/invoice' });
-  assert.deepEqual(creds.allowedLoginDomains, ['hetzner.com']);
+  assert.deepEqual(creds.allowedLoginDomains, ['accounts.hetzner.com']);
 });
 
 test('extension bridge adds sign-in domains even when an older native host omits them', async () => {
@@ -183,7 +206,7 @@ test('extension bridge adds sign-in domains even when an older native host omits
     sendNativeMessage: async () => ({ ok: true, data: { username: 'u', password: 'p', urls: ['https://my.vultr.com'] } }),
   });
   const creds = await bridge.dispatch('resolveProvider', { provider: { id: 'vultr', billingUrl: 'https://my.vultr.com/billing/' } });
-  assert.deepEqual(creds.allowedLoginDomains, ['vultr.com']);
+  assert.deepEqual(creds.allowedLoginDomains, ['my.vultr.com']);
 });
 
 // Playwright-like frame stub: url()/parentFrame() as the browser reports them.

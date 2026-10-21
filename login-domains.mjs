@@ -1,40 +1,13 @@
 // Sign-in domain binding for credential autofill.
 //
-// A vault login may only be typed into a page whose host belongs to an allowed domain:
-//   - the registrable domain (eTLD+1) of every URL saved on the vault item, and
-//   - the registrable domain of the recipe's own billingUrl, plus any `auth.loginDomains`
-//     the recipe declares for SSO / identity hosts (kept as declared: that host and its
-//     subdomains only).
-// The resulting list is a set of domain suffixes, so the in-page check (engine.js) and the
-// popup pre-check only need `host === d || host.endsWith('.' + d)` — no suffix list in the page.
-//
-// No network fetch of the Public Suffix List: a short vendored list plus a ccTLD heuristic
-// (`<generic label>.<2-letter TLD>`, e.g. co.uk, com.es) is enough to keep `evil.co.uk` from
-// matching `good.co.uk`. Unknown cases err on the strict side (exact host match).
-
-// Multi-part public suffixes not covered by the ccTLD heuristic below.
-const EXTRA_PUBLIC_SUFFIXES = new Set([
-  'me.uk', 'gv.at', 'priv.at', 'asso.fr', 'gouv.fr', 'k12.ca.us',
-]);
-
-// Shared-hosting suffixes (PSL private section) where every subdomain is a different owner.
-const PRIVATE_SUFFIXES = new Set([
-  'github.io', 'gitlab.io', 'bitbucket.io', 'github.dev', 'pages.dev', 'workers.dev', 'r2.dev',
-  'vercel.app', 'netlify.app', 'web.app', 'firebaseapp.com', 'appspot.com', 'run.app',
-  'cloudfunctions.net', 'herokuapp.com', 'azurewebsites.net', 'azurestaticapps.net',
-  'cloudfront.net', 's3.amazonaws.com', 'amplifyapp.com', 'onrender.com', 'fly.dev',
-  'railway.app', 'deno.dev', 'glitch.me', 'repl.co', 'ngrok.io', 'ngrok-free.app',
-  'trycloudflare.com', 'surge.sh', 'blogspot.com', 'wordpress.com', 'wixsite.com',
-  'myshopify.com', 'webflow.io', 'framer.app',
-]);
-
-// Second-level labels that ccTLD registries use as public suffixes (co.uk, com.es, ne.jp...).
-const GENERIC_SECOND_LEVEL = new Set([
-  'ac', 'co', 'com', 'edu', 'go', 'gob', 'gov', 'ltd', 'mil', 'ne', 'net', 'nic', 'nom', 'or',
-  'org', 'plc', 'sch',
-]);
-
-const IPV4 = /^\d{1,3}(?:\.\d{1,3}){3}$/;
+// A vault login may only be typed into a page whose host is on the allowed list:
+//   - the exact host of every URL saved on the vault item (plus its subdomains),
+//   - the exact host of the recipe's own billingUrl (plus its subdomains), and
+//   - each `auth.loginDomains` entry the recipe declares (plus its subdomains).
+// Nothing is ever widened algorithmically (no "registrable domain" guess from a partial public
+// suffix list: that turns `alice.uk.com` into `uk.com`). Widening to a parent domain such as
+// `openai.com` only happens through a human-reviewed `auth.loginDomains` entry in the recipe.
+// The list is a set of domain suffixes, so every check is `host === d || host.endsWith('.' + d)`.
 
 export function normalizeHost(value) {
   if (!value || typeof value !== 'string') return '';
@@ -59,33 +32,12 @@ export function isLocalHost(host) {
   return h === 'localhost' || h.endsWith('.localhost') || h === '::1' || /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(h);
 }
 
-function isIpAddress(host) {
-  return IPV4.test(host) || host.includes(':');
-}
+// A recipe `auth.loginDomains` entry: a plain lowercase host name with at least one dot. No
+// scheme, port, path or wildcard, and never a single label ("com"). Mirrors the schema pattern.
+const LOGIN_DOMAIN_PATTERN = /^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/;
 
-export function publicSuffixOf(host) {
-  const h = normalizeHost(host);
-  if (!h || isIpAddress(h) || !h.includes('.')) return '';
-  const labels = h.split('.');
-  for (let i = 0; i < labels.length; i++) {
-    const candidate = labels.slice(i).join('.');
-    if (PRIVATE_SUFFIXES.has(candidate) || EXTRA_PUBLIC_SUFFIXES.has(candidate)) return candidate;
-  }
-  const tld = labels[labels.length - 1];
-  const sld = labels[labels.length - 2];
-  if (labels.length >= 2 && tld.length === 2 && GENERIC_SECOND_LEVEL.has(sld)) return `${sld}.${tld}`;
-  return tld;
-}
-
-// eTLD+1 of a host; the host itself for IPs / single-label hosts; '' for a bare public suffix.
-export function registrableDomain(host) {
-  const h = normalizeHost(host);
-  if (!h) return '';
-  if (isIpAddress(h) || !h.includes('.')) return h;
-  const suffix = publicSuffixOf(h);
-  if (!suffix || h === suffix) return '';
-  const rest = h.slice(0, h.length - suffix.length - 1).split('.');
-  return `${rest[rest.length - 1]}.${suffix}`;
+export function isValidLoginDomain(entry) {
+  return typeof entry === 'string' && LOGIN_DOMAIN_PATTERN.test(entry);
 }
 
 export function hostMatchesDomains(host, domains = []) {
@@ -97,44 +49,35 @@ export function hostMatchesDomains(host, domains = []) {
   });
 }
 
-// Host of a recipe URL template. Leading labels that are `{{config.*}}` placeholders are dropped
-// (`https://{{config.ws}}.example.com` → `example.com`): the allowed domain comes from the
-// recipe author, never from a user-typed config value.
+// Exact host of a recipe URL template. A host containing a `{{config.*}}` placeholder yields
+// nothing: an allowed domain never comes from a user-typed config value.
 export function templateHost(template) {
   const m = String(template || '').match(/^[a-z][a-z0-9+.-]*:\/\/([^/?#]+)/i);
-  if (!m) return '';
-  const authority = m[1]
-    .replace(/\{\{[^}]*\}\}/g, '*') // placeholders may contain dots ({{config.ws}})
-    .replace(/^[^@]*@/, '')
-    .replace(/:\d+$/, '')
-    .toLowerCase();
-  const labels = authority.split('.');
-  while (labels.length && labels[0].includes('*')) labels.shift();
-  if (labels.some(l => l.includes('*') || l.includes('{') || l.includes('}'))) return '';
-  return normalizeHost(labels.join('.'));
+  if (!m || /[{}]/.test(m[1])) return '';
+  return normalizeHost(m[0]);
 }
 
 export function buildAllowedLoginDomains({ itemUrls = [], provider = {} } = {}) {
   const allowed = new Set();
-  const add = domain => { if (domain) allowed.add(domain); };
+  const add = host => { if (host) allowed.add(host); };
 
   for (const u of Array.isArray(itemUrls) ? itemUrls : []) {
     const href = String((typeof u === 'string' ? u : u?.href || u?.uri) || '').trim();
     // Only web addresses count (Bitwarden also stores androidapp:// and iosapp:// URIs).
     if (/^[a-z][a-z0-9+.-]*:/i.test(href) && !/^https?:\/\//i.test(href)) continue;
-    add(registrableDomain(normalizeHost(href)));
+    add(normalizeHost(href));
   }
 
-  add(registrableDomain(templateHost(provider?.billingUrl)));
+  add(templateHost(provider?.billingUrl));
 
   for (const entry of Array.isArray(provider?.auth?.loginDomains) ? provider.auth.loginDomains : []) {
-    const host = normalizeHost(String(entry || ''));
-    // A bare public suffix ("com", "co.uk") would allow every site: ignore it.
-    if (host && registrableDomain(host)) add(host);
+    // Invalid entries (single label, wildcard, scheme, path) are ignored, never interpreted.
+    if (isValidLoginDomain(entry)) add(entry);
   }
 
   return Array.from(allowed).sort();
 }
+
 
 // Decides whether the frame at `url` (and every ancestor origin) may receive a login.
 export function checkLoginLocation({ url = '', ancestorOrigins = [] } = {}, allowedDomains = []) {

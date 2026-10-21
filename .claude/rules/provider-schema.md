@@ -118,28 +118,35 @@ Use `preNavigation` when the provider requires setup on a different page before 
 ## Sign-in domains (`auth.loginDomains`)
 
 Vault autofill (extension, CLI and MCP) only types a username, password or code into a page that
-is on an allowed domain, and fails closed otherwise (nothing is typed, the user sees "sign-in page
-<host> does not match the saved login for <provider>; nothing was typed"). Allowed domains are:
+is on an allowed host, and fails closed otherwise (nothing is typed, the user sees "sign-in page
+<host> does not match the saved login for <provider>; nothing was typed"). Allowed hosts are:
 
-- the registrable domain (eTLD+1, e.g. `stripe.com`, `naturgy.es`, `example.co.uk`) of every URL
-  saved on the vault item (1Password `urls`, Bitwarden `login.uris`);
-- the registrable domain of the recipe's `billingUrl` (leading `{{config.*}}` labels are ignored,
-  so user config can never widen it);
-- each host listed in `auth.loginDomains`, plus its subdomains.
+- the **exact host** of every URL saved on the vault item (1Password `urls`, Bitwarden
+  `login.uris`), plus its subdomains — `https://app.holded.com` allows `app.holded.com` and
+  `*.app.holded.com`, **not** `holded.com` or `www.holded.com`;
+- the **exact host** of the recipe's `billingUrl`, plus its subdomains (a host containing a
+  `{{config.*}}` placeholder contributes nothing, so user config can never add a host);
+- each entry in `auth.loginDomains`, plus its subdomains.
+
+Nothing is widened automatically: there is no guessing of a "registrable domain" from a public
+suffix list (a partial list turns `alice.uk.com` into `uk.com`). The only way to allow a parent
+domain is a human-reviewed `loginDomains` entry.
 
 The page must be `https` (plain `http` only on `localhost` test fixtures), and when the form is
 inside an iframe, that frame and every parent frame must be allowed. An explicit item reference
 (`_onepasswordItem`, `auth.item`) picks the item but does not skip this check.
 
-Add `loginDomains` only when the provider's sign-in form legitimately lives on another registrable
-domain than `billingUrl` — typically an SSO / OAuth identity provider:
+Add `loginDomains` whenever the sign-in form is not on the `billingUrl` host or one of its
+subdomains — a sibling subdomain (billing on `platform.openai.com`, sign-in on `auth.openai.com`)
+or an SSO / OAuth identity provider. Prefer the provider's own domain:
 
 ```json
-"auth": { "loginDomains": ["github.com"] }
+"auth": { "loginDomains": ["openai.com"] }
 ```
 
-Subdomains of the billing domain (`login.twilio.com` for `1console.twilio.com`,
-`accounts.google.com` for `admin.google.com`) are already allowed and need no entry.
+Each entry must be a plain lowercase host name containing at least one dot: no scheme, port,
+path or wildcard, and never a bare public suffix (`com`, `co.uk`, `uk.com`, `amazonaws.com`,
+`github.io`…). The schema rejects malformed entries and the runtime ignores them.
 
 ## Org check
 

@@ -23,6 +23,9 @@
     "urlPattern": "payments.google.com/payments"
   },
   "readySelector": "h1.b3id-timeline-view-title",
+  "auth": {
+    "loginDomains": ["google.com"]
+  },
   "extract": {
     "preSteps": [
       {

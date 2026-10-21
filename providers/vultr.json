@@ -5,6 +5,9 @@
   "icon": "☁️",
   "billingUrl": "https://my.vultr.com/billing/#billinghistory",
   "readySelector": "a[href^=\"/billing/invoice/\"]",
+  "auth": {
+    "loginDomains": ["vultr.com"]
+  },
   "extract": {
     "rows": "tr:has(a[href^=\"/billing/invoice/\"]:not([href$=\".csv\"]))",
     "fields": {
