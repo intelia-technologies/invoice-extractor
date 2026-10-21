@@ -11,7 +11,7 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import { closeSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync, statSync, unlinkSync, writeSync } from 'node:fs';
+import { closeSync, linkSync, mkdirSync, openSync, readdirSync, readFileSync, statSync, unlinkSync, writeSync } from 'node:fs';
 import { join } from 'node:path';
 import { checkLoginLocation, playwrightFrameLocation } from '../login-domains.mjs';
 
@@ -616,17 +616,22 @@ function exchangeDir(stateDir) {
   return dir;
 }
 
-// Exclusive create: fails if the file exists, so a second submission never replaces the first.
+// Exclusive, atomic publish: the content is complete before `path` becomes visible (another
+// process never reads a half-written file), and linkSync fails with EEXIST, so a second
+// submission never replaces the first.
 function writePrivateFile(path, content) {
-  const fd = openSync(path, 'wx', 0o600);
+  const tmp = `${path}.${randomUUID()}.tmp`;
+  const fd = openSync(tmp, 'wx', 0o600);
   try {
     writeSync(fd, content);
-  } catch (err) {
+  } finally {
     closeSync(fd);
-    removeQuietly(path);
-    throw err;
   }
-  closeSync(fd);
+  try {
+    linkSync(tmp, path);
+  } finally {
+    removeQuietly(tmp);
+  }
 }
 
 function removeQuietly(path) {
@@ -683,19 +688,11 @@ export function createCodeMailbox(stateDir, { id = randomUUID(), providerId, exp
     id,
     /** Reads and deletes a handed-over code, if any: { code, nonce }. */
     take() {
-      if (!existsSync(codeFile)) return null;
-      let raw = null;
-      try {
-        raw = readFileSync(codeFile, 'utf8');
-      } catch {}
+      // Anything that is not a complete submission is "not ready": leave it in place.
+      const parsed = readJson(codeFile);
+      if (!parsed || typeof parsed.code !== 'string' || !isVerificationId(parsed.nonce)) return null;
       removeQuietly(codeFile);
-      if (raw == null) return null;
-      try {
-        const parsed = JSON.parse(raw);
-        return { code: String(parsed.code ?? ''), nonce: String(parsed.nonce || '') };
-      } catch {
-        return { code: raw, nonce: '' };
-      }
+      return { code: parsed.code, nonce: parsed.nonce };
     },
     /**
      * One result file per submission (named by its nonce, exclusive create), so an answer can

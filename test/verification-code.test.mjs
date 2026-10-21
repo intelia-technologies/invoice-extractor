@@ -10,7 +10,7 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -598,6 +598,33 @@ test('submit-code hands the code over in a 0600 file that is deleted right after
     assert.equal(result.providerId, 'holded');
     mailbox.close();
     assert.deepEqual(readdirSync(dir), [], 'nothing left on disk');
+  } finally {
+    rmSync(stateDir, { recursive: true, force: true });
+  }
+});
+
+test('the run never consumes an incomplete code file; submissions appear fully written', async () => {
+  const stateDir = mkdtempSync(path.join(tmpdir(), 'ie-verif-'));
+  try {
+    const mailbox = createCodeMailbox(stateDir, {
+      providerId: 'holded',
+      expiresAt: new Date(Date.now() + 60000).toISOString(),
+    });
+    const dir = path.join(stateDir, 'verification');
+    const codeFile = path.join(dir, `${mailbox.id}.code`);
+    writeFileSync(codeFile, '', { mode: 0o600 }); // as seen between open() and write()
+    assert.equal(mailbox.take(), null);
+    assert.ok(existsSync(codeFile), 'left in place until complete');
+    rmSync(codeFile);
+
+    const handing = handOverCode(stateDir, mailbox.id, CODE, { intervalMs: 10, timeoutMs: 2000 });
+    while (!existsSync(codeFile)) await new Promise(r => setTimeout(r, 1));
+    const submission = mailbox.take();
+    assert.equal(submission.code, CODE, 'visible only once complete');
+    mailbox.reply({ accepted: true, message: 'ok' }, submission.nonce);
+    assert.equal((await handing).accepted, true);
+    mailbox.close();
+    assert.deepEqual(readdirSync(dir), [], 'no temporary files left behind');
   } finally {
     rmSync(stateDir, { recursive: true, force: true });
   }
