@@ -584,8 +584,44 @@
     'input[id*="otp" i]',
     'input[id*="totp" i]',
     'input[id*="code" i]',
-    'input[inputmode="numeric"][maxlength="6"]',
+    'input[name*="mfa" i]',
+    'input[id*="mfa" i]',
+    'input[name*="twofactor" i]',
+    'input[name*="passcode" i]',
+    ...[4, 5, 6, 7, 8, 9, 10].map(n => `input[inputmode="numeric"][maxlength="${n}"]`),
   ].join(', ');
+
+  // "code" in a name/id also matches postal codes, country codes, coupons... Those are never a
+  // one-time code (only applies to the default selector; a recipe's otpSelector is trusted).
+  const NOT_A_CODE_FIELD = /postal|zip|country|coupon|promo|discount|referral|voucher|gift|area|phone/i;
+
+  // Explicit one-time-code markers win over the negative list ("Phone verification code").
+  const EXPLICIT_CODE_FIELD = /otp|mfa|2fa|two.?factor|passcode|verif|one.?time/i;
+
+  function looksLikeCodeField(el) {
+    if (String(el.getAttribute('autocomplete') || '').toLowerCase() === 'one-time-code') return true;
+    const label = [el.name, el.id, el.getAttribute('autocomplete'), el.placeholder, el.getAttribute('aria-label')]
+      .filter(Boolean)
+      .join(' ');
+    if (EXPLICIT_CODE_FIELD.test(label)) return true;
+    // Only ambiguous matches (a generic "code" name, the numeric-input heuristic) are filtered.
+    return !NOT_A_CODE_FIELD.test(label);
+  }
+
+  // The one-time-code input. With includeDisabled, also a field the page disabled while it
+  // validates a submitted code (still the code step, not "the code was accepted").
+  function findOtpInput(authConfig = {}, { includeDisabled = false } = {}) {
+    if (authConfig.otpSelector) {
+      if (!includeDisabled) return findVisibleInput(authConfig.otpSelector);
+      return Array.from(document.querySelectorAll(authConfig.otpSelector))
+        .find(el => utils.isElementVisible(el)) || null;
+    }
+    return Array.from(document.querySelectorAll(DEFAULT_OTP_SELECTOR)).find(el =>
+      (includeDisabled || (!el.disabled && !el.readOnly)) &&
+      looksLikeCodeField(el) &&
+      utils.isElementVisible(el)
+    ) || null;
+  }
 
   const DEFAULT_SUBMIT_SELECTOR = [
     'button[type="submit"]',
@@ -651,7 +687,7 @@
   function detectLoginForm(authConfig = {}) {
     const userEl = findVisibleInput(authConfig.usernameSelector || DEFAULT_USERNAME_SELECTOR);
     const passEl = findVisibleInput(authConfig.passwordSelector || DEFAULT_PASSWORD_SELECTOR);
-    const otpEl = findVisibleInput(authConfig.otpSelector || DEFAULT_OTP_SELECTOR);
+    const otpEl = findOtpInput(authConfig);
     return {
       hasLoginForm: Boolean(userEl || passEl || otpEl),
       hasUsername: Boolean(userEl),
@@ -707,6 +743,125 @@
     return { attempted: false, blocked: true, reason: check.reason, host: check.host };
   }
 
+  // =====================================================
+  // STEP API: verification-code step (a code sent by email/SMS after the password)
+  // =====================================================
+  const CODE_HINT_PATTERN = /code|c[oó]digo|sent|enviad|e-?mail|correo|verif|sms|d[ií]git/i;
+  const CODE_SUBMIT_TEXTS = [
+    'Verify', 'Confirm', 'Continue', 'Submit', 'Sign in', 'Log in',
+    'Verificar', 'Confirmar', 'Continuar', 'Enviar', 'Acceder', 'Entrar',
+  ];
+
+  // One box per character: 4–10 visible single-character inputs sharing a container.
+  function findSplitCodeInputs({ includeDisabled = false } = {}) {
+    const singles = Array.from(document.querySelectorAll('input')).filter(el =>
+      ['text', 'tel', 'number'].includes(el.type) &&
+      el.maxLength === 1 && (includeDisabled || (!el.disabled && !el.readOnly)) && utils.isElementVisible(el)
+    );
+    if (singles.length < 4) return null;
+    let scope = singles[0].parentElement;
+    while (scope && singles.filter(el => scope.contains(el)).length < 4) scope = scope.parentElement;
+    const group = scope ? singles.filter(el => scope.contains(el)) : [];
+    return group.length >= 4 && group.length <= 10 ? group : null;
+  }
+
+  function findCodeInputs(authConfig = {}) {
+    const split = findSplitCodeInputs();
+    if (split) return split;
+    const single = findOtpInput(authConfig);
+    return single ? [single] : [];
+  }
+
+  // Visible text explaining where the code went ("we sent a code to p***@x.com"). Input values
+  // are not part of innerText, so a typed code can never end up here.
+  function verificationHint(anchor) {
+    const pick = scope => String(scope?.innerText || '')
+      .split('\n')
+      .map(line => line.replace(/\s+/g, ' ').trim())
+      .filter(line => line && CODE_HINT_PATTERN.test(line));
+    let scope = anchor ? (anchor.closest('form') || anchor.parentElement) : null;
+    for (let depth = 0; scope && depth < 5; depth++, scope = scope.parentElement) {
+      const lines = pick(scope);
+      if (lines.length) return lines.join(' · ').slice(0, 300);
+    }
+    return pick(document.body).join(' · ').slice(0, 300);
+  }
+
+  // Shared with popup.js: is the provider waiting for a code the user receives (email/SMS)?
+  // A code field is a verification step wherever it lives (/login, /login/verify, ...); without
+  // one, only a form that vanished while staying on the sign-in address counts.
+  // context: { url, loginStartUrl, hasOtpCredential, detectSplitInputs, detectDisabledCodeField }
+  // Agent mode also counts a code field the page disabled while validating a submitted code as
+  // still on the step (`validating`), so it is never mistaken for "the code was accepted".
+  function detectVerificationStep(authConfig = {}, context = {}) {
+    const form = detectLoginForm(authConfig);
+    const url = context.url || location.href;
+    const split = context.detectSplitInputs ? findSplitCodeInputs() : null;
+    let validatingField = null;
+    if (!form.hasOtp && !split && context.detectDisabledCodeField) {
+      const boxes = context.detectSplitInputs ? findSplitCodeInputs({ includeDisabled: true }) : null;
+      validatingField = (boxes && boxes[0]) || findOtpInput(authConfig, { includeDisabled: true });
+    }
+    const validating = Boolean(validatingField);
+    const hasCodeField = form.hasOtp || Boolean(split) || validating;
+    const awaiting = hasCodeField
+      ? !context.hasOtpCredential
+      : url === context.loginStartUrl && !form.hasUsername && !form.hasPassword;
+    const anchor = split ? split[0] : validatingField || findOtpInput(authConfig);
+    return {
+      ...form,
+      awaiting,
+      validating,
+      hasCodeField,
+      codeLength: split ? split.length : null,
+      hint: awaiting ? verificationHint(anchor) : '',
+    };
+  }
+
+  // Types a one-time code into the code field(s) of THIS document and submits, in one call:
+  // the inputs are held as element references, never re-resolved by selector, so a navigation
+  // cannot retarget the code (the call simply dies with its document). The sign-in domain is
+  // checked again right before typing, like attemptAutoLogin does for passwords.
+  async function fillVerificationCode(code, authConfig = {}, allowedLoginDomains = []) {
+    const domainCheck = checkLoginFrame(allowedLoginDomains);
+    if (!domainCheck.ok) return { typed: false, blocked: true, reason: domainCheck.reason, host: domainCheck.host };
+    const value = typeof code === 'string' ? code : '';
+    const inputs = findCodeInputs(authConfig);
+    const single = inputs.length === 1 ? inputs[0] : null;
+    const shape = {
+      count: inputs.length,
+      split: inputs.length > 1,
+      maxLength: single && single.maxLength > 0 ? single.maxLength : null,
+    };
+    if (!shape.count) return { typed: false, reason: 'no-code-field', ...shape };
+    if (shape.split && shape.count !== value.length) return { typed: false, reason: 'length', ...shape };
+    if (!shape.split && shape.maxLength && shape.maxLength < value.length) return { typed: false, reason: 'length', ...shape };
+
+    if (shape.split) {
+      for (let i = 0; i < inputs.length; i++) setNativeInputValue(inputs[i], value[i]);
+    } else {
+      setNativeInputValue(single, value);
+    }
+    await sleep(150); // let the page's framework take the new values before submitting
+    if (!checkLoginFrame(allowedLoginDomains).ok) return { typed: true, submitted: false, ...shape };
+
+    const last = inputs[inputs.length - 1];
+    // The boxes are gone: the page submitted by itself after the last character.
+    if (!last.isConnected || !utils.isElementVisible(last)) return { typed: true, submitted: true, via: 'auto', ...shape };
+    const scope = last.closest('form') || last.parentElement?.parentElement || last.parentElement;
+    const button = findSubmitButton(scope, authConfig.submitSelector, CODE_SUBMIT_TEXTS);
+    if (button) {
+      utils.simulateRealClick(button);
+      return { typed: true, submitted: true, via: 'button', ...shape };
+    }
+    if (last.form) {
+      last.form.requestSubmit ? last.form.requestSubmit() : last.form.submit();
+      return { typed: true, submitted: true, via: 'form', ...shape };
+    }
+    last.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
+    return { typed: true, submitted: true, via: 'enter', ...shape };
+  }
+
   async function attemptAutoLogin(credentials = {}, authConfig = {}) {
     const { username = '', password = '', otp = '', allowedLoginDomains = [] } = credentials;
     const domainCheck = checkLoginFrame(allowedLoginDomains);
@@ -721,11 +876,10 @@
 
     const userSelector = authConfig.usernameSelector || DEFAULT_USERNAME_SELECTOR;
     const passSelector = authConfig.passwordSelector || DEFAULT_PASSWORD_SELECTOR;
-    const otpSelector = authConfig.otpSelector || DEFAULT_OTP_SELECTOR;
 
     let userEl = findVisibleInput(userSelector);
     let passEl = findVisibleInput(passSelector);
-    let otpEl = findVisibleInput(otpSelector);
+    let otpEl = findOtpInput(authConfig);
 
     if (!userEl && !passEl && !otpEl) {
       return {
@@ -795,7 +949,7 @@
         const otpWaitStart = Date.now();
         while (Date.now() - otpWaitStart < 3500) {
           await sleep(250);
-          otpEl = findVisibleInput(otpSelector);
+          otpEl = findOtpInput(authConfig);
           if (otpEl) break;
         }
       }
@@ -920,6 +1074,8 @@
     selectPaginationOption,
     clickNext,
     detectLoginForm,
+    detectVerificationStep,
+    fillVerificationCode,
     attemptAutoLogin,
     verifyLoggedInIdentity,
     clearPageSessionData,

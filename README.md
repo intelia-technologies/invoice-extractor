@@ -35,6 +35,33 @@ The extension can fetch credentials (username, password, and 6-digit TOTP codes)
 3. **SaaS Billing Auto-Login:** When a provider tab lands on a login screen, the extension matches the provider against 1Password items by URL domain, provider name, or the optional `1Password Item` override in the provider's settings, and fills username, password, and 2FA OTP automatically (1-step or 2-step flows). You can also click **🔑 Sign in with 1Password** in the workflow panel at any time. Credentials are only typed on an HTTPS page whose host is (a subdomain of) a host saved on the vault item, the provider's billing host, or a sign-in domain the recipe declares in `auth.loginDomains` — hosts are never widened automatically to a parent domain. On any other page nothing is typed and the panel says which host was refused.
 4. **Profile Sync Auto-Login:** In **Profiles**, click **🔑 Sign in with 1Password** to authenticate against the synchronization service using an item titled `Profile Sync` or `Invoice Extractor` (or matching the sync service URL).
 
+## AI assistants (CLI, MCP server and Skill)
+
+`bin/invoice-extractor.mjs` (CLI), `bin/invoice-extractor-mcp.mjs` (MCP server for Claude Desktop
+and other MCP clients) and `skills/invoice-extractor/SKILL.md` let an AI assistant download
+invoices with the same provider recipes. Passwords are never given to the AI: they go from
+1Password/Bitwarden straight into the provider's sign-in page.
+
+**One-time verification codes.** Some providers (e.g. Holded) email or text a code after the
+password. The rule is: **if the AI has access to the user's email, it reads the provider's code
+and uses it; if not, the user does it** (typing it in the open browser window, or telling the AI).
+The code only reaches the AI if the AI reads it from the user's email or the user gives it.
+
+- MCP: `invoice_extractor_run` keeps that provider's page open for 10 minutes, finishes the other
+  providers and returns it under `pendingVerification` with a `nextStep` instruction; the AI then
+  calls `invoice_extractor_submit_code({ verificationId, code })`, which only types the code on a
+  page of that provider, signs in and returns the downloaded invoices. A wrong code can be retried.
+  Runs share one browser session and run one at a time; while a code is pending, a run for a
+  different client profile is refused until the code is submitted or released with
+  `invoice_extractor_cancel_verification`.
+- CLI: `run --wait-for-code[=minutes]` prints a `verification_code_required` JSON line on stderr
+  and waits; the code is handed over with
+  `echo <code> | invoice-extractor submit-code --id <verificationId>` (through a short-lived
+  `0600` file in the local state directory, deleted as soon as it is read) or typed in the
+  `--headed` window. Without the flag the provider fails with a clear message.
+
+The code is never logged, written to the manifest or state, or echoed back.
+
 ## Optional profile synchronization
 
 The extension works without an account. Open **Profiles** (or **Sync: local only**) to
