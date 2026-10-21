@@ -228,8 +228,9 @@ async function waitForSelectorInFrame(page, provider, selector, timeoutSec = 10)
     try {
       const frame = await resolveTargetFrame(page, provider, 1500);
       await injectEngineIntoFrame(frame);
-      const exists = await frame.evaluate(sel => window.__invoiceEngine.queryElement(sel), selector);
-      if (exists) return { success: true, frame };
+      // queryElement always returns an object; only `found` says the element is there.
+      const match = await frame.evaluate(sel => window.__invoiceEngine.queryElement(sel), selector);
+      if (match?.found) return { success: true, frame };
     } catch {}
     await new Promise(r => setTimeout(r, 700));
   }
@@ -600,6 +601,21 @@ async function extractProviderInvoices(page, provider, { readyCheck, provConfig 
   );
 
   const invoices = extraction?.invoices || [];
+  if (!extraction?.rowsFound) {
+    // An empty table is never a silent success: say so, so the caller doesn't report "nothing new".
+    manifest.errors.push({
+      providerId: provider.id,
+      error: `No invoice rows found on the ${provider.name} billing page (${extraction?.debug || 'unknown'}).`,
+    });
+  }
+  const supportedMethods = ['direct-link', 'fetch-blob', 'click-download'];
+  if (invoices.length && !supportedMethods.includes(provider.download?.method)) {
+    manifest.errors.push({
+      providerId: provider.id,
+      error: `Download method "${provider.download?.method}" is not supported in agent mode yet; run ${provider.name} from the extension.`,
+    });
+    return;
+  }
   const newHistoryKeys = [];
 
   for (const inv of invoices) {
