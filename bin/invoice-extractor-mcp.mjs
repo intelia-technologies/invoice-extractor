@@ -286,7 +286,8 @@ async function executeTool(name, args = {}) {
 
   if (name === 'invoice_extractor_onboard_provider') {
     // Onboarding opens its own browser on the same persistent profile: never while runs use it.
-    return verifications.runExclusive(String(args.profile || '').trim(), () => {
+    return verifications.runExclusive(String(args.profile || '').trim(), async () => {
+      await verifications.idle();
       if (verifications.list().length > 0) {
         throw new Error(
           'A provider page is waiting for a verification code. Submit it with invoice_extractor_submit_code or cancel it with invoice_extractor_cancel_verification before onboarding.'

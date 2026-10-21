@@ -584,8 +584,38 @@
     'input[id*="otp" i]',
     'input[id*="totp" i]',
     'input[id*="code" i]',
-    'input[inputmode="numeric"][maxlength="6"]',
+    'input[name*="mfa" i]',
+    'input[id*="mfa" i]',
+    'input[name*="twofactor" i]',
+    'input[name*="passcode" i]',
+    ...[4, 5, 6, 7, 8, 9, 10].map(n => `input[inputmode="numeric"][maxlength="${n}"]`),
   ].join(', ');
+
+  // "code" in a name/id also matches postal codes, country codes, coupons... Those are never a
+  // one-time code (only applies to the default selector; a recipe's otpSelector is trusted).
+  const NOT_A_CODE_FIELD = /postal|zip|country|coupon|promo|discount|referral|voucher|gift|area|phone/i;
+
+  function looksLikeCodeField(el) {
+    const label = [el.name, el.id, el.getAttribute('autocomplete'), el.placeholder, el.getAttribute('aria-label')]
+      .filter(Boolean)
+      .join(' ');
+    return !NOT_A_CODE_FIELD.test(label);
+  }
+
+  // The one-time-code input. With includeDisabled, also a field the page disabled while it
+  // validates a submitted code (still the code step, not "the code was accepted").
+  function findOtpInput(authConfig = {}, { includeDisabled = false } = {}) {
+    if (authConfig.otpSelector) {
+      if (!includeDisabled) return findVisibleInput(authConfig.otpSelector);
+      return Array.from(document.querySelectorAll(authConfig.otpSelector))
+        .find(el => utils.isElementVisible(el)) || null;
+    }
+    return Array.from(document.querySelectorAll(DEFAULT_OTP_SELECTOR)).find(el =>
+      (includeDisabled || (!el.disabled && !el.readOnly)) &&
+      looksLikeCodeField(el) &&
+      utils.isElementVisible(el)
+    ) || null;
+  }
 
   const DEFAULT_SUBMIT_SELECTOR = [
     'button[type="submit"]',
@@ -651,7 +681,7 @@
   function detectLoginForm(authConfig = {}) {
     const userEl = findVisibleInput(authConfig.usernameSelector || DEFAULT_USERNAME_SELECTOR);
     const passEl = findVisibleInput(authConfig.passwordSelector || DEFAULT_PASSWORD_SELECTOR);
-    const otpEl = findVisibleInput(authConfig.otpSelector || DEFAULT_OTP_SELECTOR);
+    const otpEl = findOtpInput(authConfig);
     return {
       hasLoginForm: Boolean(userEl || passEl || otpEl),
       hasUsername: Boolean(userEl),
@@ -717,10 +747,10 @@
   ];
 
   // One box per character: 4–10 visible single-character inputs sharing a container.
-  function findSplitCodeInputs() {
+  function findSplitCodeInputs({ includeDisabled = false } = {}) {
     const singles = Array.from(document.querySelectorAll('input')).filter(el =>
       ['text', 'tel', 'number'].includes(el.type) &&
-      el.maxLength === 1 && !el.disabled && !el.readOnly && utils.isElementVisible(el)
+      el.maxLength === 1 && (includeDisabled || (!el.disabled && !el.readOnly)) && utils.isElementVisible(el)
     );
     if (singles.length < 4) return null;
     let scope = singles[0].parentElement;
@@ -732,7 +762,7 @@
   function findCodeInputs(authConfig = {}) {
     const split = findSplitCodeInputs();
     if (split) return split;
-    const single = findVisibleInput(authConfig.otpSelector || DEFAULT_OTP_SELECTOR);
+    const single = findOtpInput(authConfig);
     return single ? [single] : [];
   }
 
@@ -754,19 +784,28 @@
   // Shared with popup.js: is the provider waiting for a code the user receives (email/SMS)?
   // A code field is a verification step wherever it lives (/login, /login/verify, ...); without
   // one, only a form that vanished while staying on the sign-in address counts.
-  // context: { url, loginStartUrl, hasOtpCredential, detectSplitInputs }
+  // context: { url, loginStartUrl, hasOtpCredential, detectSplitInputs, detectDisabledCodeField }
+  // Agent mode also counts a code field the page disabled while validating a submitted code as
+  // still on the step (`validating`), so it is never mistaken for "the code was accepted".
   function detectVerificationStep(authConfig = {}, context = {}) {
     const form = detectLoginForm(authConfig);
     const url = context.url || location.href;
     const split = context.detectSplitInputs ? findSplitCodeInputs() : null;
-    const hasCodeField = form.hasOtp || Boolean(split);
+    let validatingField = null;
+    if (!form.hasOtp && !split && context.detectDisabledCodeField) {
+      const boxes = context.detectSplitInputs ? findSplitCodeInputs({ includeDisabled: true }) : null;
+      validatingField = (boxes && boxes[0]) || findOtpInput(authConfig, { includeDisabled: true });
+    }
+    const validating = Boolean(validatingField);
+    const hasCodeField = form.hasOtp || Boolean(split) || validating;
     const awaiting = hasCodeField
       ? !context.hasOtpCredential
       : url === context.loginStartUrl && !form.hasUsername && !form.hasPassword;
-    const anchor = split ? split[0] : findVisibleInput(authConfig.otpSelector || DEFAULT_OTP_SELECTOR);
+    const anchor = split ? split[0] : validatingField || findOtpInput(authConfig);
     return {
       ...form,
       awaiting,
+      validating,
       hasCodeField,
       codeLength: split ? split.length : null,
       hint: awaiting ? verificationHint(anchor) : '',
@@ -831,11 +870,10 @@
 
     const userSelector = authConfig.usernameSelector || DEFAULT_USERNAME_SELECTOR;
     const passSelector = authConfig.passwordSelector || DEFAULT_PASSWORD_SELECTOR;
-    const otpSelector = authConfig.otpSelector || DEFAULT_OTP_SELECTOR;
 
     let userEl = findVisibleInput(userSelector);
     let passEl = findVisibleInput(passSelector);
-    let otpEl = findVisibleInput(otpSelector);
+    let otpEl = findOtpInput(authConfig);
 
     if (!userEl && !passEl && !otpEl) {
       return {
@@ -905,7 +943,7 @@
         const otpWaitStart = Date.now();
         while (Date.now() - otpWaitStart < 3500) {
           await sleep(250);
-          otpEl = findVisibleInput(otpSelector);
+          otpEl = findOtpInput(authConfig);
           if (otpEl) break;
         }
       }

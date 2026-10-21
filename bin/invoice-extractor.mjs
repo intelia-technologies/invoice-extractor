@@ -39,6 +39,7 @@ import {
   domainsOverlap,
   detectCodeStep,
   handOverCode,
+  sameBillingLocation,
   redactCode,
   typeVerificationCode,
   VerificationCodeError,
@@ -243,9 +244,12 @@ function verificationRequiredMessage(provider) {
 // for its readySelector.
 async function reachBillingAfterLogin(page, provider, billingUrl) {
   const currentUrl = page.url();
-  if (!currentUrl.includes(new URL(billingUrl).pathname)) {
+  // Path-aware: a root billingUrl ("/", Naturgy) must not match every page of the host.
+  if (!sameBillingLocation(currentUrl, billingUrl)) {
     try {
       await page.goto(billingUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
+      // A hash-only change does not reload the document: force it so the SPA routes.
+      if (billingUrl.includes('#')) await page.reload({ waitUntil: 'domcontentloaded', timeout: 20000 });
     } catch {}
   } else if (billingUrl.includes('#')) {
     try {
@@ -254,6 +258,17 @@ async function reachBillingAfterLogin(page, provider, billingUrl) {
     } catch {}
   }
   return waitForSelectorInFrame(page, provider, provider.readySelector, 12);
+}
+
+// Same post-login wait as the extension: up to 8 s for the sign-in page to move on, then for
+// the resulting page to finish loading.
+async function settleAfterLogin(page, loginStartUrl) {
+  const start = Date.now();
+  while (Date.now() - start < 8000) {
+    await page.waitForTimeout(500);
+    if (page.url() !== loginStartUrl) break;
+  }
+  await page.waitForLoadState('load', { timeout: 8000 }).catch(() => {});
 }
 
 function emitStderrEvent(event) {
@@ -330,7 +345,7 @@ export async function waitForCodeFromCli(
  * Returns { status: 'none' | 'error' | 'pending', step }.
  */
 async function handleVerificationStep(page, provider, ctx, run, deps) {
-  const step = await detectCodeStep(page, provider, ctx, { inject: injectEngineIntoFrame });
+  const step = await detectCodeStep(page, provider, ctx, { inject: injectEngineIntoFrame, confirmMs: 1000 });
   if (!step.awaiting) return { status: 'none' };
 
   if (run.verificationMode === 'wait') {
@@ -463,7 +478,7 @@ async function signInToProvider(page, context, provider, run, deps) {
       return { status: 'error' };
     }
     if (!loginRes?.attempted) return { status: 'none', attempted: false };
-    await page.waitForTimeout(4000);
+    await settleAfterLogin(page, loginStartUrl);
     const ctx = signIn(loginStartUrl, requestedAt);
     const verdict = await handleVerificationStep(page, provider, ctx, run, deps);
     if (verdict.status === 'pending') return { status: 'pending', signIn: ctx, step: verdict.step };

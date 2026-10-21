@@ -496,6 +496,72 @@ test('registry: another profile is refused while a code is pending; same profile
   await assert.rejects(registry.submit(view.verificationId, CODE), /cancelled/);
 });
 
+test('detectCodeStep with confirmMs ignores a code field that does not hold for a second', async () => {
+  const answers = [true, false];
+  const engine = { detectVerificationStep: () => ({ awaiting: answers.shift(), hint: '' }) };
+  const frame = {
+    async evaluate(fn, arg) {
+      const previous = globalThis.window;
+      globalThis.window = { __invoiceEngine: engine };
+      try {
+        return await fn(arg);
+      } finally {
+        globalThis.window = previous;
+      }
+    },
+  };
+  const page = { url: () => 'https://app.holded.com/login', mainFrame: () => frame };
+  const step = await detectCodeStep(page, HOLDED, { billingUrl: HOLDED_BILLING }, { inject: noInject, confirmMs: 10 });
+  assert.equal(step.awaiting, false);
+});
+
+function closableContext() {
+  const handlers = {};
+  return {
+    closed: false,
+    on(event, cb) { (handlers[event] ||= []).push(cb); },
+    async close() {
+      await new Promise(r => setTimeout(r, 40));
+      this.closed = true;
+      for (const cb of handlers.close || []) cb();
+    },
+    userClosesWindow() {
+      this.closed = true;
+      for (const cb of handlers.close || []) cb();
+    },
+  };
+}
+
+test('registry: the user closing the browser window expires its pages and the next run relaunches', async () => {
+  const registry = createVerificationRegistry({ resume: async () => null, watchIntervalMs: 0 });
+  const first = closableContext();
+  await registry.contextProvider.acquire(async () => first, { headed: true });
+  const view = registry.add(pendingFor({ async close() {} }));
+  await registry.contextProvider.release();
+  first.userClosesWindow();
+  assert.deepEqual(registry.list(), []);
+  await assert.rejects(registry.submit(view.verificationId, CODE), /browser window was closed/);
+  const second = closableContext();
+  assert.equal(await registry.contextProvider.acquire(async () => second), second, 'fresh launch, not the dead context');
+  await registry.contextProvider.release();
+});
+
+test('registry: a new launch waits for the previous browser to finish closing', async () => {
+  const registry = createVerificationRegistry({ resume: async () => null, watchIntervalMs: 0 });
+  const first = closableContext();
+  await registry.contextProvider.acquire(async () => first);
+  const releasing = registry.contextProvider.release(); // close takes 40 ms
+  let closedWhenLaunched = null;
+  await registry.contextProvider.acquire(async () => {
+    closedWhenLaunched = first.closed;
+    return closableContext();
+  });
+  await releasing;
+  assert.equal(closedWhenLaunched, true, 'the persistent profile was released before relaunching');
+  await registry.contextProvider.release();
+  await registry.idle();
+});
+
 // ─── CLI hand-over through the state directory ────────────────────────────────────────────
 
 test('submit-code hands the code over in a 0600 file that is deleted right after reading', async () => {
@@ -584,6 +650,34 @@ test('submit-code only trusts the result carrying its own nonce (stale results n
   }
 });
 
+test('a finished submission never deletes the next submission\'s code, and each reads only its own answer', async () => {
+  const stateDir = mkdtempSync(path.join(tmpdir(), 'ie-verif-'));
+  try {
+    const mailbox = createCodeMailbox(stateDir, {
+      providerId: 'holded',
+      expiresAt: new Date(Date.now() + 60000).toISOString(),
+    });
+    const codeFile = path.join(stateDir, 'verification', `${mailbox.id}.code`);
+    const a = handOverCode(stateDir, mailbox.id, '111111', { timeoutMs: 5000, intervalMs: 20 });
+    while (!existsSync(codeFile)) await new Promise(r => setTimeout(r, 2));
+    const subA = mailbox.take(); // the run is typing A
+    const b = handOverCode(stateDir, mailbox.id, '222222', { timeoutMs: 5000, intervalMs: 20 });
+    while (!existsSync(codeFile)) await new Promise(r => setTimeout(r, 2));
+    mailbox.reply({ accepted: false, message: 'A rejected' }, subA.nonce);
+    assert.equal((await a).message, 'A rejected');
+    assert.ok(existsSync(codeFile), 'B\'s code is still waiting after A finished');
+    const subB = mailbox.take();
+    assert.equal(subB.code, '222222');
+    // Both answers can coexist: B's reply cannot remove an unread answer of A, and vice versa.
+    mailbox.reply({ accepted: true, message: 'B accepted' }, subB.nonce);
+    assert.equal((await b).message, 'B accepted');
+    mailbox.close();
+    assert.deepEqual(readdirSync(path.join(stateDir, 'verification')), []);
+  } finally {
+    rmSync(stateDir, { recursive: true, force: true });
+  }
+});
+
 test('submit-code refuses unknown, expired or malformed verification ids', async () => {
   const stateDir = mkdtempSync(path.join(tmpdir(), 'ie-verif-'));
   try {
@@ -645,7 +739,35 @@ document.getElementById('f').addEventListener('submit', e => {
 });
 </script></body></html>`;
 
+const VALIDATING_PAGE = `<!doctype html><html><body>
+<form id="f"><p>Enter the 6-digit code we emailed you</p>
+<div class="boxes">${'<input type="text" inputmode="numeric" maxlength="1" style="width:2em">'.repeat(6)}</div>
+<p id="err" hidden>That code is not valid</p>
+<button type="submit">Verify</button></form>
+<script>
+document.getElementById('f').addEventListener('submit', e => {
+  e.preventDefault();
+  const boxes = [...document.querySelectorAll('.boxes input')];
+  const code = boxes.map(i => i.value).join('');
+  boxes.forEach(i => { i.disabled = true; });          // validating...
+  setTimeout(() => {
+    if (code === '${CODE}') { location.href = 'https://root.acme.test/dashboard'; return; }
+    boxes.forEach(i => { i.disabled = false; i.value = ''; });
+    document.getElementById('err').hidden = false;
+  }, 1500);
+});
+</script></body></html>`;
+
 const PAGES = {
+  'https://root.acme.test/login/verify': VALIDATING_PAGE,
+  'https://root.acme.test/dashboard': '<!doctype html><html><body><h1>Welcome</h1></body></html>',
+  'https://root.acme.test/': `<!doctype html><html><body><table id="invoices">
+    <tr class="inv"><td class="date">2026-09-01</td><td><a href="/inv-1.pdf">PDF</a></td></tr></table></body></html>`,
+  'https://login.acme.test/address': `<!doctype html><html><body><form>
+    <input name="postal_code" inputmode="numeric" maxlength="5"><input id="countryCode"><input name="couponCode">
+    <input name="areaCode"><button>Save</button></form></body></html>`,
+  'https://login.acme.test/plain-code': `<!doctype html><html><body><form><p>Type the code we sent</p>
+    <input name="code"><button>Continue</button></form></body></html>`,
   'https://login.acme.test/verify': SPLIT_PAGE,
   'https://login.evil.test/verify': SPLIT_PAGE,
   'https://login.acme.test/otp': `<!doctype html><html><body><form>
@@ -766,6 +888,53 @@ test('the in-page filler re-checks the document it runs in (navigated to a forei
     assert.equal(direct.blocked, true);
     assert.equal(await page.$$eval('.boxes input', inputs => inputs.map(i => i.value).join('')), '');
   });
+});
+
+test('postal, country, coupon and area code fields are not a verification step; a real code field is', { skip: browserSkip }, async () => {
+  await withBrowser(async page => {
+    const detect = async url => {
+      await page.goto(url);
+      return detectCodeStep(page, ACME, { billingUrl: ACME.billingUrl, loginStartUrl: 'https://login.acme.test/login' }, { inject: injectEngine });
+    };
+    assert.equal((await detect('https://login.acme.test/address')).awaiting, false);
+    assert.equal((await detect('https://login.acme.test/plain-code')).awaiting, true);
+    assert.equal((await detect('https://login.acme.test/otp')).awaiting, true);
+  });
+});
+
+test('a code field disabled while the page validates is not "accepted"; wrong code stays retryable; root billing reached', { skip: browserSkip }, async () => {
+  const ROOT_PROVIDER = { ...ACME, id: 'rootco', name: 'RootCo', billingUrl: 'https://root.acme.test/' };
+  const work = mkdtempSync(path.join(tmpdir(), 'ie-verif-run-'));
+  try {
+    await withBrowser(async page => {
+      await page.goto('https://root.acme.test/login/verify');
+      const pending = {
+        page,
+        provider: ROOT_PROVIDER,
+        provConfig: {},
+        billingUrl: ROOT_PROVIDER.billingUrl,
+        loginStartUrl: 'https://root.acme.test/login',
+        owner: {},
+        acceptTimeoutMs: 5000,
+        runOptions: { outDir: work },
+        deps: { statePath: path.join(work, 'state.json') },
+      };
+      await assert.rejects(
+        resumeAfterVerification(pending, { code: '111111' }),
+        err => err instanceof VerificationCodeError && err.retryable
+      );
+      assert.equal(page.url(), 'https://root.acme.test/login/verify', 'never navigated away mid-validation');
+
+      // Right code: the page validates for 1.5 s, lands on /dashboard, and the run must still go
+      // to the root billing page ("/" does not match every path).
+      const manifest = await resumeAfterVerification(pending, { code: CODE });
+      assert.deepEqual(manifest.errors, []);
+      assert.equal(manifest.downloadedFiles.length, 1);
+      assert.equal(page.url(), 'https://root.acme.test/');
+    });
+  } finally {
+    rmSync(work, { recursive: true, force: true });
+  }
 });
 
 test('a code typed by the user in the window is detected and the run continues', { skip: browserSkip }, async () => {

@@ -11,7 +11,7 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import { closeSync, existsSync, mkdirSync, openSync, readFileSync, unlinkSync, writeSync } from 'node:fs';
+import { closeSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync, statSync, unlinkSync, writeSync } from 'node:fs';
 import { join } from 'node:path';
 import { checkLoginLocation, playwrightFrameLocation } from '../login-domains.mjs';
 
@@ -94,7 +94,17 @@ export function sameBillingLocation(pageUrl, billingUrl) {
  * Is the page waiting for a code the user receives? `inject(frame)` loads utils.js + engine.js.
  * ctx: { billingUrl, loginStartUrl, hasOtpCredential }
  */
-export async function detectCodeStep(page, provider, ctx, { inject }) {
+export async function detectCodeStep(page, provider, ctx, { inject, confirmMs = 0 }) {
+  const first = await detectCodeStepOnce(page, provider, ctx, { inject });
+  if (!first.awaiting || !confirmMs) return first;
+  // A code field that shows up for an instant (or a field merely named like a code) must still
+  // be there a second later before the run stops to wait for a code.
+  await sleep(confirmMs);
+  const second = await detectCodeStepOnce(page, provider, ctx, { inject });
+  return second.awaiting ? second : { ...second, awaiting: false };
+}
+
+async function detectCodeStepOnce(page, provider, ctx, { inject }) {
   const url = page.url();
   if (!url || sameBillingLocation(url, ctx.billingUrl)) return { awaiting: false };
   try {
@@ -109,6 +119,7 @@ export async function detectCodeStep(page, provider, ctx, { inject }) {
           loginStartUrl: ctx.loginStartUrl || '',
           hasOtpCredential: Boolean(ctx.hasOtpCredential),
           detectSplitInputs: true,
+          detectDisabledCodeField: true,
         },
       ]
     );
@@ -119,17 +130,34 @@ export async function detectCodeStep(page, provider, ctx, { inject }) {
   }
 }
 
-/** Polls until the page is no longer on the code step (code accepted, or typed by the user). */
-export async function waitForCodeStepExit(page, provider, ctx, { inject, timeoutMs = 20000, intervalMs = 1000 } = {}) {
+/**
+ * Polls until the page has left the code step (code accepted, or typed by the user). Leaving
+ * must hold on two consecutive checks `confirmMs` apart: a field disabled while the page
+ * validates counts as still on the step, and a page in the middle of navigating is "unknown".
+ * Then waits for the new page to load, so callers never navigate away from a pending request.
+ */
+export async function waitForCodeStepExit(
+  page,
+  provider,
+  ctx,
+  { inject, timeoutMs = 20000, intervalMs = 1000, confirmMs = 1000 } = {}
+) {
   const deadline = Date.now() + timeoutMs;
-  do {
+  for (;;) {
     if (page.isClosed?.()) return false;
     const step = await detectCodeStep(page, provider, ctx, { inject });
-    if (!step.awaiting && !step.unknown) return true;
-    if (Date.now() >= deadline) break;
+    if (!step.awaiting && !step.unknown) {
+      await sleep(confirmMs);
+      if (page.isClosed?.()) return false;
+      const again = await detectCodeStep(page, provider, ctx, { inject });
+      if (!again.awaiting && !again.unknown) {
+        await page.waitForLoadState?.('load', { timeout: 8000 }).catch(() => {});
+        return true;
+      }
+    }
+    if (Date.now() >= deadline) return false;
     await sleep(intervalMs);
-  } while (Date.now() < deadline);
-  return false;
+  }
 }
 
 // Runs inside the page (Playwright serializes its source, so it must stay self-contained).
@@ -264,7 +292,15 @@ export function createVerificationRegistry({
   const finished = new Map();
   let shared = null;
   let launching = null;
+  let closing = Promise.resolve();
   let runQueue = Promise.resolve();
+
+  // Closing the persistent profile must finish before anything relaunches it.
+  function closeContext(context) {
+    const done = context.close().catch(() => {});
+    closing = closing.then(() => done);
+    return done;
+  }
 
   async function releaseContext() {
     if (!shared) return;
@@ -272,7 +308,20 @@ export function createVerificationRegistry({
     if (shared.holds <= 0) {
       const { context } = shared;
       shared = null;
-      await context.close().catch(() => {});
+      await closeContext(context);
+    }
+  }
+
+  // The user closed the headed window (or the browser died): its pages are gone. Forget the
+  // context so the next run launches a fresh one, and tell late submitters what happened.
+  function onContextClosed(context) {
+    if (!shared || shared.context !== context) return;
+    shared = null;
+    for (const [id, entry] of entries) {
+      entries.delete(id);
+      clearTimeout(entry.expiryTimer);
+      clearInterval(entry.watchTimer);
+      finished.set(id, { status: 'browser-closed', expiresAt: entry.expiresAt });
     }
   }
 
@@ -295,7 +344,9 @@ export function createVerificationRegistry({
         return shared.context;
       }
       launching = (async () => {
+        await closing;
         const context = await launch();
+        context.on?.('close', () => onContextClosed(context));
         shared = { context, holds: 0, headed: Boolean(headed) };
       })();
       try {
@@ -463,6 +514,11 @@ export function createVerificationRegistry({
       if (!entry) {
         const done = finished.get(id);
         if (done?.status === 'completed') return done;
+        if (done?.status === 'browser-closed') {
+          throw new VerificationCodeError(
+            'The browser window was closed, so the provider page waiting for the code is gone. Run invoice_extractor_run again for that provider.'
+          );
+        }
         if (done?.status === 'cancelled') {
           throw new VerificationCodeError('This verification was cancelled. Run invoice_extractor_run again for that provider.');
         }
@@ -486,8 +542,14 @@ export function createVerificationRegistry({
       if (shared) {
         const { context } = shared;
         shared = null;
-        await context.close().catch(() => {});
+        await closeContext(context);
       }
+      await closing;
+    },
+
+    /** Resolves once any browser close in progress has finished (before relaunching the profile). */
+    idle() {
+      return closing;
     },
   };
 }
@@ -573,6 +635,11 @@ function removeQuietly(path) {
   } catch {}
 }
 
+function removeOwnCodeFile(codeFile, nonce) {
+  const current = readJson(codeFile);
+  if (current && current.nonce === nonce) removeQuietly(codeFile);
+}
+
 function readJson(path) {
   try {
     return JSON.parse(readFileSync(path, 'utf8'));
@@ -582,11 +649,35 @@ function readJson(path) {
 }
 
 /** Waiting side (the `run` process). The marker never contains the code. */
+const RESULT_TTL_MS = 2 * 60 * 1000;
+
+function resultPath(dir, id, nonce) {
+  return join(dir, `${id}.result-${nonce}.json`);
+}
+
+// Results are not secret, but nothing should pile up: drop the ones no submitter came back for.
+function sweepResults(dir, id = null, olderThanMs = RESULT_TTL_MS) {
+  let names = [];
+  try {
+    names = readdirSync(dir);
+  } catch {
+    return;
+  }
+  for (const name of names) {
+    if (!/\.result-[0-9a-f-]{36}\.json$/.test(name)) continue;
+    if (id && !name.startsWith(`${id}.`)) continue;
+    const file = join(dir, name);
+    try {
+      if (Date.now() - statSync(file).mtimeMs >= olderThanMs) unlinkSync(file);
+    } catch {}
+  }
+}
+
 export function createCodeMailbox(stateDir, { id = randomUUID(), providerId, expiresAt }) {
   const dir = exchangeDir(stateDir);
+  sweepResults(dir);
   const marker = join(dir, `${id}.pending.json`);
   const codeFile = join(dir, `${id}.code`);
-  const resultFile = join(dir, `${id}.result.json`);
   writePrivateFile(marker, JSON.stringify({ providerId, expiresAt, pid: process.pid }));
   return {
     id,
@@ -606,14 +697,21 @@ export function createCodeMailbox(stateDir, { id = randomUUID(), providerId, exp
         return { code: raw, nonce: '' };
       }
     },
-    /** The answer echoes the submission's nonce, so submit-code only trusts its own result. */
+    /**
+     * One result file per submission (named by its nonce, exclusive create), so an answer can
+     * never overwrite or delete another submitter's unread answer.
+     */
     reply(result, nonce = '') {
-      removeQuietly(resultFile);
-      writePrivateFile(resultFile, JSON.stringify({ ...result, nonce }));
+      if (!isVerificationId(nonce)) return;
+      try {
+        writePrivateFile(resultPath(dir, id, nonce), JSON.stringify({ ...result, nonce }));
+      } catch {}
     },
     close() {
       removeQuietly(marker);
       removeQuietly(codeFile);
+      // Answers just written stay for their submitters to read; older leftovers go.
+      sweepResults(dir, id);
     },
   };
 }
@@ -628,10 +726,10 @@ export async function handOverCode(stateDir, id, rawCode, { timeoutMs = 45000, i
     throw new VerificationCodeError('No run is waiting for that verificationId (finished or expired).');
   }
   const codeFile = join(dir, `${id}.code`);
-  const resultFile = join(dir, `${id}.result.json`);
-  // Results are matched to this submission by a random nonce, so a stale result (or another
-  // submission's) is never mistaken for ours and nothing needs deleting before publishing.
+  // Each submission has its own nonce and its own result file: another submission's answer is
+  // never read as ours, and nothing of anyone else's is deleted.
   const nonce = randomUUID();
+  const resultFile = resultPath(dir, id, nonce);
   try {
     writePrivateFile(codeFile, JSON.stringify({ code, nonce }));
   } catch {
@@ -649,8 +747,9 @@ export async function handOverCode(stateDir, id, rawCode, { timeoutMs = 45000, i
       }
     }
   } finally {
-    // Never leave the code on disk, even if the run never picked it up.
-    removeQuietly(codeFile);
+    // Never leave our code on disk if the run never picked it up, but never delete a file that
+    // now holds another submission's code (ours was taken, then someone else submitted).
+    removeOwnCodeFile(codeFile, nonce);
   }
   throw new VerificationCodeError('The waiting run did not pick up the code in time. Is it still running?', {
     retryable: true,
