@@ -180,7 +180,7 @@ full workflow and selector-resilience guidelines.
 - **`fetch-blob`** — `fetch()` with credentials + blob download (for same-origin PDFs)
 - **`open-tabs`** — Opens URLs in new tabs for manual download (e.g., Stripe receipts)
 - **`print-page`** — Opens the receipt page + triggers the print dialog (save as PDF)
-- **`chrome-download`** — Opens the URL in a background tab and waits for a browser-initiated download; handles redirects, cookies, and JS triggers. Supports `postLoadClick` to press a button after load (e.g., Stripe's "Download invoice")
+- **`chrome-download`** — Opens the URL in a background tab and waits for a browser-initiated download; handles redirects, cookies, and JS triggers. Supports `postLoadClick` to press a button after load (e.g., Stripe's "Download invoice"). In agent mode the URL must be on the billing host, `auth.loginDomains` or `download.allowedHosts`
 - **`debugger-print`** — Uses `chrome.debugger` + `Page.printToPDF` to generate a PDF fully automatically, no print dialog (for receipt pages with no PDF link)
 - **`click-download`** — Drives a sequence of in-row click steps (via the engine) to trigger the browser's own download, for providers with no extractable URL (e.g., open a popover, then click the download link)
 

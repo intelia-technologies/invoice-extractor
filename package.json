@@ -10,7 +10,7 @@
     "test": "test"
   },
   "scripts": {
-    "test": "node scripts/validate-providers.mjs && node scripts/build-design-tokens.mjs --check && node scripts/check-contrast.mjs && node --test test/profile-sync.test.mjs test/login-domains.test.mjs test/verification-code.test.mjs",
+    "test": "node scripts/validate-providers.mjs && node scripts/build-design-tokens.mjs --check && node scripts/check-contrast.mjs && node --test test/profile-sync.test.mjs test/login-domains.test.mjs test/verification-code.test.mjs test/agent-downloads.test.mjs test/agent-signin.test.mjs",
     "validate": "node scripts/validate-providers.mjs",
     "test:sync": "node --test test/profile-sync.test.mjs test/login-domains.test.mjs",
     "install:1password": "node scripts/install-onepassword-host.mjs",
