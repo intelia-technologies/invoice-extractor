@@ -45,6 +45,7 @@ import {
   VerificationCodeError,
   waitForCodeStepExit,
 } from '../scripts/verification-code.mjs';
+import { chromeDownloadInvoice, printInvoiceToPdf } from '../scripts/agent-downloads.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = resolve(__dirname, '..');
@@ -608,7 +609,7 @@ async function extractProviderInvoices(page, provider, { readyCheck, provConfig 
       error: `No invoice rows found on the ${provider.name} billing page (${extraction?.debug || 'unknown'}).`,
     });
   }
-  const supportedMethods = ['direct-link', 'fetch-blob', 'click-download'];
+  const supportedMethods = ['direct-link', 'fetch-blob', 'click-download', 'chrome-download', 'debugger-print'];
   if (invoices.length && !supportedMethods.includes(provider.download?.method)) {
     manifest.errors.push({
       providerId: provider.id,
@@ -655,6 +656,15 @@ async function extractProviderInvoices(page, provider, { readyCheck, provConfig 
           await download.saveAs(destPath);
           downloaded = true;
         }
+      }
+
+      // Tab-based methods: the invoice opens in its own page of the same signed-in context.
+      if (!downloaded && (provider.download.method === 'chrome-download' || provider.download.method === 'debugger-print')) {
+        const result = provider.download.method === 'chrome-download'
+          ? await chromeDownloadInvoice(page.context(), provider, inv.downloadUrl, destPath)
+          : await printInvoiceToPdf(page.context(), provider, inv.downloadUrl, destPath);
+        if (result.success) downloaded = true;
+        else manifest.errors.push({ providerId: provider.id, filename, error: result.error });
       }
     } catch (dlErr) {
       manifest.errors.push({ providerId: provider.id, filename, error: dlErr.message });

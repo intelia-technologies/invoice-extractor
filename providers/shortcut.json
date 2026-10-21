@@ -39,6 +39,7 @@
   },
   "download": {
     "method": "chrome-download",
+    "allowedHosts": ["pay.stripe.com", "invoice.stripe.com"],
     "postLoadClick": {
       "selector": "a[href*=\"/invoice/\"][href*=\"/pdf\"]",
       "text": "download invoice",

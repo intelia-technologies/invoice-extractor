@@ -298,6 +298,16 @@
         "urlSuffix": {
           "type": "string",
           "description": "String appended to the download URL (chrome-download)."
+        },
+        "allowedHosts": {
+          "type": "array",
+          "description": "Human-reviewed hosts, besides the billingUrl host and auth.loginDomains, where agent mode may open invoice URLs for chrome-download and debugger-print (e.g. Stripe-hosted invoices: \"invoice.stripe.com\"). Each entry also covers its subdomains. Plain lowercase host with at least one dot: no scheme, port, path or wildcard. Keep it as narrow as the URLs the recipe extracts.",
+          "items": {
+            "type": "string",
+            "pattern": "^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z]{2,}$"
+          },
+          "uniqueItems": true,
+          "minItems": 1
         }
       }
     }

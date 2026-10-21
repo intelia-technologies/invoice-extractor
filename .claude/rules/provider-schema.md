@@ -41,6 +41,28 @@ Use `postLoadClick` with `chrome-download` when the download URL opens a page th
 - `text` — optional text filter (case-insensitive substring match on textContent). If no match, clicks first element from selector as fallback.
 - `wait` — ms to wait after page load before clicking (default: 2000).
 
+## Invoice hosts in agent mode (`download.allowedHosts`)
+
+Agent mode (CLI `run`, MCP server) supports `chrome-download` and `debugger-print` by opening
+each invoice URL in a new page of the signed-in browser. Before opening it, the URL must be
+`https` (plain `http` only on `localhost` test fixtures) and its host must be the `billingUrl`
+host, an `auth.loginDomains` entry, or a `download.allowedHosts` entry (each with subdomains).
+Otherwise that invoice is refused with an error and the run continues. The same check applies to
+the page the URL redirects to before `postLoadClick` clicks or `debugger-print` prints.
+
+Declare `allowedHosts` when invoices live on a third-party host such as Stripe-hosted invoices,
+and keep it as narrow as the URLs the recipe extracts:
+
+```json
+"download": {
+  "method": "chrome-download",
+  "allowedHosts": ["invoice.stripe.com"]
+}
+```
+
+Same entry format as `auth.loginDomains`: plain lowercase host with at least one dot, no scheme,
+port, path or wildcard. The extension ignores this field.
+
 ## URL resolution
 
 Set `"resolve": true` on a field to resolve relative URLs to absolute using `new URL(href, location.href)`.

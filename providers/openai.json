@@ -62,6 +62,7 @@
   },
   "download": {
     "method": "chrome-download",
+    "allowedHosts": ["invoice.stripe.com"],
     "postLoadClick": {
       "selector": "table.InvoiceDetails-table button, .App-InvoiceDetails button",
       "wait": 3000
