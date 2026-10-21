@@ -54,13 +54,13 @@ page's origin) before it is saved. List the provider's file host too if its PDFs
 another host (Stripe hosted invoices download from `pay.stripe.com`). With `IE_DEBUG=1`, agent
 mode prints a `debug_download_host` line on stderr for every saved invoice.
 
-Declare `allowedHosts` when invoices live on a third-party host such as Stripe-hosted invoices,
-and keep it as narrow as the URLs the recipe extracts:
+Declare `allowedHosts` when invoices live on a third-party host such as Stripe-hosted invoices.
+Keep it as narrow as the hosts the invoice pages and their downloaded files really use:
 
 ```json
 "download": {
   "method": "chrome-download",
-  "allowedHosts": ["invoice.stripe.com"]
+  "allowedHosts": ["invoice.stripe.com", "pay.stripe.com"]
 }
 ```
 

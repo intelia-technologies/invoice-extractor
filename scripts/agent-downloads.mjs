@@ -26,6 +26,7 @@ const PRINT_LOAD_TIMEOUT_MS = 10000;
 const PRINT_SETTLE_MS = 2000;
 const DEFAULT_POST_LOAD_WAIT_MS = 2000;
 const MAX_FALLBACK_REDIRECTS = 5;
+const FALLBACK_RESERVE_MS = 8000;
 
 // Same options popup.js passes to chrome.debugger 'Page.printToPDF'.
 export const PRINT_TO_PDF_OPTIONS = Object.freeze({
@@ -193,12 +194,14 @@ export async function chromeDownloadInvoice(context, provider, invoiceUrl, destP
       }
     }
 
-    if (!download) download = await within(watch.promise, left());
+    // Without postLoadClick, part of the budget (8 s of the default 25 s) is kept for the request fallback.
+    const reserve = Math.min(FALLBACK_RESERVE_MS, Math.round(timeoutMs / 3));
+    if (!download) download = await within(watch.promise, cfg.postLoadClick ? left() : Math.max(0, left() - reserve));
     if (!download) {
       if (cfg.postLoadClick) return { success: false, error: `No download started within ${Math.round(timeoutMs / 1000)} s.` };
       // Extension fallback: download the URL itself. Only accepted when it really is a PDF
       // (a hosted invoice page is HTML, not the invoice).
-      return await fetchPdfFallback(context.request, provider, url, destPath, deadline);
+      return await fetchPdfFallback(context.request, provider, url, destPath, Math.max(deadline, Date.now() + reserve));
     }
 
     // Where the bytes really come from (after redirects), checked before anything is saved.
