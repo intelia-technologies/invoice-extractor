@@ -707,6 +707,103 @@
     return { attempted: false, blocked: true, reason: check.reason, host: check.host };
   }
 
+  // =====================================================
+  // STEP API: verification-code step (a code sent by email/SMS after the password)
+  // =====================================================
+  const CODE_SLOT_ATTR = 'data-invoice-code-slot';
+  const CODE_HINT_PATTERN = /code|c[oó]digo|sent|enviad|e-?mail|correo|verif|sms|d[ií]git/i;
+  const CODE_SUBMIT_TEXTS = [
+    'Verify', 'Confirm', 'Continue', 'Submit', 'Sign in', 'Log in',
+    'Verificar', 'Confirmar', 'Continuar', 'Enviar', 'Acceder', 'Entrar',
+  ];
+
+  // One box per character: 4–10 visible single-character inputs sharing a container.
+  function findSplitCodeInputs() {
+    const singles = Array.from(document.querySelectorAll('input')).filter(el =>
+      ['text', 'tel', 'number'].includes(el.type) &&
+      el.maxLength === 1 && !el.disabled && !el.readOnly && utils.isElementVisible(el)
+    );
+    if (singles.length < 4) return null;
+    let scope = singles[0].parentElement;
+    while (scope && singles.filter(el => scope.contains(el)).length < 4) scope = scope.parentElement;
+    const group = scope ? singles.filter(el => scope.contains(el)) : [];
+    return group.length >= 4 && group.length <= 10 ? group : null;
+  }
+
+  function findCodeInputs(authConfig = {}) {
+    const split = findSplitCodeInputs();
+    if (split) return split;
+    const single = findVisibleInput(authConfig.otpSelector || DEFAULT_OTP_SELECTOR);
+    return single ? [single] : [];
+  }
+
+  // Visible text explaining where the code went ("we sent a code to p***@x.com"). Input values
+  // are not part of innerText, so a typed code can never end up here.
+  function verificationHint(anchor) {
+    const pick = scope => String(scope?.innerText || '')
+      .split('\n')
+      .map(line => line.replace(/\s+/g, ' ').trim())
+      .filter(line => line && CODE_HINT_PATTERN.test(line));
+    let scope = anchor ? (anchor.closest('form') || anchor.parentElement) : null;
+    for (let depth = 0; scope && depth < 5; depth++, scope = scope.parentElement) {
+      const lines = pick(scope);
+      if (lines.length) return lines.join(' · ').slice(0, 300);
+    }
+    return pick(document.body).join(' · ').slice(0, 300);
+  }
+
+  // Shared with popup.js: is the provider waiting for a code the user receives (email/SMS)?
+  // A code field is a verification step wherever it lives (/login, /login/verify, ...); without
+  // one, only a form that vanished while staying on the sign-in address counts.
+  // context: { url, loginStartUrl, hasOtpCredential, detectSplitInputs }
+  function detectVerificationStep(authConfig = {}, context = {}) {
+    const form = detectLoginForm(authConfig);
+    const url = context.url || location.href;
+    const split = context.detectSplitInputs ? findSplitCodeInputs() : null;
+    const hasCodeField = form.hasOtp || Boolean(split);
+    const awaiting = hasCodeField
+      ? !context.hasOtpCredential
+      : url === context.loginStartUrl && !form.hasUsername && !form.hasPassword;
+    const anchor = split ? split[0] : findVisibleInput(authConfig.otpSelector || DEFAULT_OTP_SELECTOR);
+    return {
+      ...form,
+      awaiting,
+      hasCodeField,
+      codeLength: split ? split.length : null,
+      hint: awaiting ? verificationHint(anchor) : '',
+    };
+  }
+
+  // Tags the code field(s) so the caller can type into them with real keyboard input.
+  function markCodeInputs(authConfig = {}) {
+    document.querySelectorAll(`[${CODE_SLOT_ATTR}]`).forEach(el => el.removeAttribute(CODE_SLOT_ATTR));
+    const inputs = findCodeInputs(authConfig);
+    inputs.forEach((el, i) => el.setAttribute(CODE_SLOT_ATTR, String(i)));
+    const single = inputs.length === 1 ? inputs[0] : null;
+    return {
+      count: inputs.length,
+      split: inputs.length > 1,
+      maxLength: single && single.maxLength > 0 ? single.maxLength : null,
+    };
+  }
+
+  function submitVerificationCode(authConfig = {}) {
+    const last = Array.from(document.querySelectorAll(`[${CODE_SLOT_ATTR}]`)).pop();
+    // The boxes are gone: the page submitted by itself after the last character.
+    if (!last || !utils.isElementVisible(last)) return { submitted: true, via: 'auto' };
+    const scope = last.closest('form') || last.parentElement?.parentElement || last.parentElement;
+    const button = findSubmitButton(scope, authConfig.submitSelector, CODE_SUBMIT_TEXTS);
+    if (button) {
+      utils.simulateRealClick(button);
+      return { submitted: true, via: 'button' };
+    }
+    if (last.form) {
+      last.form.requestSubmit ? last.form.requestSubmit() : last.form.submit();
+      return { submitted: true, via: 'form' };
+    }
+    return { submitted: false };
+  }
+
   async function attemptAutoLogin(credentials = {}, authConfig = {}) {
     const { username = '', password = '', otp = '', allowedLoginDomains = [] } = credentials;
     const domainCheck = checkLoginFrame(allowedLoginDomains);
@@ -920,6 +1017,9 @@
     selectPaginationOption,
     clickNext,
     detectLoginForm,
+    detectVerificationStep,
+    markCodeInputs,
+    submitVerificationCode,
     attemptAutoLogin,
     verifyLoggedInIdentity,
     clearPageSessionData,

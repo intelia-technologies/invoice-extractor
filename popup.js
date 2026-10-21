@@ -3068,15 +3068,15 @@ async function awaitingVerificationStep(tabId, provider, loginStartUrl, creds) {
   try { tab = await chrome.tabs.get(tabId); } catch { return false; }
   const url = tab?.url || '';
   if (!url || sameBillingLocation(url, resolveBillingUrl(provider))) return false;
-  let form;
+  // The heuristic lives in engine.js (detectVerificationStep) and is shared with the agent CLI.
   try {
     await injectEngine(tabId);
-    form = await callEngine(tabId, 'detectLoginForm', [provider.auth || {}]);
+    const step = await callEngine(tabId, 'detectVerificationStep', [
+      provider.auth || {},
+      { url, loginStartUrl, hasOtpCredential: Boolean(creds?.otp) },
+    ]);
+    return Boolean(step?.awaiting);
   } catch { return false; }
-  // A code field is a verification step wherever it lives (/login, /login/verify, ...).
-  if (form?.hasOtp) return !creds?.otp;
-  // Without one, only a form that vanished while staying on the sign-in address counts.
-  return url === loginStartUrl && !form?.hasUsername && !form?.hasPassword;
 }
 
 // The provider is waiting for a code the user has to type. Keep the tab where it is and,
