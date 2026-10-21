@@ -209,13 +209,18 @@ const ROUTES = {
   'https://invoice.stripe.test/i/away': () => html(`<script>location.replace('https://login.other.test/sign-in')</script>`),
   'https://login.other.test/sign-in': () => html('<button>Download invoice</button>'),
   // Receipt page for debugger-print.
-  'https://billing.acme.test/receipts/7': () => html(`<h1 style="background:#eef">Receipt #7</h1><p>Total: $12.00</p>`),
+  'https://billing.acme.test/receipts/7': () => html(`<h1 class="receipt" style="background:#eef">Receipt #7</h1><p>Total: $12.00</p>`),
+  // Session expired: the receipt redirects to the sign-in page, or shows the form in place.
+  'https://billing.acme.test/receipts/8': () => html(`<script>location.replace('/signin')</script>`),
+  'https://billing.acme.test/signin': () => html(`<form><input type="email"><input type="password"><button>Sign in</button></form>`),
+  'https://billing.acme.test/receipts/9': () => html(`<p>Please sign in again</p><form><input type="password"></form>`),
   // Billing page for the end-to-end run.
   'https://billing.acme.test/invoices': () => html(`<table id="invoices">
     <tr class="inv"><td class="date">2026-09-01</td><td><a href="https://invoice.stripe.test/i/hosted">View</a></td></tr>
     <tr class="inv"><td class="date">2026-08-01</td><td><a href="https://elsewhere.test/i/hosted">View</a></td></tr></table>`),
   'https://billing.acme.test/receipts': () => html(`<table id="invoices">
-    <tr class="inv"><td class="date">2026-09-01</td><td><a href="/receipts/7">View</a></td></tr></table>`),
+    <tr class="inv"><td class="date">2026-09-01</td><td><a href="/receipts/7">View</a></td></tr>
+    <tr class="inv"><td class="date">2026-08-01</td><td><a href="/receipts/404">View</a></td></tr></table>`),
 };
 
 async function withContext(fn, { onRequest } = {}) {
@@ -353,6 +358,32 @@ test('debugger-print prints the receipt page to a real PDF over CDP', { skip: br
   });
 });
 
+test('debugger-print refuses a 404, a sign-in redirect, an in-place sign-in form and a missing readySelector', { skip: browserSkip }, async () => {
+  await withContext(async (context, out) => {
+    const provider = { ...ACME, download: { method: 'debugger-print', filenameTemplate: 'x.pdf' } };
+    const print = (p, n) => printInvoiceToPdf(context, p, `https://billing.acme.test/receipts/${n}`, path.join(out, `${n}.pdf`), { settleMs: 50, loadTimeoutMs: 3000 });
+
+    const notFound = await print(provider, 404);
+    assert.equal(notFound.success, false);
+    assert.match(notFound.error, /HTTP 404/);
+
+    const redirected = await print(provider, 8);
+    assert.equal(redirected.success, false);
+    assert.match(redirected.error, /sign-in page \(\/signin\)/);
+
+    assert.match((await print(provider, 9)).error, /sign-in page/);
+
+    const strict = { ...provider, download: { ...provider.download, readySelector: '.receipt' } };
+    assert.deepEqual(await print(strict, 7), { success: true });
+    const notReceipt = await printInvoiceToPdf(context, { ...strict, download: { ...strict.download, readySelector: '.nope' } },
+      'https://billing.acme.test/receipts/7', path.join(out, 'n.pdf'), { settleMs: 50, loadTimeoutMs: 1000 });
+    assert.match(notReceipt.error, /readySelector \.nope not found/);
+
+    for (const n of [404, 8, 9]) assert.ok(!existsSync(path.join(out, `${n}.pdf`)), `nothing saved for ${n}`);
+    assert.equal(context.pages().length, 0);
+  });
+});
+
 // End to end through extractProviderInvoices (resumeAfterVerification resumes a run on an open
 // billing page): manifest, history and per-invoice errors as for the other methods.
 test('agent run: chrome-download and debugger-print land in the manifest and history', { skip: browserSkip }, async () => {
@@ -384,12 +415,15 @@ test('agent run: chrome-download and debugger-print land in the manifest and his
       download: { method: 'debugger-print', filenameTemplate: 'Acme_Receipt_{{date}}.pdf' },
     };
     const m2 = await run(printed, 'https://billing.acme.test/receipts');
-    assert.deepEqual(m2.errors, []);
+    assert.equal(m2.downloadedFiles.length, 1);
     assert.equal(m2.downloadedFiles[0].filename, 'Acme_Receipt_2026-09-01.pdf');
+    assert.equal(m2.errors.length, 1, 'the 404 receipt is an error, not a download');
+    assert.match(m2.errors[0].error, /HTTP 404/);
     assert.ok(isPdf(m2.downloadedFiles[0].path));
 
     const history = JSON.parse(readFileSync(statePath, 'utf8')).history;
     assert.ok(history.includes('acme::https://invoice.stripe.test/i/hosted'));
     assert.ok(history.includes('acme::https://billing.acme.test/receipts/7'));
+    assert.ok(!history.includes('acme::https://billing.acme.test/receipts/404'), 'a failed receipt is retried next run');
   });
 });

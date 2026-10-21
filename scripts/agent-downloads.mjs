@@ -249,6 +249,19 @@ export async function fetchPdfFallback(request, provider, url, destPath, deadlin
   return { success: false, error: 'No download started and the URL did not return a PDF.' };
 }
 
+// A sign-in page instead of the receipt: a login-looking path, or a visible password field.
+const SIGN_IN_PATH = /(^|\/)(log-?in|sign-?in|sign_in|log_in|signin|auth|sso|session\/new)(\/|$)/i;
+async function looksLikeSignIn(page) {
+  let path = '';
+  try { path = new URL(page.url()).pathname; } catch {}
+  if (SIGN_IN_PATH.test(path)) return true;
+  return page.evaluate(() => Array.from(document.querySelectorAll('input[type="password"]')).some(el => {
+    const r = el.getBoundingClientRect();
+    const st = getComputedStyle(el);
+    return r.width > 0 && r.height > 0 && st.visibility !== 'hidden' && st.display !== 'none';
+  })).catch(() => false);
+}
+
 /**
  * debugger-print: open the receipt page and print it to PDF over CDP (Page.printToPDF).
  * Returns { success: true } or { success: false, error }.
@@ -266,11 +279,28 @@ export async function printInvoiceToPdf(
 
   const page = await context.newPage();
   try {
-    // Like the extension: wait for load up to 10 s, then 2 s more for late rendering.
-    await page.goto(receiptUrl, { waitUntil: 'load', timeout: loadTimeoutMs }).catch(() => {});
+    // Like the extension: wait for load up to 10 s, then 2 s more for late rendering. Unlike a
+    // blind print, a receipt that did not load is an error, never a "downloaded" PDF.
+    let response = null;
+    try {
+      response = await page.goto(receiptUrl, { waitUntil: 'domcontentloaded', timeout: loadTimeoutMs });
+    } catch (err) {
+      return { success: false, error: `Receipt page did not load: ${err.message.split('\n')[0]}` };
+    }
+    if (!response) return { success: false, error: 'Receipt page did not load (no response).' };
+    if (response.status() >= 400) return { success: false, error: `Receipt page returned HTTP ${response.status()}.` };
+    await page.waitForLoadState('load', { timeout: loadTimeoutMs }).catch(() => {});
     await sleep(settleMs);
     const landed = checkInvoiceUrl(page.url(), provider);
     if (!landed.ok) return { success: false, error: landed.error };
+    if (await looksLikeSignIn(page)) {
+      return { success: false, error: `Receipt page redirected to a sign-in page (${new URL(page.url()).pathname}); the session may have expired.` };
+    }
+    const readySelector = provider.download?.readySelector;
+    if (readySelector) {
+      const ready = await page.waitForSelector(readySelector, { state: 'attached', timeout: loadTimeoutMs }).then(() => true, () => false);
+      if (!ready) return { success: false, error: `Receipt page is not a receipt (download.readySelector ${readySelector} not found).` };
+    }
 
     const cdp = await context.newCDPSession(page);
     try {

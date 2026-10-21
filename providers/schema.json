@@ -295,6 +295,11 @@
           "type": "string",
           "description": "Template used to build the download URL (e.g. fetch-blob)."
         },
+        "readySelector": {
+          "type": "string",
+          "minLength": 1,
+          "description": "debugger-print: CSS selector that only exists on a real receipt page. Agent mode refuses to print (and records an error) when it is missing."
+        },
         "urlSuffix": {
           "type": "string",
           "description": "String appended to the download URL (chrome-download)."

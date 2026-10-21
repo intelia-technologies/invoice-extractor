@@ -20,7 +20,7 @@ Every provider JSON must have: `id`, `name`, `icon`, `billingUrl`, `readySelecto
 - `open-tabs` — for external URLs (e.g., Stripe receipts). Opens in new tabs.
 - `print-page` — for pages that need print-to-PDF. Opens URL + triggers `window.print()`.
 - `chrome-download` — opens URL in a background tab, waits for browser-initiated download (handles redirects, JS triggers, cookies). Supports `urlSuffix` to append to URLs and `postLoadClick` to click a button after page load (e.g., "Download invoice" on Stripe).
-- `debugger-print` — for receipt pages without PDF download. Uses `chrome.debugger` + `Page.printToPDF` to programmatically generate PDF. Fully automated, no print dialog.
+- `debugger-print` — for receipt pages without PDF download. Uses `chrome.debugger` + `Page.printToPDF` to programmatically generate PDF. Fully automated, no print dialog. Agent mode only prints a page that really loaded: no response, HTTP status >= 400 or a sign-in page (login-looking path or visible password field) is an error for that invoice and is not added to history. Optional `download.readySelector`: a selector that only exists on a real receipt; when set, a page without it is refused too.
 
 ## Post-load click (chrome-download)
 
