@@ -787,6 +787,20 @@
       }
     }
   },
+  "workflowLoginPageChanged": {
+    "message": "The sign-in page $host$ changed while signing in to $provider$; nothing was typed. Try again.",
+    "description": "Autofill refused: the page navigated between the sign-in address check and filling, so the credentials could not be bound to the checked page. Nothing was typed.",
+    "placeholders": {
+      "host": {
+        "content": "$1",
+        "example": "login.example.net"
+      },
+      "provider": {
+        "content": "$2",
+        "example": "Stripe"
+      }
+    }
+  },
   "workflowStatusVerifying": {
     "message": "$provider$: verifying the billing page… ($seconds$ s)",
     "description": "Status with elapsed seconds.",

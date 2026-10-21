@@ -1288,6 +1288,75 @@ async function runTests() {
       `Login on an allowed host must be filled, got: ${JSON.stringify(allowedCheck)}`);
     log('popup refuses autofill outside the allowed sign-in domains (nothing typed, message names host) and fills on an allowed host');
 
+    // 12c-3: autofill must be pinned to the exact document whose address was checked (fail closed)
+    const guardForm = `
+      <form id="guard-form" onsubmit="event.preventDefault()">
+        <input id="guard-user" type="email" autocomplete="username" />
+        <input id="guard-pass" type="password" />
+      </form>
+    `;
+    await fetchBlobPage.setContent(guardForm);
+    const noDocIdCheck = await popup.evaluate(async (tabId) => {
+      const realGetFrame = chrome.webNavigation.getFrame;
+      let lookups = 0;
+      chrome.webNavigation.getFrame = async (details) => {
+        lookups++;
+        const frame = await realGetFrame.call(chrome.webNavigation, details);
+        return { ...frame, documentId: undefined };
+      };
+      try {
+        await injectEngine(tabId);
+        const res = await callEngineForLogin(
+          tabId,
+          { username: 'finance@intelia.com', password: 'vault-password-99', allowedLoginDomains: ['127.0.0.1'] },
+          {}
+        );
+        return { res, lookups, message: loginBlockedMessage(res, { name: 'Stripe' }) };
+      } finally {
+        chrome.webNavigation.getFrame = realGetFrame;
+      }
+    }, fetchBlobTabId);
+    const typedWithoutDocId = await fetchBlobPage.evaluate(() => [
+      document.getElementById('guard-user').value,
+      document.getElementById('guard-pass').value,
+    ]);
+    assert(noDocIdCheck.res?.blocked === true && noDocIdCheck.res.reason === 'page-changed' && noDocIdCheck.lookups >= 2,
+      `Without a documentId the popup must retry, then refuse, got: ${JSON.stringify(noDocIdCheck)}`);
+    assert(typedWithoutDocId.every(v => v === ''), `Nothing may be typed when the call cannot be pinned, got: ${JSON.stringify(typedWithoutDocId)}`);
+    assert(noDocIdCheck.message !== 'workflowLoginPageChanged' && noDocIdCheck.message.includes('Stripe'),
+      `Page-changed refusal must use the localized message, got: ${noDocIdCheck.message}`);
+
+    // The tab navigates between the address check and the injection: the stale documentId
+    // makes Chrome refuse the injection, and the new document receives nothing.
+    const staleFrame = await popup.evaluate(
+      async (tabId) => chrome.webNavigation.getFrame({ tabId, frameId: 0 }),
+      fetchBlobTabId
+    );
+    await fetchBlobPage.goto(`${baseUrl}/coderabbit-billing`);
+    await fetchBlobPage.setContent(guardForm);
+    const staleCheck = await popup.evaluate(async ({ tabId, stale }) => {
+      const realGetFrame = chrome.webNavigation.getFrame;
+      chrome.webNavigation.getFrame = async () => stale;
+      try {
+        await injectEngine(tabId);
+        return await callEngineForLogin(
+          tabId,
+          { username: 'finance@intelia.com', password: 'vault-password-99', allowedLoginDomains: ['127.0.0.1'] },
+          {}
+        );
+      } finally {
+        chrome.webNavigation.getFrame = realGetFrame;
+      }
+    }, { tabId: fetchBlobTabId, stale: staleFrame });
+    const typedAfterNavigation = await fetchBlobPage.evaluate(() => [
+      document.getElementById('guard-user').value,
+      document.getElementById('guard-pass').value,
+    ]);
+    assert(staleCheck?.blocked === true && staleCheck.reason === 'page-changed',
+      `A stale documentId must be refused as page-changed, got: ${JSON.stringify(staleCheck)}`);
+    assert(typedAfterNavigation.every(v => v === ''), `The new document must receive nothing, got: ${JSON.stringify(typedAfterNavigation)}`);
+    log('popup autofill is pinned to the checked document: missing or stale documentId refuses with "page changed" and types nothing');
+
     // 12d: verifyLoggedInIdentity detects wrong active account and clearPageSessionData purges session state
     const identityCheckResult = await fetchBlobPage.evaluate(async () => {
       window.localStorage.setItem('current_user_email', 'finance@intelia.com');

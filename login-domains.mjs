@@ -127,13 +127,81 @@ export function playwrightFrameLocation(frame) {
   return { url: frame?.url?.() || '', ancestorOrigins };
 }
 
-// CLI / MCP autofill: checks the frame before the credentials enter the page at all, then
-// lets engine.js check again at the moment of typing.
+// Runs inside the page (Playwright serializes its source, so it must stay self-contained).
+// Playwright cannot pin an evaluate to one document: if the frame navigated after the check in
+// guardedAutoLogin, this runs in the new document. So it re-checks the document it actually runs
+// in before handing the credentials to the engine, reading only the browser's unforgeable
+// `location` and using only operators and indexing, never a String/Array/URL method a page
+// script could have replaced to observe the credentials.
+export function loginInPage([c, authCfg]) {
+  const blocked = (reason, host) => ({ attempted: false, blocked: true, reason, host });
+  const domains = c ? c.allowedLoginDomains : null;
+  const count = domains && typeof domains.length === 'number' ? domains.length : 0;
+  const endsOnLabel = (host, domain) => {
+    if (typeof host !== 'string' || typeof domain !== 'string' || domain.length === 0) return false;
+    if (host.length < domain.length) return false;
+    for (let i = 1; i <= domain.length; i++) {
+      if (host[host.length - i] !== domain[domain.length - i]) return false;
+    }
+    return host.length === domain.length || host[host.length - domain.length - 1] === '.';
+  };
+  const isAllowedHost = host => {
+    for (let i = 0; i < count; i++) if (endsOnLabel(host, domains[i])) return true;
+    return false;
+  };
+  const isLoopbackIp = host => {
+    if (!(host[0] === '1' && host[1] === '2' && host[2] === '7' && host[3] === '.')) return false;
+    for (let i = 4; i < host.length; i++) {
+      const ch = host[i];
+      if (ch !== '.' && (ch < '0' || ch > '9')) return false;
+    }
+    return true;
+  };
+  const isLocal = host => host === 'localhost' || endsOnLabel(host, 'localhost') || host === '[::1]' || isLoopbackIp(host);
+  const problem = (scheme, host) => {
+    if (!(scheme === 'https:' || (scheme === 'http:' && isLocal(host)))) return 'insecure';
+    return isAllowedHost(host) ? '' : 'domain-mismatch';
+  };
+  // "https://host:port" -> { scheme: 'https:', host: 'host' }
+  const parseOrigin = origin => {
+    let scheme = '';
+    let i = 0;
+    const text = typeof origin === 'string' ? origin : '';
+    while (i < text.length && text[i] !== ':') scheme += text[i++];
+    scheme += ':';
+    i += 3; // skip "://"
+    let host = '';
+    if (text[i] === '[') {
+      while (i < text.length && text[i] !== ']') host += text[i++];
+      if (i < text.length) host += text[i++];
+    } else {
+      while (i < text.length && text[i] !== ':' && text[i] !== '/') host += text[i++];
+    }
+    return { scheme, host };
+  };
+
+  const frameHost = location.hostname;
+  if (count === 0) return blocked('no-allowed-domains', frameHost);
+  let reason = problem(location.protocol, frameHost);
+  if (reason) return blocked(reason, frameHost);
+  const ancestors = location.ancestorOrigins;
+  if (ancestors) {
+    for (let i = 0; i < ancestors.length; i++) {
+      const parent = parseOrigin(ancestors[i]);
+      reason = problem(parent.scheme, parent.host);
+      if (reason) return blocked(reason, parent.host);
+    }
+  } else if (window.top !== window) {
+    return blocked('unknown-top-frame', frameHost);
+  }
+  return window.__invoiceEngine.attemptAutoLogin(c, authCfg);
+}
+
+// CLI / MCP autofill. The URL check and the evaluate target the same Playwright frame. The check
+// runs before the credentials enter the page at all; loginInPage re-checks inside the document
+// that actually receives them, and engine.js checks again at the moment of typing.
 export async function guardedAutoLogin(frame, creds, authConfig = {}) {
   const check = checkLoginLocation(playwrightFrameLocation(frame), creds?.allowedLoginDomains);
   if (!check.ok) return { attempted: false, blocked: true, reason: check.reason, host: check.host };
-  return frame.evaluate(
-    ([c, authCfg]) => window.__invoiceEngine.attemptAutoLogin(c, authCfg),
-    [creds, authConfig]
-  );
+  return frame.evaluate(loginInPage, [creds, authConfig]);
 }

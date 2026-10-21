@@ -12,6 +12,7 @@ import {
   guardedAutoLogin,
   hostMatchesDomains,
   isValidLoginDomain,
+  loginInPage,
   templateHost,
 } from '../login-domains.mjs';
 
@@ -243,6 +244,72 @@ test('CLI guard refuses before the credentials reach a page on the wrong domain'
   const noDomains = fakeFrame('https://dashboard.stripe.com/login');
   assert.equal((await guardedAutoLogin(noDomains, { username: 'u', password: 'p' }, {})).reason, 'no-allowed-domains');
   assert.equal(noDomains.calls.length, 0);
+});
+
+// A page document for loginInPage: its own location, a page-defined (possibly hostile)
+// __invoiceEngine, and optionally tampered built-ins.
+function pageDocument(href, { ancestorOrigins = [], tamper = false } = {}) {
+  const url = new URL(href);
+  const received = [];
+  const window = {
+    __invoiceEngine: { attemptAutoLogin: (c, a) => { received.push(c); return { attempted: true, filledPassword: true }; } },
+  };
+  window.top = window;
+  const context = vm.createContext({
+    window,
+    location: { href, hostname: url.hostname, protocol: url.protocol, ancestorOrigins },
+  });
+  if (tamper) {
+    // A hostile page replacing built-ins to observe or bypass the check.
+    vm.runInContext(`
+      String.prototype.endsWith = function () { throw new Error('tampered endsWith'); };
+      String.prototype.slice = function () { throw new Error('tampered slice'); };
+      Array.prototype.some = function () { return true; };
+      globalThis.URL = function () { throw new Error('tampered URL'); };
+    `, context);
+  }
+  const run = vm.runInContext(`(${loginInPage.toString()})`, context);
+  return { run, received };
+}
+
+test('CLI in-page re-check: a navigation after the URL check never hands credentials to the new page', async () => {
+  const creds = { username: 'u', password: 'vault-secret', allowedLoginDomains: ['dashboard.stripe.com'] };
+
+  // The frame passes the check, then navigates before evaluate runs: the hostile document
+  // defines its own __invoiceEngine to catch the credentials.
+  const hostile = pageDocument('https://stripe-login.evil.example/', { tamper: true });
+  const racingFrame = {
+    url: () => 'https://dashboard.stripe.com/login',
+    parentFrame: () => null,
+    evaluate: async (fn, args) => {
+      assert.equal(fn, loginInPage, 'evaluate must run the self-contained in-page guard');
+      return hostile.run(args);
+    },
+  };
+  const res = await guardedAutoLogin(racingFrame, creds, {});
+  assert.deepEqual({ ...res }, { attempted: false, blocked: true, reason: 'domain-mismatch', host: 'stripe-login.evil.example' });
+  assert.equal(hostile.received.length, 0, 'the new page must never receive the credentials');
+
+  // Same document but plain http, or a hostile parent frame: refused.
+  const http = pageDocument('http://dashboard.stripe.com/login');
+  assert.equal(http.run([creds, {}]).reason, 'insecure');
+  const framed = pageDocument('https://dashboard.stripe.com/login', { ancestorOrigins: ['https://phish.example:8443'] });
+  assert.equal(framed.run([creds, {}]).host, 'phish.example');
+  assert.equal(http.received.length + framed.received.length, 0);
+
+  // The allowed page still signs in, even with tampered built-ins (the guard uses none of them).
+  const legit = pageDocument('https://dashboard.stripe.com/login', { tamper: true, ancestorOrigins: ['https://dashboard.stripe.com'] });
+  assert.equal(legit.run([creds, {}]).filledPassword, true);
+  assert.equal(legit.received.length, 1);
+  const subdomain = pageDocument('https://eu.dashboard.stripe.com/login', { tamper: true });
+  assert.equal(subdomain.run([creds, {}]).attempted, true);
+  const lookalike = pageDocument('https://xdashboard.stripe.com/login', { tamper: true });
+  assert.equal(lookalike.run([creds, {}]).reason, 'domain-mismatch');
+  const local = pageDocument('http://127.0.0.1:4100/login');
+  assert.equal(local.run([{ ...creds, allowedLoginDomains: ['127.0.0.1'] }, {}]).attempted, true);
+  const noDomains = pageDocument('https://dashboard.stripe.com/login');
+  assert.equal(noDomains.run([{ username: 'u', password: 'p' }, {}]).reason, 'no-allowed-domains');
+  assert.equal(noDomains.received.length, 0);
 });
 
 // --- engine.js in-page check (runs the real engine in a minimal fake DOM) ---
