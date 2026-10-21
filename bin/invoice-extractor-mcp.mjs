@@ -122,6 +122,21 @@ const TOOLS = [
     },
   },
   {
+    name: 'invoice_extractor_cancel_verification',
+    description:
+      'Give up on a provider waiting for a one-time verification code and close its browser page (omit verificationId to cancel all). ' +
+      'Needed before running another client profile while a code is pending: runs share one browser session, so a run for a different profile is refused until the pending code is submitted or cancelled.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        verificationId: {
+          type: 'string',
+          description: 'verificationId from pendingVerification; omit to cancel every pending verification.',
+        },
+      },
+    },
+  },
+  {
     name: 'invoice_extractor_onboard_provider',
     description:
       'Verify an existing SaaS provider with the user 1Password credentials, auto-repair it if it fails, or inspect and create a new provider if it does not exist.',
@@ -214,8 +229,9 @@ async function executeTool(name, args = {}) {
 
   if (name === 'invoice_extractor_run') {
     const defaultOut = join(homedir(), 'Desktop', 'Facturas');
-    const manifest = await runAgentExtraction({
-      profileName: args.profile || '',
+    const profileName = String(args.profile || '').trim();
+    const manifest = await verifications.runExclusive(profileName, () => runAgentExtraction({
+      profileName,
       providerIds: Array.isArray(args.providers) ? args.providers : [],
       sinceDate: args.sinceDate || null,
       maxInvoices: args.maxInvoices || 999,
@@ -223,10 +239,16 @@ async function executeTool(name, args = {}) {
       headed: Boolean(args.headed),
       verificationMode: 'defer',
       contextProvider: verifications.contextProvider,
-      onVerificationPending: pending => verifications.add(pending),
-    });
+      onVerificationPending: pending =>
+        verifications.add({ ...pending, profileName, profileKey: profileName.toLowerCase() }),
+    }));
     const nextStep = buildNextStep(manifest.pendingVerification);
     return nextStep ? { ...manifest, nextStep } : manifest;
+  }
+
+  if (name === 'invoice_extractor_cancel_verification') {
+    const cancelled = await verifications.cancel(args.verificationId ? String(args.verificationId) : null);
+    return { cancelled, pendingVerification: verifications.list() };
   }
 
   if (name === 'invoice_extractor_submit_code') {
@@ -252,11 +274,19 @@ async function executeTool(name, args = {}) {
   }
 
   if (name === 'invoice_extractor_onboard_provider') {
-    return onboardProvider({
-      target: args.provider || '',
-      url: args.url || '',
-      profileName: args.profile || '',
-      headed: Boolean(args.headed),
+    // Onboarding opens its own browser on the same persistent profile: never while runs use it.
+    return verifications.runExclusive(String(args.profile || '').trim(), () => {
+      if (verifications.list().length > 0) {
+        throw new Error(
+          'A provider page is waiting for a verification code. Submit it with invoice_extractor_submit_code or cancel it with invoice_extractor_cancel_verification before onboarding.'
+        );
+      }
+      return onboardProvider({
+        target: args.provider || '',
+        url: args.url || '',
+        profileName: args.profile || '',
+        headed: Boolean(args.headed),
+      });
     });
   }
 

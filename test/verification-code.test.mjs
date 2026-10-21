@@ -16,6 +16,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   buildNextStep,
+  codeInPage,
   createCodeMailbox,
   createVerificationRegistry,
   detectCodeStep,
@@ -38,7 +39,15 @@ const CODE = '482913';
 
 // ─── Fake page: the engine calls run against a scripted in-memory engine ──────────────────
 
-function fakePage({ url = 'https://app.holded.com/login', slots = { count: 6, split: true }, step = {}, failFill = null } = {}) {
+// `url` is where the browser reports the frame (Node-side check); `documentUrl` is the document
+// the in-page function actually runs in (differs when the frame navigated in between).
+function fakePage({
+  url = 'https://app.holded.com/login',
+  documentUrl = url,
+  slots = { count: 6, split: true },
+  step = {},
+  failFill = null,
+} = {}) {
   const fills = [];
   const engineCalls = [];
   const engine = {
@@ -46,32 +55,33 @@ function fakePage({ url = 'https://app.holded.com/login', slots = { count: 6, sp
       engineCalls.push(['detectVerificationStep', context]);
       return { awaiting: true, hasCodeField: true, hint: 'We sent a code to p***@intelia.test', ...step };
     },
-    markCodeInputs() {
-      engineCalls.push(['markCodeInputs']);
-      return slots;
-    },
-    submitVerificationCode() {
-      engineCalls.push(['submitVerificationCode']);
-      return { submitted: true, via: 'button' };
+    async fillVerificationCode(code, authCfg, domains) {
+      engineCalls.push(['fillVerificationCode', domains]);
+      if (failFill) throw new Error(failFill(code));
+      const shape = { count: slots.count, split: slots.split, maxLength: slots.maxLength || null };
+      if (shape.split && shape.count !== code.length) return { typed: false, reason: 'length', ...shape };
+      if (shape.split) fills.push(...code);
+      else fills.push(code);
+      return { typed: true, submitted: true, via: 'button', ...shape };
     },
   };
   const frame = {
     url: () => url,
     parentFrame: () => null,
     async evaluate(fn, arg) {
-      const previous = globalThis.window;
-      globalThis.window = { __invoiceEngine: engine };
+      const previous = { window: globalThis.window, location: globalThis.location };
+      const doc = new URL(documentUrl);
+      const win = { __invoiceEngine: engine };
+      win.top = win;
+      globalThis.window = win;
+      globalThis.location = { hostname: doc.hostname, protocol: doc.protocol, href: doc.href, ancestorOrigins: [] };
       try {
         return await fn(arg);
       } finally {
-        globalThis.window = previous;
+        globalThis.window = previous.window;
+        globalThis.location = previous.location;
       }
     },
-    async fill(selector, value) {
-      if (failFill) throw new Error(failFill(value));
-      fills.push([selector, value]);
-    },
-    async press() {},
   };
   return {
     fills,
@@ -142,20 +152,15 @@ test('a root billingUrl (Naturgy) does not make every page of the host the billi
   assert.equal(page.engineCalls.length, 1);
 });
 
-test('typeVerificationCode types one character per box on split inputs and submits', async () => {
+test('typeVerificationCode hands the normalized code and the allowed hosts to the in-page filler', async () => {
   const page = fakePage();
   await typeVerificationCode(page, HOLDED, '482 913', { allowedLoginDomains: HOLDED_DOMAINS, inject: noInject });
-  assert.deepEqual(
-    page.fills,
-    [...CODE].map((ch, i) => [`[data-invoice-code-slot="${i}"]`, ch])
-  );
-  assert.deepEqual(page.engineCalls.map(c => c[0]), ['markCodeInputs', 'submitVerificationCode']);
-});
+  assert.deepEqual(page.fills, [...CODE]);
+  assert.deepEqual(page.engineCalls, [['fillVerificationCode', HOLDED_DOMAINS]]);
 
-test('typeVerificationCode fills a single code field in one go', async () => {
-  const page = fakePage({ slots: { count: 1, split: false, maxLength: 6 } });
-  await typeVerificationCode(page, HOLDED, CODE, { allowedLoginDomains: HOLDED_DOMAINS, inject: noInject });
-  assert.deepEqual(page.fills, [['[data-invoice-code-slot="0"]', CODE]]);
+  const single = fakePage({ slots: { count: 1, split: false, maxLength: 6 } });
+  await typeVerificationCode(single, HOLDED, CODE, { allowedLoginDomains: HOLDED_DOMAINS, inject: noInject });
+  assert.deepEqual(single.fills, [CODE]);
 });
 
 test('typeVerificationCode refuses a page that is not the provider and never touches it', async () => {
@@ -166,6 +171,24 @@ test('typeVerificationCode refuses a page that is not the provider and never tou
   );
   assert.equal(page.fills.length, 0);
   assert.equal(page.engineCalls.length, 0);
+});
+
+test('a navigation to a foreign host between the check and the typing types nothing', async () => {
+  // The browser still reports the allowed page, but the document that receives the call is evil.
+  const page = fakePage({ url: 'https://app.holded.com/login', documentUrl: 'https://evil.example/otp' });
+  await assert.rejects(
+    typeVerificationCode(page, HOLDED, CODE, { allowedLoginDomains: HOLDED_DOMAINS, inject: noInject }),
+    err => /evil\.example/.test(err.message) && /domain-mismatch/.test(err.message) && !err.message.includes(CODE)
+  );
+  assert.equal(page.fills.length, 0);
+  assert.equal(page.engineCalls.length, 0, 'the engine never received the code');
+
+  const downgraded = fakePage({ documentUrl: 'http://app.holded.com/login' });
+  await assert.rejects(
+    typeVerificationCode(downgraded, HOLDED, CODE, { allowedLoginDomains: HOLDED_DOMAINS, inject: noInject }),
+    /insecure/
+  );
+  assert.equal(downgraded.engineCalls.length, 0);
 });
 
 test('typeVerificationCode reports a length mismatch as retryable and redacts browser errors', async () => {
@@ -342,6 +365,49 @@ test('registry: concurrent runs share one browser launch and hold accounting sta
   assert.equal(results[1].status, 'fulfilled');
 });
 
+test('registry: runs use the shared browser one at a time', async () => {
+  const registry = createVerificationRegistry({ resume: async () => null, watchIntervalMs: 0 });
+  const order = [];
+  const task = (name, ms) => async () => {
+    order.push(`${name}:start`);
+    await new Promise(r => setTimeout(r, ms));
+    order.push(`${name}:end`);
+    return name;
+  };
+  const results = await Promise.all([
+    registry.runExclusive('acme', task('a', 30)),
+    registry.runExclusive('acme', task('b', 5)),
+  ]);
+  assert.deepEqual(results, ['a', 'b']);
+  assert.deepEqual(order, ['a:start', 'a:end', 'b:start', 'b:end']);
+});
+
+test('registry: another profile is refused while a code is pending; same profile and cancel release it', async () => {
+  const registry = createVerificationRegistry({ resume: async () => null, watchIntervalMs: 0 });
+  await registry.contextProvider.acquire(async () => fakeContext());
+  const page = { closed: false, async close() { this.closed = true; } };
+  const view = await registry.runExclusive('Acme', async () =>
+    registry.add({ ...pendingFor(page), profileName: 'Acme', profileKey: 'acme' })
+  );
+  await registry.contextProvider.release();
+  assert.equal(view.profile, 'Acme');
+
+  let ran = false;
+  await assert.rejects(
+    registry.runExclusive('Globex', async () => { ran = true; }),
+    err => /profile "Acme" is waiting for a verification code from Holded/.test(err.message) &&
+      err.message.includes(view.verificationId) && /invoice_extractor_cancel_verification/.test(err.message)
+  );
+  assert.equal(ran, false, 'the other client never touched the shared session');
+  assert.equal(await registry.runExclusive(' acme ', async () => 'same-profile'), 'same-profile');
+
+  const cancelled = await registry.cancel(view.verificationId);
+  assert.deepEqual(cancelled.map(c => c.verificationId), [view.verificationId]);
+  assert.equal(page.closed, true);
+  assert.equal(await registry.runExclusive('Globex', async () => 'globex'), 'globex');
+  await assert.rejects(registry.submit(view.verificationId, CODE), /cancelled/);
+});
+
 // ─── CLI hand-over through the state directory ────────────────────────────────────────────
 
 test('submit-code hands the code over in a 0600 file that is deleted right after reading', async () => {
@@ -374,6 +440,27 @@ test('submit-code hands the code over in a 0600 file that is deleted right after
     assert.equal(result.providerId, 'holded');
     mailbox.close();
     assert.deepEqual(readdirSync(dir), [], 'nothing left on disk');
+  } finally {
+    rmSync(stateDir, { recursive: true, force: true });
+  }
+});
+
+test('a second submit-code never replaces a code already waiting to be used', async () => {
+  const stateDir = mkdtempSync(path.join(tmpdir(), 'ie-verif-'));
+  try {
+    const mailbox = createCodeMailbox(stateDir, {
+      providerId: 'holded',
+      expiresAt: new Date(Date.now() + 60000).toISOString(),
+    });
+    const first = handOverCode(stateDir, mailbox.id, CODE, { intervalMs: 10, timeoutMs: 2000 });
+    await assert.rejects(
+      handOverCode(stateDir, mailbox.id, '999999', { intervalMs: 10 }),
+      err => /already waiting/.test(err.message) && err.retryable
+    );
+    assert.equal(mailbox.take(), CODE, 'the first submission is the one delivered');
+    mailbox.reply({ accepted: true, message: 'ok' });
+    assert.equal((await first).accepted, true);
+    mailbox.close();
   } finally {
     rmSync(stateDir, { recursive: true, force: true });
   }
@@ -544,6 +631,22 @@ test('submit code is refused on a page outside the provider domain', { skip: bro
     );
     const values = await page.$$eval('.boxes input', inputs => inputs.map(i => i.value).join(''));
     assert.equal(values, '');
+  });
+});
+
+test('the in-page filler re-checks the document it runs in (navigated to a foreign host)', { skip: browserSkip }, async () => {
+  await withBrowser(async page => {
+    await page.goto('https://login.evil.test/verify');
+    await injectEngine(page.mainFrame());
+    const domains = buildAllowedLoginDomains({ provider: ACME });
+    // As if the Node-side check had passed on login.acme.test and the frame then navigated here.
+    const res = await page.evaluate(codeInPage, [CODE, domains, {}]);
+    assert.equal(res.blocked, true);
+    assert.equal(res.reason, 'domain-mismatch');
+    // The engine alone refuses too (defence in depth).
+    const direct = await page.evaluate(([c, d]) => window.__invoiceEngine.fillVerificationCode(c, {}, d), [CODE, domains]);
+    assert.equal(direct.blocked, true);
+    assert.equal(await page.$$eval('.boxes input', inputs => inputs.map(i => i.value).join('')), '');
   });
 });
 

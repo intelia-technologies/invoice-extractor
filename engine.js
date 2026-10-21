@@ -710,7 +710,6 @@
   // =====================================================
   // STEP API: verification-code step (a code sent by email/SMS after the password)
   // =====================================================
-  const CODE_SLOT_ATTR = 'data-invoice-code-slot';
   const CODE_HINT_PATTERN = /code|c[oó]digo|sent|enviad|e-?mail|correo|verif|sms|d[ií]git/i;
   const CODE_SUBMIT_TEXTS = [
     'Verify', 'Confirm', 'Continue', 'Submit', 'Sign in', 'Log in',
@@ -774,34 +773,48 @@
     };
   }
 
-  // Tags the code field(s) so the caller can type into them with real keyboard input.
-  function markCodeInputs(authConfig = {}) {
-    document.querySelectorAll(`[${CODE_SLOT_ATTR}]`).forEach(el => el.removeAttribute(CODE_SLOT_ATTR));
+  // Types a one-time code into the code field(s) of THIS document and submits, in one call:
+  // the inputs are held as element references, never re-resolved by selector, so a navigation
+  // cannot retarget the code (the call simply dies with its document). The sign-in domain is
+  // checked again right before typing, like attemptAutoLogin does for passwords.
+  async function fillVerificationCode(code, authConfig = {}, allowedLoginDomains = []) {
+    const domainCheck = checkLoginFrame(allowedLoginDomains);
+    if (!domainCheck.ok) return { typed: false, blocked: true, reason: domainCheck.reason, host: domainCheck.host };
+    const value = typeof code === 'string' ? code : '';
     const inputs = findCodeInputs(authConfig);
-    inputs.forEach((el, i) => el.setAttribute(CODE_SLOT_ATTR, String(i)));
     const single = inputs.length === 1 ? inputs[0] : null;
-    return {
+    const shape = {
       count: inputs.length,
       split: inputs.length > 1,
       maxLength: single && single.maxLength > 0 ? single.maxLength : null,
     };
-  }
+    if (!shape.count) return { typed: false, reason: 'no-code-field', ...shape };
+    if (shape.split && shape.count !== value.length) return { typed: false, reason: 'length', ...shape };
+    if (!shape.split && shape.maxLength && shape.maxLength < value.length) return { typed: false, reason: 'length', ...shape };
 
-  function submitVerificationCode(authConfig = {}) {
-    const last = Array.from(document.querySelectorAll(`[${CODE_SLOT_ATTR}]`)).pop();
+    if (shape.split) {
+      for (let i = 0; i < inputs.length; i++) setNativeInputValue(inputs[i], value[i]);
+    } else {
+      setNativeInputValue(single, value);
+    }
+    await sleep(150); // let the page's framework take the new values before submitting
+    if (!checkLoginFrame(allowedLoginDomains).ok) return { typed: true, submitted: false, ...shape };
+
+    const last = inputs[inputs.length - 1];
     // The boxes are gone: the page submitted by itself after the last character.
-    if (!last || !utils.isElementVisible(last)) return { submitted: true, via: 'auto' };
+    if (!last.isConnected || !utils.isElementVisible(last)) return { typed: true, submitted: true, via: 'auto', ...shape };
     const scope = last.closest('form') || last.parentElement?.parentElement || last.parentElement;
     const button = findSubmitButton(scope, authConfig.submitSelector, CODE_SUBMIT_TEXTS);
     if (button) {
       utils.simulateRealClick(button);
-      return { submitted: true, via: 'button' };
+      return { typed: true, submitted: true, via: 'button', ...shape };
     }
     if (last.form) {
       last.form.requestSubmit ? last.form.requestSubmit() : last.form.submit();
-      return { submitted: true, via: 'form' };
+      return { typed: true, submitted: true, via: 'form', ...shape };
     }
-    return { submitted: false };
+    last.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
+    return { typed: true, submitted: true, via: 'enter', ...shape };
   }
 
   async function attemptAutoLogin(credentials = {}, authConfig = {}) {
@@ -1018,8 +1031,7 @@
     clickNext,
     detectLoginForm,
     detectVerificationStep,
-    markCodeInputs,
-    submitVerificationCode,
+    fillVerificationCode,
     attemptAutoLogin,
     verifyLoggedInIdentity,
     clearPageSessionData,

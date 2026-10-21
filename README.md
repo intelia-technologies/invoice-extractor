@@ -51,6 +51,9 @@ The code only reaches the AI if the AI reads it from the user's email or the use
   providers and returns it under `pendingVerification` with a `nextStep` instruction; the AI then
   calls `invoice_extractor_submit_code({ verificationId, code })`, which only types the code on a
   page of that provider, signs in and returns the downloaded invoices. A wrong code can be retried.
+  Runs share one browser session and run one at a time; while a code is pending, a run for a
+  different client profile is refused until the code is submitted or released with
+  `invoice_extractor_cancel_verification`.
 - CLI: `run --wait-for-code[=minutes]` prints a `verification_code_required` JSON line on stderr
   and waits; the code is handed over with
   `echo <code> | invoice-extractor submit-code --id <verificationId>` (through a short-lived

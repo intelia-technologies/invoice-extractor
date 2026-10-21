@@ -11,7 +11,7 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
+import { closeSync, existsSync, mkdirSync, openSync, readFileSync, unlinkSync, writeSync } from 'node:fs';
 import { join } from 'node:path';
 import { checkLoginLocation, playwrightFrameLocation } from '../login-domains.mjs';
 
@@ -132,58 +132,116 @@ export async function waitForCodeStepExit(page, provider, ctx, { inject, timeout
   return false;
 }
 
+// Runs inside the page (Playwright serializes its source, so it must stay self-contained).
+// Playwright cannot pin an evaluate to one document: if the frame navigated after the Node-side
+// check, this runs in the new document. So, like loginInPage in login-domains.mjs, it re-checks
+// the document it actually runs in before the code reaches the engine, reading only the
+// browser's unforgeable `location` and using only operators and indexing (no String/Array/URL
+// method a page script could replace). The engine then types into element references of this
+// same document and re-checks the domain at the moment of typing.
+export function codeInPage([code, domains, authCfg]) {
+  const blocked = (reason, host) => ({ typed: false, blocked: true, reason, host });
+  const count = domains && typeof domains.length === 'number' ? domains.length : 0;
+  const endsOnLabel = (host, domain) => {
+    if (typeof host !== 'string' || typeof domain !== 'string' || domain.length === 0) return false;
+    if (host.length < domain.length) return false;
+    for (let i = 1; i <= domain.length; i++) {
+      if (host[host.length - i] !== domain[domain.length - i]) return false;
+    }
+    return host.length === domain.length || host[host.length - domain.length - 1] === '.';
+  };
+  const isAllowedHost = host => {
+    for (let i = 0; i < count; i++) if (endsOnLabel(host, domains[i])) return true;
+    return false;
+  };
+  const isLoopbackIp = host => {
+    if (!(host[0] === '1' && host[1] === '2' && host[2] === '7' && host[3] === '.')) return false;
+    for (let i = 4; i < host.length; i++) {
+      const ch = host[i];
+      if (ch !== '.' && (ch < '0' || ch > '9')) return false;
+    }
+    return true;
+  };
+  const isLocal = host => host === 'localhost' || endsOnLabel(host, 'localhost') || host === '[::1]' || isLoopbackIp(host);
+  const problem = (scheme, host) => {
+    if (!(scheme === 'https:' || (scheme === 'http:' && isLocal(host)))) return 'insecure';
+    return isAllowedHost(host) ? '' : 'domain-mismatch';
+  };
+  const parseOrigin = origin => {
+    let scheme = '';
+    let i = 0;
+    const text = typeof origin === 'string' ? origin : '';
+    while (i < text.length && text[i] !== ':') scheme += text[i++];
+    scheme += ':';
+    i += 3;
+    let host = '';
+    if (text[i] === '[') {
+      while (i < text.length && text[i] !== ']') host += text[i++];
+      if (i < text.length) host += text[i++];
+    } else {
+      while (i < text.length && text[i] !== ':' && text[i] !== '/') host += text[i++];
+    }
+    return { scheme, host };
+  };
+
+  const frameHost = location.hostname;
+  if (count === 0) return blocked('no-allowed-domains', frameHost);
+  let reason = problem(location.protocol, frameHost);
+  if (reason) return blocked(reason, frameHost);
+  const ancestors = location.ancestorOrigins;
+  if (ancestors) {
+    for (let i = 0; i < ancestors.length; i++) {
+      const parent = parseOrigin(ancestors[i]);
+      reason = problem(parent.scheme, parent.host);
+      if (reason) return blocked(reason, parent.host);
+    }
+  } else if (window.top !== window) {
+    return blocked('unknown-top-frame', frameHost);
+  }
+  return window.__invoiceEngine.fillVerificationCode(code, authCfg, domains);
+}
+
+function refusedMessage(provider, host, reason) {
+  return `Refusing to type the code: the open page (${host || 'unknown host'}) is not a ${provider.name} sign-in page (${reason}).`;
+}
+
 /**
  * Types the code into the detected field(s) and submits. Refuses when the open page is not on
  * the provider's allowed sign-in hosts (`allowedLoginDomains` from login-domains.mjs: the vault
  * item's hosts, the billingUrl host and `auth.loginDomains`, each with subdomains), so the code
- * is never handed to another site. The fields are tagged in the checked document; if the frame
- * navigated afterwards the tags are gone and nothing is typed.
+ * is never handed to another site. The check runs here (as the browser reports the frame) and
+ * again inside the document that receives the code (codeInPage + engine), where the typing
+ * happens in the same call: a navigation in between makes it fail, never retarget.
  */
 export async function typeVerificationCode(page, provider, rawCode, { allowedLoginDomains, inject }) {
   const code = normalizeVerificationCode(rawCode);
   const frame = page.mainFrame();
   const check = checkLoginLocation(playwrightFrameLocation(frame), allowedLoginDomains);
   if (!check.ok) {
-    throw new VerificationCodeError(
-      `Refusing to type the code: the open page (${check.host || hostOf(page.url()) || 'unknown host'}) is not a ${provider.name} sign-in page (${check.reason}).`
-    );
+    throw new VerificationCodeError(refusedMessage(provider, check.host || hostOf(page.url()), check.reason));
   }
+  let res;
   try {
     await inject(frame);
-    const slots = await frame.evaluate(authCfg => window.__invoiceEngine.markCodeInputs(authCfg), provider.auth || {});
-    if (!slots?.count) {
-      throw new VerificationCodeError(`${provider.name} is no longer showing a code field.`);
-    }
-    if (slots.split && slots.count !== code.length) {
-      throw new VerificationCodeError(
-        `${provider.name} expects a ${slots.count}-character code; the one given has ${code.length}.`,
-        { retryable: true }
-      );
-    }
-    if (!slots.split && slots.maxLength && slots.maxLength < code.length) {
-      throw new VerificationCodeError(
-        `${provider.name} expects at most ${slots.maxLength} characters; the code given has ${code.length}.`,
-        { retryable: true }
-      );
-    }
-    const slot = i => `[data-invoice-code-slot="${i}"]`;
-    if (slots.split) {
-      for (let i = 0; i < code.length; i++) await frame.fill(slot(i), code[i], { timeout: 5000 });
-    } else {
-      await frame.fill(slot(0), code, { timeout: 5000 });
-    }
-    const submit = await frame
-      .evaluate(authCfg => window.__invoiceEngine.submitVerificationCode(authCfg), provider.auth || {})
-      .catch(() => ({ submitted: true }));
-    if (!submit?.submitted) {
-      await frame.press(slot(slots.count - 1), 'Enter', { timeout: 2000 }).catch(() => {});
-    }
+    res = await frame.evaluate(codeInPage, [code, allowedLoginDomains, provider.auth || {}]);
   } catch (err) {
-    if (err instanceof VerificationCodeError) throw err;
     throw new VerificationCodeError(redactCode(`Could not type the code: ${err.message}`, code, rawCode), {
       retryable: true,
     });
   }
+  if (res?.blocked) throw new VerificationCodeError(refusedMessage(provider, res.host, res.reason));
+  if (res?.reason === 'no-code-field') {
+    throw new VerificationCodeError(`${provider.name} is no longer showing a code field.`);
+  }
+  if (res?.reason === 'length') {
+    throw new VerificationCodeError(
+      res.split
+        ? `${provider.name} expects a ${res.count}-character code; the one given has ${code.length}.`
+        : `${provider.name} expects at most ${res.maxLength} characters; the code given has ${code.length}.`,
+      { retryable: true }
+    );
+  }
+  if (!res?.typed) throw new VerificationCodeError('Could not type the code.', { retryable: true });
 }
 
 /**
@@ -203,6 +261,7 @@ export function createVerificationRegistry({
   const finished = new Map();
   let shared = null;
   let launching = null;
+  let runQueue = Promise.resolve();
 
   async function releaseContext() {
     if (!shared) return;
@@ -249,6 +308,7 @@ export function createVerificationRegistry({
       pageHost: entry.pending.pageHost,
       hint: entry.pending.hint,
       browserVisible: Boolean(entry.pending.headed),
+      profile: entry.pending.profileName || null,
       requestedAt: entry.pending.requestedAt,
       expiresAt: new Date(entry.expiresAt).toISOString(),
     };
@@ -312,12 +372,55 @@ export function createVerificationRegistry({
       return [...entries.values()].map(publicView);
     },
 
+    /**
+     * Runs share one persistent browser profile, hence one cookie jar: they run one at a time,
+     * and a run for another client profile is refused while a page waits for a code (its
+     * sign-in would replace the waiting client's session). Same-profile runs may proceed.
+     */
+    async runExclusive(profileKey, task) {
+      const previous = runQueue;
+      let release;
+      runQueue = new Promise(r => (release = r));
+      await previous;
+      try {
+        const key = String(profileKey || '').trim().toLowerCase();
+        const blocking = [...entries.values()].find(e => (e.pending.profileKey || '') !== key);
+        if (blocking) {
+          const who = blocking.pending.profileName ? `profile "${blocking.pending.profileName}"` : 'the default profile';
+          throw new VerificationCodeError(
+            `A run for ${who} is waiting for a verification code from ${blocking.pending.providerName} until ` +
+              `${new Date(blocking.expiresAt).toISOString()} (verificationId ${blocking.id}). Submit the code with ` +
+              'invoice_extractor_submit_code or cancel it with invoice_extractor_cancel_verification, then run again.'
+          );
+        }
+        return await task();
+      } finally {
+        release();
+      }
+    },
+
+    /** Gives up on a waiting code step (one id, or all) and closes its page. */
+    async cancel(id) {
+      const ids = id ? [id] : [...entries.keys()];
+      const cancelled = [];
+      for (const one of ids) {
+        const entry = entries.get(one);
+        if (!entry) continue;
+        cancelled.push(publicView(entry));
+        await exclusive(entry, () => close(one, { status: 'cancelled' }));
+      }
+      return cancelled;
+    },
+
     /** Without a code: waits up to `waitMs` for the user to finish the step in the browser window. */
     async submit(id, code, { waitMs = 0 } = {}) {
       const entry = entries.get(id);
       if (!entry) {
         const done = finished.get(id);
         if (done?.status === 'completed') return done;
+        if (done?.status === 'cancelled') {
+          throw new VerificationCodeError('This verification was cancelled. Run invoice_extractor_run again for that provider.');
+        }
         if (done?.status === 'expired' || (done && now() > done.expiresAt)) {
           throw new VerificationCodeError(
             'This verification expired and the browser page was closed. Run invoice_extractor_run again for that provider.'
@@ -373,10 +476,17 @@ function exchangeDir(stateDir) {
   return dir;
 }
 
+// Exclusive create: fails if the file exists, so a second submission never replaces the first.
 function writePrivateFile(path, content) {
-  const tmp = `${path}.${process.pid}.tmp`;
-  writeFileSync(tmp, content, { mode: 0o600, flag: 'wx' });
-  renameSync(tmp, path);
+  const fd = openSync(path, 'wx', 0o600);
+  try {
+    writeSync(fd, content);
+  } catch (err) {
+    closeSync(fd);
+    removeQuietly(path);
+    throw err;
+  }
+  closeSync(fd);
 }
 
 function removeQuietly(path) {
@@ -434,12 +544,13 @@ export async function handOverCode(stateDir, id, rawCode, { timeoutMs = 45000, i
   }
   const codeFile = join(dir, `${id}.code`);
   const resultFile = join(dir, `${id}.result.json`);
-  removeQuietly(resultFile);
   try {
     writePrivateFile(codeFile, code);
   } catch {
     throw new VerificationCodeError('A code for this verification is already waiting to be used.', { retryable: true });
   }
+  // Only the submission that owns the code file may clear a stale result.
+  removeQuietly(resultFile);
   const deadline = now() + timeoutMs;
   try {
     while (now() < deadline) {
