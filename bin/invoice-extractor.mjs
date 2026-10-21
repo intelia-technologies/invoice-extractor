@@ -541,7 +541,8 @@ async function signInToProvider(page, context, provider, run, deps) {
         await injectEngineIntoFrame(page.mainFrame());
         return guardedAutoLogin(page.mainFrame(), creds, provider.auth || {});
       });
-      if (form.value.hasPassword && (loginRes.navigated || loginRes.value?.filledPassword)) passwordSubmitted = true;
+      // A password typed this pass counts even if the field only appeared during it (email-first SPAs).
+      if (loginRes.value?.filledPassword || (form.value.hasPassword && loginRes.navigated)) passwordSubmitted = true;
       if (loginRes.navigated) {
         // Typed and submitted; the provider moved on to its next sign-in page.
         attempted = true;
