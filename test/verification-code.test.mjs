@@ -766,6 +766,12 @@ const PAGES = {
   'https://login.acme.test/address': `<!doctype html><html><body><form>
     <input name="postal_code" inputmode="numeric" maxlength="5"><input id="countryCode"><input name="couponCode">
     <input name="areaCode"><button>Save</button></form></body></html>`,
+  'https://login.acme.test/phone-otp': `<!doctype html><html><body><form>
+    <input name="phone_code" autocomplete="one-time-code"><button>Verify</button></form></body></html>`,
+  'https://login.acme.test/phone-verification': `<!doctype html><html><body><form>
+    <input name="phone_code" aria-label="Phone verification code"><button>Verify</button></form></body></html>`,
+  'https://login.acme.test/phone': `<!doctype html><html><body><form>
+    <input name="phone_code"><input name="postal_code"><button>Save</button></form></body></html>`,
   'https://login.acme.test/plain-code': `<!doctype html><html><body><form><p>Type the code we sent</p>
     <input name="code"><button>Continue</button></form></body></html>`,
   'https://login.acme.test/verify': SPLIT_PAGE,
@@ -897,6 +903,9 @@ test('postal, country, coupon and area code fields are not a verification step; 
       return detectCodeStep(page, ACME, { billingUrl: ACME.billingUrl, loginStartUrl: 'https://login.acme.test/login' }, { inject: injectEngine });
     };
     assert.equal((await detect('https://login.acme.test/address')).awaiting, false);
+    assert.equal((await detect('https://login.acme.test/phone')).awaiting, false, 'plain phone/postal codes are not codes');
+    assert.equal((await detect('https://login.acme.test/phone-otp')).awaiting, true, 'autocomplete=one-time-code wins');
+    assert.equal((await detect('https://login.acme.test/phone-verification')).awaiting, true, 'explicit "verification code" wins');
     assert.equal((await detect('https://login.acme.test/plain-code')).awaiting, true);
     assert.equal((await detect('https://login.acme.test/otp')).awaiting, true);
   });

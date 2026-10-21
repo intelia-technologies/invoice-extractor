@@ -595,10 +595,16 @@
   // one-time code (only applies to the default selector; a recipe's otpSelector is trusted).
   const NOT_A_CODE_FIELD = /postal|zip|country|coupon|promo|discount|referral|voucher|gift|area|phone/i;
 
+  // Explicit one-time-code markers win over the negative list ("Phone verification code").
+  const EXPLICIT_CODE_FIELD = /otp|mfa|2fa|two.?factor|passcode|verif|one.?time/i;
+
   function looksLikeCodeField(el) {
+    if (String(el.getAttribute('autocomplete') || '').toLowerCase() === 'one-time-code') return true;
     const label = [el.name, el.id, el.getAttribute('autocomplete'), el.placeholder, el.getAttribute('aria-label')]
       .filter(Boolean)
       .join(' ');
+    if (EXPLICIT_CODE_FIELD.test(label)) return true;
+    // Only ambiguous matches (a generic "code" name, the numeric-input heuristic) are filtered.
     return !NOT_A_CODE_FIELD.test(label);
   }
 
