@@ -28,6 +28,12 @@
   <link rel="stylesheet" href="../fonts.css" />
   <link rel="stylesheet" href="../tokens.css" />
   <link rel="stylesheet" href="../styles.css" />
+  <link rel="stylesheet" href="../motion.css" />
+  <script>
+    // The motion scenes are written in their final state. This flag lets motion.js stage them, never
+    // with reduced motion; if motion.js has not loaded after 3 s, the final state comes back.
+    (function (d) { try { if (!matchMedia('(prefers-reduced-motion: reduce)').matches && 'IntersectionObserver' in window) { d.classList.add('mo'); setTimeout(function () { if (!window.ieMotion) d.classList.remove('mo'); }, 3000); } } catch (e) { /* no motion */ } })(document.documentElement);
+  </script>
 </head>
 <body>
   <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -40,6 +46,14 @@
     <symbol id="i-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
     <symbol id="i-file" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></symbol>
     <symbol id="i-shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="i-key" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></symbol>
+    <symbol id="i-monitor" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></symbol>
+    <symbol id="i-browser" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 9h20"/><path d="M6 6.5h.01"/><path d="M9 6.5h.01"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></symbol>
   </svg>
   <a class="skip" href="#main">Saltar al contenido</a>
 
@@ -86,25 +100,25 @@
         <p class="beta-note">Beta pública y de código abierto (MIT). De momento se instala a mano desde esta descarga, no desde la Chrome Web Store, y puedes leer cada línea de lo que instalas.</p>
       </div>
 
-      <figure class="sheet-wrap" aria-label="Ejemplo de ejecución: siete facturas guardadas para el perfil Acme">
-        <div class="mascot">
-          <img class="mascot-art" src="../assets/bonobot.svg" alt="Bonobot, el bonobo robot" width="112" height="112" />
+      <figure class="sheet-wrap" data-mo="hero" aria-label="Ejemplo de ejecución: siete facturas guardadas para el perfil Acme">
+        <div class="mascot" data-at="9">
+          <img class="mascot-art" src="../assets/bonobot-celebrating.svg" alt="Bonobot, el bonobo robot, celebra la ejecución archivada" width="112" height="112" />
           <p class="mascot-says">El trabajo de mono, para el mono.</p>
         </div>
         <div class="sheet">
           <div class="sheet-head"><span>Invoice Extractor</span><span>Ejecución 0042</span></div>
           <div class="sheet-sub">perfil: Acme · desde 2026-09-01</div>
           <ol class="tape">
-            <li><span class="logo"><img src="../assets/providers/stripe.png" alt="" /></span><span class="name">Stripe</span><span class="num">INV-0918</span><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>Guardada</span></li>
-            <li><span class="logo"><img src="../assets/providers/github.png" alt="" /></span><span class="name">GitHub</span><span class="num">#58213</span><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>Guardada</span></li>
-            <li><span class="logo"><img src="../assets/providers/openai.png" alt="" /></span><span class="name">OpenAI</span><span class="num">A1B2-0007</span><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>Guardada</span></li>
-            <li><span class="logo"><img src="../assets/providers/google-workspace.png" alt="" /></span><span class="name">Google Workspace</span><span class="num">GW-3391</span><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>Guardada</span></li>
-            <li><span class="logo"><img src="../assets/providers/hetzner.png" alt="" /></span><span class="name">Hetzner</span><span class="num">R0021</span><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>Guardada</span></li>
-            <li><span class="logo"><img src="../assets/providers/holded.png" alt="" /></span><span class="name">Holded</span><span class="num">F260912</span><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>Guardada</span></li>
-            <li><span class="logo"><img src="../assets/providers/twilio.png" alt="" /></span><span class="name">Twilio</span><span class="num">TW-8812</span><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>Guardada</span></li>
+            <li data-at="1"><span class="logo"><img src="../assets/providers/stripe.png" alt="" /></span><span class="name">Stripe</span><span class="num">INV-0918</span><span class="mo-state"><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>Guardada</span><span class="status mo-wait" aria-hidden="true">Buscando…</span></span></li>
+            <li data-at="2"><span class="logo"><img src="../assets/providers/github.png" alt="" /></span><span class="name">GitHub</span><span class="num">#58213</span><span class="mo-state"><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>Guardada</span><span class="status mo-wait" aria-hidden="true">Buscando…</span></span></li>
+            <li data-at="3"><span class="logo"><img src="../assets/providers/openai.png" alt="" /></span><span class="name">OpenAI</span><span class="num">A1B2-0007</span><span class="mo-state"><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>Guardada</span><span class="status mo-wait" aria-hidden="true">Buscando…</span></span></li>
+            <li data-at="4"><span class="logo"><img src="../assets/providers/google-workspace.png" alt="" /></span><span class="name">Google Workspace</span><span class="num">GW-3391</span><span class="mo-state"><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>Guardada</span><span class="status mo-wait" aria-hidden="true">Buscando…</span></span></li>
+            <li data-at="5"><span class="logo"><img src="../assets/providers/hetzner.png" alt="" /></span><span class="name">Hetzner</span><span class="num">R0021</span><span class="mo-state"><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>Guardada</span><span class="status mo-wait" aria-hidden="true">Buscando…</span></span></li>
+            <li data-at="6"><span class="logo"><img src="../assets/providers/holded.png" alt="" /></span><span class="name">Holded</span><span class="num">F260912</span><span class="mo-state"><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>Guardada</span><span class="status mo-wait" aria-hidden="true">Buscando…</span></span></li>
+            <li data-at="7"><span class="logo"><img src="../assets/providers/twilio.png" alt="" /></span><span class="name">Twilio</span><span class="num">TW-8812</span><span class="mo-state"><span class="status ok"><svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>Guardada</span><span class="status mo-wait" aria-hidden="true">Buscando…</span></span></li>
           </ol>
-          <div class="sheet-total"><span>7 PDF</span><span>~/Facturas/2026-09</span></div>
-          <div class="stamp" aria-hidden="true">ARCHIVADO</div>
+          <div class="sheet-total"><span><span data-mo-count>7</span> PDF</span><span>~/Facturas/2026-09</span></div>
+          <div class="stamp" data-at="8" aria-hidden="true">ARCHIVADO</div>
         </div>
       </figure>
     </section>
@@ -131,6 +145,28 @@
           <div class="sheet-total"><span>Contraseñas enviadas a nosotros o a tu IA</span><span>0</span></div>
         </div>
       </div>
+      <div class="wrap">
+        <figure class="mo-sec" data-mo="security" aria-labelledby="sec-flow-title">
+          <figcaption class="mo-head"><span id="sec-flow-title">Flujo local previsto</span><span class="mo-pill">Esquema</span></figcaption>
+          <div class="mo-sec-flow">
+            <div class="mo-sec-pc">
+              <p class="mo-sec-pc-label"><svg class="icon sm" aria-hidden="true"><use href="#i-monitor"/></svg>Tu ordenador</p>
+              <div class="mo-sec-pc-row">
+                <div class="mo-node" data-at="1"><span class="mo-node-icon"><svg class="icon" aria-hidden="true"><use href="#i-key"/></svg></span><strong>Gestor de contraseñas</strong><small>1Password · Bitwarden</small></div>
+                <div class="mo-line" data-at="2" aria-hidden="true"><span class="mo-line-fill"></span><span class="mo-key"><svg class="icon sm"><use href="#i-key"/></svg></span></div>
+                <div class="mo-node" data-at="3"><span class="mo-node-icon"><svg class="icon" aria-hidden="true"><use href="#i-browser"/></svg></span><strong>Tu Chrome</strong><small>o el navegador de automatización</small></div>
+              </div>
+            </div>
+            <div class="mo-line mo-line-out" data-at="4"><span class="mo-line-fill"></span><span class="mo-key" aria-hidden="true"><svg class="icon sm"><use href="#i-key"/></svg></span><span class="mo-line-cap">Autorrelleno en el proveedor</span><span class="mo-line-cap mo-line-cap-b">HTTPS</span></div>
+            <div class="mo-node mo-node-ext" data-at="4"><span class="mo-tick" data-at="5" aria-hidden="true"><svg class="icon sm"><use href="#i-check"/></svg></span><span class="mo-node-icon"><svg class="icon" aria-hidden="true"><use href="#i-globe"/></svg></span><strong>Web del proveedor</strong><small>Fuera de tu ordenador</small></div>
+          </div>
+          <ul class="mo-sec-blocked">
+            <li class="mo-blocked"><span class="mo-cross" data-at="6" aria-hidden="true"><svg class="icon sm"><use href="#i-x"/></svg></span><span><strong>Tu IA</strong><small>Sin envío previsto</small></span></li>
+            <li class="mo-blocked"><span class="mo-cross" data-at="7" aria-hidden="true"><svg class="icon sm"><use href="#i-x"/></svg></span><span><strong>Intelia</strong><small>Sin envío previsto</small></span></li>
+          </ul>
+          <p class="mo-sec-note">Un esquema del flujo previsto, no una auditoría. La sincronización opcional de perfiles va aparte, y no nos llega nada salvo que la actives.</p>
+        </figure>
+      </div>
     </section>
 
     <section id="agents" class="section" aria-labelledby="ways-title">
@@ -143,7 +179,16 @@
           <div class="way">
             <h3>Pídeselo a tu IA</h3>
             <p>Conéctalo a <b>Claude</b>, <b>Codex</b>, <b>Cursor</b> o cualquier asistente que hable <b>MCP</b>, el estándar con el que una app de IA se conecta a una herramienta externa. Luego pídelo con tus palabras:</p>
-            <blockquote class="ask">«Descarga las facturas del mes pasado de Acme.»</blockquote>
+            <figure class="mo-chat" data-mo="chat" aria-label="Ejemplo de conversación con tu asistente">
+              <div class="mo-head"><span><svg class="icon sm" aria-hidden="true"><use href="#i-chat"/></svg>Tu asistente</span><span class="mo-pill">Ejemplo</span></div>
+              <div class="mo-chat-body">
+                <blockquote class="mo-chat-user"><span class="mo-type-real">«Descarga las facturas del mes pasado de Acme.»</span><span class="mo-type" aria-hidden="true"></span></blockquote>
+                <p class="mo-chat-run mo-rv" data-at="1"><span class="mo-dots" aria-hidden="true"><i></i><i></i><i></i></span><span data-mo-wait="Ejecutando en tu ordenador…">Ejecución terminada en tu ordenador</span></p>
+                <div class="mo-chat-reply mo-rv" data-at="2"><p class="mo-chat-title"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>7 PDF guardados</p><p class="mo-chat-path"><svg class="icon sm" aria-hidden="true"><use href="#i-folder"/></svg>~/Facturas/2026-09</p></div>
+                <p class="mo-chat-warn mo-rv" data-at="3"><svg class="icon sm" aria-hidden="true"><use href="#i-mail"/></svg><span>Otro proveedor pide un código por email, así que aparece como pendiente. Ese lo haces tú desde la extensión.</span></p>
+                <p class="mo-chat-tags mo-rv" data-at="4"><span class="mo-pill">Resultado de ejecución</span><span class="mo-pill">Sin navegación paso a paso</span></p>
+              </div>
+            </figure>
             <p>El asistente lanza la ejecución en tu ordenador y solo recibe el resultado: qué PDF se han guardado y dónde, y qué proveedores no han podido terminar. Si un proveedor pide un código por email o SMS, aparece como pendiente: ese lo haces tú desde la extensión, que espera mientras escribes el código en la propia página del proveedor. El código nunca pasa por el chat.</p>
             <p>Además, ahorras tokens. Durante la ejecución el asistente no abre ni lee las páginas de facturación; eso lo hace el motor en tu ordenador. El asistente gasta tokens en tu petición y en la lista de ficheros guardados, no en las páginas.</p>
             <p class="way-safe"><svg class="icon sm" aria-hidden="true"><use href="#i-shield"/></svg><span>Funciona en tu ordenador. Tus contraseñas no nos llegan ni a nosotros ni a tu IA.</span></p>
@@ -151,11 +196,11 @@
           <div class="way">
             <h3>Hazlo tú</h3>
             <p>Abre la extensión de Chrome, elige un perfil y pulsa «Empezar descarga». Trabaja en tu propio Chrome, con las sesiones que ya tienes abiertas, inicia sesión con 1Password o Bitwarden cuando hace falta y solo te espera cuando un acceso necesita a una persona.</p>
-            <div class="ui" aria-hidden="true">
+            <div class="ui" data-mo="diy" aria-hidden="true">
               <span class="ui-button">Empezar descarga</span>
               <ul class="ui-log">
-                <li><span>Stripe</span><span class="status ok"><svg class="icon sm"><use href="#i-check"/></svg>2 guardadas</span></li>
-                <li><span>GitHub</span><span class="status go"><svg class="icon sm"><use href="#i-arrow"/></svg>Leyendo la página de facturación</span></li>
+                <li class="mo-rv" data-at="1"><span>Stripe</span><span class="status ok"><svg class="icon sm"><use href="#i-check"/></svg>2 guardadas</span></li>
+                <li class="mo-rv" data-at="2"><span>GitHub</span><span class="status go"><svg class="icon sm"><use href="#i-arrow"/></svg>Leyendo la página de facturación</span></li>
               </ul>
             </div>
             <a class="more-link" href="#how">Mira una ejecución, paso a paso <svg class="icon sm" aria-hidden="true"><use href="#i-arrow"/></svg></a>
@@ -213,6 +258,7 @@
         </header>
         <ol class="run">
           <li class="beat">
+            <span class="mo-step" aria-hidden="true"><b></b></span>
             <div class="ui" aria-hidden="true">
               <span class="ui-label">Perfil</span>
               <span class="ui-select">Acme <svg class="icon sm"><use href="#i-chevron"/></svg></span>
@@ -227,6 +273,7 @@
             <p>Un perfil es una empresa o un cliente: sus proveedores y los ajustes de cada cuenta. Créalo a partir de una etiqueta de tu bóveda (<code>#Acme</code>) o de una carpeta.</p>
           </li>
           <li class="beat">
+            <span class="mo-step" aria-hidden="true"><b></b></span>
             <div class="ui" aria-hidden="true">
               <span class="ui-button">Empezar descarga</span>
               <ul class="ui-log">
@@ -238,6 +285,7 @@
             <p>Abre cada página de facturación en una pestaña, inicia sesión y lee la tabla de facturas. Puedes mirar o ponerte con otra cosa.</p>
           </li>
           <li class="beat">
+            <span class="mo-step" aria-hidden="true"><b></b></span>
             <div class="ui" aria-hidden="true">
               <div class="ui-needs">
                 <span class="status warn"><svg class="icon sm"><use href="#i-alert"/></svg>Te necesita</span>
@@ -249,6 +297,7 @@
             <p>Si un inicio de sesión necesita a una persona, la ejecución espera y te dice exactamente qué hacer. Los códigos 2FA que guardas en tu bóveda se rellenan solos.</p>
           </li>
           <li class="beat">
+            <span class="mo-step" aria-hidden="true"><b></b></span>
             <div class="ui" aria-hidden="true">
               <div class="ui-file"><svg class="icon sm"><use href="#i-file"/></svg><span>Hetzner_Invoice_R0021_Sep-12-2026_4.51.pdf</span></div>
               <ul class="ui-log">
@@ -396,5 +445,6 @@
   </footer>
 
   <script src="../site.js"></script>
+  <script src="../motion.js"></script>
 </body>
 </html>
