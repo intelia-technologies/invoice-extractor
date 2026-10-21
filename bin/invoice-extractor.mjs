@@ -262,6 +262,37 @@ async function reachBillingAfterLogin(page, provider, billingUrl) {
   return waitForSelectorInFrame(page, provider, provider.readySelector, 12);
 }
 
+// Sign-in pages agent mode fills in one provider run (email page, password page, ...).
+const MAX_LOGIN_PASSES = 4;
+
+// Playwright errors that mean "the document went away under us" (a submitted form navigated),
+// not "the page is broken".
+export function isNavigationError(err) {
+  return /Execution context was destroyed|Cannot find context with specified id|frame was detached|because of a navigation/i
+    .test(String(err?.message || err));
+}
+
+// Runs `fn`; a navigation that interrupts it resolves to { navigated: true } instead of throwing.
+export async function withNavigationTolerance(fn) {
+  try {
+    return { value: await fn(), navigated: false };
+  } catch (err) {
+    if (isNavigationError(err)) return { value: null, navigated: true };
+    throw err;
+  }
+}
+
+// Load state plus a short delay so client-side redirects and SPA renders land.
+async function settlePage(page) {
+  await page.waitForLoadState('load', { timeout: 8000 }).catch(() => {});
+  await page.waitForTimeout(700).catch(() => {});
+}
+
+// One quick look (no waiting) for the billing readySelector.
+async function billingReadyNow(page, provider) {
+  return (await waitForSelectorInFrame(page, provider, provider.readySelector, 0.1)).success;
+}
+
 // Same post-login wait as the extension: up to 8 s for the sign-in page to move on, then for
 // the resulting page to finish loading.
 async function settleAfterLogin(page, loginStartUrl) {
@@ -443,7 +474,7 @@ async function signInToProvider(page, context, provider, run, deps) {
   // Resolve 1Password credentials for login or account verification
   let creds = null;
   try {
-    creds = await handleHostRequest(
+    creds = await (deps.resolveCredentials || handleHostRequest)(
       {
         action: 'resolveProvider',
         provider,
@@ -470,21 +501,67 @@ async function signInToProvider(page, context, provider, run, deps) {
   });
 
   // Auto-login, then deal with a verification-code step before leaving the sign-in page.
+  // Sign-in is often several pages (email, then password on another host, then a code), so it
+  // runs in passes like the extension's login polling. Each pass re-runs the domain check on the
+  // page actually being filled (guardedAutoLogin); a navigation that destroys the page mid-fill
+  // means the step was submitted, not that it failed.
   const loginAndVerify = async () => {
-    const loginStartUrl = page.url();
     const requestedAt = new Date().toISOString();
-    await injectEngineIntoFrame(page.mainFrame());
-    const loginRes = await guardedAutoLogin(page.mainFrame(), creds, provider.auth || {});
-    if (loginRes?.blocked) {
-      manifest.errors.push({ providerId: provider.id, error: describeLoginBlock({ ...loginRes, providerName: provider.name }) });
-      return { status: 'error' };
+    let attempted = false;
+    let passwordSubmitted = false;
+    let stepStartUrl = page.url();
+    const codeStep = async () => {
+      const ctx = signIn(stepStartUrl, requestedAt);
+      const verdict = await handleVerificationStep(page, provider, ctx, run, deps);
+      if (verdict.status === 'pending') return { status: 'pending', signIn: ctx, step: verdict.step };
+      if (verdict.status === 'error') return { status: 'error' };
+      return null;
+    };
+    for (let pass = 0; pass < MAX_LOGIN_PASSES; pass++) {
+      if (page.isClosed()) throw new Error(`The ${provider.name} page was closed during sign-in.`);
+      if (pass > 0) {
+        await settlePage(page);
+        if (await billingReadyNow(page, provider)) return { status: 'none', attempted };
+        if (attempted) {
+          const stop = await codeStep();
+          if (stop) return stop;
+        }
+      }
+      const form = await withNavigationTolerance(async () => {
+        await injectEngineIntoFrame(page.mainFrame());
+        return page.mainFrame().evaluate(authCfg => window.__invoiceEngine.detectLoginForm(authCfg), provider.auth || {});
+      });
+      if (form.navigated) continue; // the page moved while we looked: look again next pass
+      if (!form.value?.hasLoginForm) break;
+      // A password form again after we submitted one: the password was refused. Never retry it.
+      if (form.value.hasPassword && passwordSubmitted) break;
+
+      stepStartUrl = page.url();
+      const loginRes = await withNavigationTolerance(async () => {
+        await injectEngineIntoFrame(page.mainFrame());
+        return guardedAutoLogin(page.mainFrame(), creds, provider.auth || {});
+      });
+      if (form.value.hasPassword && (loginRes.navigated || loginRes.value?.filledPassword)) passwordSubmitted = true;
+      if (loginRes.navigated) {
+        // Typed and submitted; the provider moved on to its next sign-in page.
+        attempted = true;
+        continue;
+      }
+      if (loginRes.value?.blocked) {
+        manifest.errors.push({ providerId: provider.id, error: describeLoginBlock({ ...loginRes.value, providerName: provider.name }) });
+        return { status: 'error' };
+      }
+      if (!loginRes.value?.attempted) break; // a form, but nothing we can fill (e.g. a code field)
+      attempted = true;
+      await settleAfterLogin(page, stepStartUrl);
     }
-    if (!loginRes?.attempted) return { status: 'none', attempted: false };
-    await settleAfterLogin(page, loginStartUrl);
-    const ctx = signIn(loginStartUrl, requestedAt);
-    const verdict = await handleVerificationStep(page, provider, ctx, run, deps);
-    if (verdict.status === 'pending') return { status: 'pending', signIn: ctx, step: verdict.step };
-    if (verdict.status === 'error') return { status: 'error' };
+    if (!attempted) return { status: 'none', attempted: false };
+    // Last look: the loop may have ended right after a submit that leads to a code step.
+    await settlePage(page);
+    if (!(await billingReadyNow(page, provider))) {
+      const stop = await codeStep();
+      if (stop) return stop;
+    }
     return { status: 'none', attempted: true };
   };
 
@@ -733,7 +810,7 @@ export async function runAgentExtraction(options = {}, deps = {}) {
     contextProvider = null,
   } = options;
 
-  const allProviders = loadAllProviders();
+  const allProviders = deps.providers || loadAllProviders(); // deps.providers: test catalog
   let state = readLocalState(deps);
 
   // Auto-discover from 1Password if requested profile is not in state yet
@@ -802,25 +879,26 @@ export async function runAgentExtraction(options = {}, deps = {}) {
   let page = contextProvider ? await context.newPage() : context.pages()[0] || (await context.newPage());
   try {
     for (const provider of targetProviders) {
-      const outcome = await signInToProvider(page, context, provider, run, deps);
-      if (outcome.status === 'pending') {
-        const pending = {
-          ...outcome.signIn,
-          page,
+      try {
+        page = await runOneProvider(page, provider);
+      } catch (err) {
+        if (err instanceof VerificationCodeError) throw err;
+        manifest.errors.push({
           providerId: provider.id,
-          providerName: provider.name,
-          pageHost: new URL(page.url()).hostname,
-          hint: outcome.step.hint || '',
-          headed: browserVisible,
-          runOptions: { profileName, activeProfile, sinceDate, maxInvoices, outDir, skipDedup },
-          deps,
-        };
-        manifest.pendingVerification.push(await onVerificationPending(pending));
-        page = await context.newPage();
-        continue;
+          error: `${provider.name} failed unexpectedly and was skipped: ${err?.message || err}`,
+        });
+        if (process.env.IE_DEBUG) console.error(err?.stack || err);
+        // Continue the run on a usable page (the failure may have closed this one).
+        if (page.isClosed()) {
+          try {
+            page = await context.newPage();
+          } catch {
+            // The browser itself is gone (window closed): nothing else can run.
+            manifest.errors.push({ error: 'The browser closed; the remaining providers were not run.' });
+            break;
+          }
+        }
       }
-      if (outcome.status !== 'ready') continue;
-      await extractProviderInvoices(page, provider, outcome, run, deps);
     }
   } finally {
     if (contextProvider) {
@@ -833,6 +911,28 @@ export async function runAgentExtraction(options = {}, deps = {}) {
 
   manifest.completedAt = new Date().toISOString();
   return manifest;
+
+  // Signs in and downloads for one provider; returns the page the next provider should use.
+  async function runOneProvider(page, provider) {
+    const outcome = await signInToProvider(page, context, provider, run, deps);
+    if (outcome.status === 'pending') {
+      const pending = {
+        ...outcome.signIn,
+        page,
+        providerId: provider.id,
+        providerName: provider.name,
+        pageHost: new URL(page.url()).hostname,
+        hint: outcome.step.hint || '',
+        headed: browserVisible,
+        runOptions: { profileName, activeProfile, sinceDate, maxInvoices, outDir, skipDedup },
+        deps,
+      };
+      manifest.pendingVerification.push(await onVerificationPending(pending));
+      return context.newPage();
+    }
+    if (outcome.status === 'ready') await extractProviderInvoices(page, provider, outcome, run, deps);
+    return page;
+  }
 }
 
 /**
@@ -1870,7 +1970,7 @@ async function main() {
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
   main().catch(err => {
-    console.error(JSON.stringify({ ok: false, error: err.message }, null, 2));
+    console.error(JSON.stringify({ ok: false, error: err.message }, null, 2)); if (process.env.IE_DEBUG) console.error(err.stack);
     process.exit(1);
   });
 }
